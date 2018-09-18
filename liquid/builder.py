@@ -4,7 +4,7 @@ class LiquidLine(object):
 	Line of compiled code
 	"""
 	
-	def __init__(self, line, src = '', lineno = 0, indent = 0):
+	def __init__(self, line, lineno = 0, src = '', indent = 0):
 		"""
 		Constructor of line
 		@params:
@@ -21,7 +21,10 @@ class LiquidLine(object):
 		"""
 		For exceptions
 		"""
-		return "Line {}: {}".format(self.lineno, self.src)
+		if self.lineno:
+			return "at line {}: {}".format(self.lineno, self.src)
+		else:
+			return "in compiled source: {}".format(self.src)
 	
 	def __str__(self):
 		return "{}{}\n".format("\t" * self.ndent, self.line)
@@ -62,17 +65,6 @@ class LiquidCode(object):
 			line = LiquidLine(line)
 		line.ndent = self.ndent
 		self.codes.append(line)
-	'''
-	def addSection(self):
-		"""
-		Add a section, a sub-CodeBuilder.
-		@returns:
-			The section added.
-		"""
-		section = LiquidCode(self.ndent)
-		self.codes.append(section)
-		return section
-	'''
 	
 	def indent(self):
 		"""

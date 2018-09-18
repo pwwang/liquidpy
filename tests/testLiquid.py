@@ -1,11 +1,11 @@
-from liquid import Liquid
+from liquid import Liquid, LiquidSyntaxError, LiquidRenderError
 import testly, logging
 
 Liquid.LOGLEVEL = logging.DEBUG
 Liquid.DEFAULT_MODE = 'compact'
 
 class TestLiquid(testly.TestCase):
-
+	#region dataProvider_testRender
 	def dataProvider_testRender(self):
 		yield '{{ page.title }}', {'page': testly.Box(title = 'Introduction')}, 'Introduction'
 		yield '''{% if user %}
@@ -82,6 +82,22 @@ is turned into a comment.'''
 		yield '''{% if customer.name == 'kevin' %}
   Hey Kevin!
 {% elsif customer.name == 'anonymous' %}
+  Hey Anonymous!
+{% else %}
+  Hi Stranger!
+{% endif %}''', {'customer': testly.Box(name = 'anonymous')}, '''  Hey Anonymous!
+'''
+		yield '''{% if customer.name == 'kevin' %}
+  Hey Kevin!
+{% elseif customer.name == 'anonymous' %}
+  Hey Anonymous!
+{% else %}
+  Hi Stranger!
+{% endif %}''', {'customer': testly.Box(name = 'anonymous')}, '''  Hey Anonymous!
+'''
+		yield '''{% if customer.name == 'kevin' %}
+  Hey Kevin!
+{% else if customer.name == 'anonymous' %}
   Hey Anonymous!
 {% else %}
   Hi Stranger!
@@ -308,7 +324,7 @@ John and Paul and George and Ringo'''
 		yield '{{ 16 | @plus: 4 }}', {}, '20'
 		yield '{{ 183.357 | @plus: 12 }}', {}, '195.357'
 
-		# 79
+		# 81
 		yield '''
 {% capture string_with_newlines %}
 Hello
@@ -324,7 +340,7 @@ Hello<br />there<br />'''
 liquidmarkup.com/index.html'''
 
 		yield '{{ "I strained to see the train through the rain" | @remove: "rain" }}', {}, 'I sted to see the t through the '
-		# 83
+		# 85
 		yield '{{ "I strained to see the train through the rain" | @remove_first: "rain" }}', {}, 'I sted to see the train through the rain'
 
 		yield '{{ "Take my protein pills and put my helmet on" | @replace: "my", "your" }}', {}, 'Take your protein pills and put your helmet on'
@@ -341,7 +357,7 @@ plums, peaches, oranges, apples'''
 
 		yield '{{ 1.2 | @round }}', {}, '1.0'
 		yield '{{ 2.7 | @round }}', {}, '3.0'
-		#90
+		#92
 		yield '{{ 183.357 | @round }}', {}, '183.0'
 
 		yield '{{ "          So much room for activities!          " | @rstrip }}', {}, '          So much room for activities!'
@@ -352,7 +368,7 @@ plums, peaches, oranges, apples'''
 
 		yield '{{ "Liquid" | @slice: 0 }}', {}, 'L'
 		yield '{{ "Liquid" | @slice: 2 }}', {}, 'q'
-		# 97
+		# 99
 		yield '{{ "Liquid" | @slice: 2, 5 }}', {}, 'quid'
 		yield '{{ "Liquid" | @slice: -3, 2 }}', {}, 'ui'
 
@@ -369,7 +385,7 @@ plums, peaches, oranges, apples'''
   Ringo
 '''
 		yield '{{ "Have <em>you</em> read <strong>Ulysses</strong>?" | @strip_html }}', {}, 'Have you read Ulysses?'
-		#102
+		#104
 		yield '''{% capture string_with_newlines %}
 Hello
 there
@@ -381,7 +397,7 @@ there
 		yield '{{ 183.357 | @times: 12 }}', {}, '2200.284'
 
 		yield '{{ "Ground control to Major Tom." | @truncate: 20 }}', {}, 'Ground control to...'
-		# 107
+		# 109
 		yield '{{ "Ground control to Major Tom." | @truncate: 25, ", and so on" }}', {}, 'Ground control, and so on'
 		yield '{{ "Ground control to Major Tom." | @truncate: 20, "" }}', {}, 'Ground control to Ma'
 
@@ -394,17 +410,85 @@ there
 
 		yield '{{ "Parker Moore" | @upcase }}', {}, 'PARKER MOORE'
 		yield '{{ "APPLE" | @upcase }}', {}, 'APPLE'
-		# 115
+		# 117
 		yield '{{ "%27Stop%21%27+said+Fred" | @url_decode }}', {}, "'Stop!'+said+Fred"
 		yield '{{ "john@liquid.com" | @url_encode }}', {}, 'john%40liquid.com'
 		yield '{{ "Tetsuro Takara" | @url_encode }}', {}, 'Tetsuro+Takara'
+		# while
+		yield '''{% while True %}
+{% increment a %}
+{{a}}
+{% if a == 3 %}{% break %}{% endif %}
+{% endwhile %}''', {'a':0}, '''1
+2
+3
+'''
+		# python
+		yield '''{% python from os import path %}
+{{path.basename('a/b/c')}}''', {}, 'c'
 
-
-
+		# raw
+		yield '''{% raw %}
+whatever
+I{% if %}
+enter{% comment %}
+here{% raw %}
+is preversed
+{% endraw %}''', {}, '''whatever
+I{% if %}
+enter{% comment %}
+here{% raw %}
+is preversed
+'''
+		yield '''{% comment %}
+whatever
+I{% if %}
+enter{% comment %}
+here{% raw %}
+is treated as comments
+{% endcomment %}''', {}, '''# whatever
+# I{% if %}
+# enter{% comment %}
+# here{% raw %}
+# is treated as comments
+'''
+		yield '''{% capture a %}
+{% for i in range(5) %}
+	{% if i == 2 %}
+		{% continue %}
+	{% endif %}
+{{i}}{% endfor %}
+{% endcapture %}
+{{a}}''', {}, '0134'
+	#endregion
 
 	def testRender(self, text, data, out):
 		l = Liquid(text)
 		self.assertEqual(l.render(**data), out)
+
+	def dataProvider_testInitException(self):
+		yield '''
+		\n
+		{% if %}{%endif%}''', LiquidSyntaxError, 'No statements for "if" at line 4: 		{% if %}'
+		yield '{% for %}', LiquidSyntaxError, 'No statements for "for" at line 1: {% for %}'
+		yield '{% while %}', LiquidSyntaxError, 'No statements for "while" at line 1: {% while %}'
+		yield '{% break %}', LiquidSyntaxError, '"break" must be in a loop block at line 1: {% break %}'
+		yield '{% continue %}', LiquidSyntaxError, '"continue" must be in a loop block at line 1: {% continue %}'
+		yield '{% when x %}', LiquidSyntaxError, 'No case opened for "when" at line 1: {% when x %}'
+
+	def testInitException(self, text, exception, exmsg):
+		self.assertRaisesRegex(exception, exmsg, Liquid, text)
+
+	def dataProvider_testRenderException(self):
+		yield '{{a}}', {}, LiquidRenderError, "NameError: name 'a' is not defined, in compiled source: _liquid_ret_append\(a\)"
+		yield '{% assign a.b = 1 %}', {}, LiquidRenderError, "NameError: name 'a' is not defined, at line 1: {% assign a.b = 1 %}"
+		yield '{% python 1/0 %}', {}, LiquidRenderError, r"ZeroDivisionError: .+ by zero, at line 1: {% python 1/0 %}"
+		yield '{% assign a.b = 1 %}', {'a': 1}, LiquidRenderError, "AttributeError: 'int' object has no attribute 'b', at line 1: {% assign a.b = 1 %}"
+
+	def testRenderException(self, text, data, exception, exmsg):
+		liquid = Liquid(text, **data)
+		self.assertRaisesRegex(exception, exmsg, liquid.render)
+
 
 if __name__ == '__main__':
 	testly.main(verbosity = 2)

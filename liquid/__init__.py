@@ -1,6 +1,6 @@
 import re, traceback, logging
 from .builder import LiquidLine, LiquidCode
-from .exception import LiquidSyntaxError
+from .exception import LiquidSyntaxError, LiquidRenderError
 from .filters import filters
 
 logging.basicConfig(format = '[%(asctime)s][%(levelname)7s] %(message)s')
@@ -10,39 +10,9 @@ class Liquid(object):
 	"""
 	Implement liquid
 
-	function/variable names in complied function: 
-	                  `COMPLIED_RENDER_FUNCTION`: The name of the render function
-	                  `COMPLIED_RF_ARG`         : The name of the argument of the render function
-	                  `COMPLIED_RENDERED_STR`   : The result of the render_function
-	                  `COMPLIED_RR_APPEND`      : Append function of the result
-	                  `COMPLIED_RR_EXTEND`      : Extend function of the result
-	                  `COMPLIED_CP_APPEND`      : Append function of the captured
-	                  `COMPLIED_CP_EXTEND`      : Extend function of the captured
-
-	token types: 
-	`TOKEN_LITERAL`   : Literal tokens
-	`TOKEN_IF`        : If statements
-	`TOKEN_ELIF`      : Elif statements
-	`TOKEN_ELSE`      : Else statements
-	`TOKEN_ENDIF`     : Endif statements
-	`TOKEN_FOR`       : For statements
-	`TOKEN_ENDFOR`    : Endfor statements
-	`TOKEN_UNLESS`    : Unless statements
-	`TOKEN_ENDUNLESS` : Endunless statements
-	`TOKEN_CASE`      : Case statements
-	`TOKEN_WHEN`      : When statements
-	`TOKEN_ENDCASE`   : Endcase statements
-	`TOKEN_BREAK`     : Break statements
-	`TOKEN_CONTINUE`  : Continue statements
-	`TOKEN_COMMENT`   : Comment statements
-	`TOKEN_ENDCOMMENT`: Endcomment statements
-	`TOKEN_COMMENTTAG`: Comment tag
-	`TOKEN_RAW`       : Raw statement
-	`TOKEN_ENDRAW`    : Endraw statement
-	`TOKEN_ASSIGN`    : Assign alistatement
-	`TOKEN_CAPTURE`   : Capture statement
-	`TOKEN_INCREMENT` : Increment statement
-	`TOKEN_DECREMENT` : Decrement statement
+	@static variable
+	`LOGLEVEL`: The logger level. Default: `logging.CRITICAL`. Set it to `logging.DEBUG` to show debug information
+	`DEFAULT_MODE`: The default white space control mode: `loose`. Change it to `compact` if you want compact mode
 	"""
 	COMPLIED_RENDERED_STR = '_liquid_rendered_str'
 	COMPLIED_RENDERED     = '_liquid_rendered'
@@ -91,7 +61,7 @@ class Liquid(object):
 		`context` is a dictionary for future renderings.
 		@params:
 			`text`     : The template text
-			`**context`: The context used to render.
+			`**envs`: The context used to render.
 		"""
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.logger.setLevel(Liquid.LOGLEVEL)
@@ -142,19 +112,24 @@ class Liquid(object):
 		for token in tokens:
 			if not token:
 				continue
-			tokentype, neattoken = Liquid._tokenType(token, lineno)
+			tokentype, neattoken = Liquid._tokenType(token, lineno, opsStack)
 			self.logger.debug('Token type: {!r}, content: {!r} at line {}: {!r}'.format(tokentype, neattoken, lineno, token))
 			if not opsStack or opsStack[-1][0] not in [Liquid.TOKEN_RAW, Liquid.TOKEN_COMMENT]:
 				if tokentype in [Liquid.TOKEN_IF, Liquid.TOKEN_FOR, Liquid.TOKEN_WHILE]:
 					self._flush(capname = Liquid._capname(opsStack))
-					self._parsePythonLiteral(tokentype, neattoken, indent = True)
+					self._parsePythonLiteral(tokentype, neattoken, lineno = lineno, src = token, indent = True)
 					opsStack.append((tokentype, ))
-				elif tokentype in [Liquid.TOKEN_BREAK, Liquid.TOKEN_CONTINUE, Liquid.TOKEN_PYTHON]:
+				elif tokentype in [Liquid.TOKEN_BREAK, Liquid.TOKEN_CONTINUE]:
+					if not opsStack or not any([op[0] in [Liquid.TOKEN_FOR, Liquid.TOKEN_WHILE] for op in opsStack]):
+						raise LiquidSyntaxError('"{}" must be in a loop block'.format(tokentype), lineno, token)
 					self._flush(capname = Liquid._capname(opsStack))
-					self._parsePythonLiteral(tokentype, neattoken, colon = False)
+					self._parsePythonLiteral(tokentype, neattoken, lineno = lineno, src = token, colon = False)
+				elif tokentype == Liquid.TOKEN_PYTHON:
+					self._flush(capname = Liquid._capname(opsStack))
+					self._parsePythonLiteral(neattoken, lineno = lineno, src = token, colon = False)
 				elif tokentype in [Liquid.TOKEN_ELIF, Liquid.TOKEN_ELSE]:
 					self._flush(capname = Liquid._capname(opsStack))
-					self._parsePythonLiteral(tokentype, neattoken, indent = True, dedent = True)
+					self._parsePythonLiteral(tokentype, neattoken, lineno = lineno, src = token, indent = True, dedent = True)
 				elif tokentype == Liquid.TOKEN_COMMENTTAG:
 					self._flush(capname = Liquid._capname(opsStack))
 				elif tokentype == Liquid.TOKEN_CAPTURE:
@@ -186,10 +161,10 @@ class Liquid(object):
 					self._parseAssign(neattoken, lineno, token)
 				elif tokentype == Liquid.TOKEN_INCREMENT:
 					self._flush(capname = Liquid._capname(opsStack))
-					self._parseIncrement(neattoken)
+					self._parseIncrement(neattoken, lineno = lineno, src = src)
 				elif tokentype == Liquid.TOKEN_DECREMENT:
 					self._flush(capname = Liquid._capname(opsStack))
-					self._parseDecrement(neattoken)
+					self._parseDecrement(neattoken, lineno = lineno, src = src)
 				elif tokentype == Liquid.TOKEN_UNLESS:
 					self._flush(capname = Liquid._capname(opsStack))
 					self._parseUnless(neattoken)
@@ -298,7 +273,6 @@ class Liquid(object):
 			func, arg = filterstr.split(':', 1)
 			return '{}({}, {})'.format(func, valstr, arg)
 
-
 	@staticmethod
 	def _capname(opsStack):
 		captags = [op[0] for op in opsStack if op[0] == Liquid.TOKEN_CAPTURE]
@@ -364,7 +338,9 @@ class Liquid(object):
 		return ret
 
 	@staticmethod
-	def _tokenType(token, lineno):
+	def _tokenType(token, lineno, opsStack):
+		ops = [op[0] for op in opsStack] if opsStack else []
+
 		neattoken = token.strip()
 		tag3 = neattoken[:3] + neattoken[-3:]
 		tag2 = neattoken[:2] + neattoken[-2:]
@@ -376,27 +352,35 @@ class Liquid(object):
 			neattoken = neattoken[2:-2].strip()
 			istag = True
 
+		# raw/comment
+		if Liquid.TOKEN_RAW in ops and (tag2[1] != '%' or neattoken != Liquid.TOKEN_ENDRAW):
+			return Liquid.TOKEN_LITERAL, ''
+		if Liquid.TOKEN_COMMENT in ops and (tag2[1] != '%' or neattoken != Liquid.TOKEN_ENDCOMMENT):
+			return Liquid.TOKEN_LITERAL, ''
+		
 		if istag:
-			if tag2[1] == '#' or tag3[1] == '#':
+			if tag2[1] == '#':
 				return Liquid.TOKEN_COMMENTTAG, ''
-			elif tag2[1] == '{' or tag3[1] == '{':
+			elif tag2[1] == '{':
 				return Liquid.TOKEN_EXPR, neattoken
 			else:
 				words = neattoken.split(None, 1)
 				# sole keywords
-				if words[0] in ['break', 'continue', 'comment', 'raw']:
+				if words[0] in ['break', 'continue', 'raw']:
 					if len(words) > 1:
-						raise LiquidSyntaxError('Additional statements for {}'.format(words[0]), lineno, token)
+						raise LiquidSyntaxError('Additional statements for "{}"'.format(words[0]), lineno, token)
 					return getattr(Liquid, 'TOKEN_' + words[0].upper()), ''
-				elif words[0] in ['if', 'for', 'elif', 'elsif', 'elseif', 'unless', 'case', 'when', 'capture']:
+				elif words[0] == 'comment':
+					return Liquid.TOKEN_COMMENT, neattoken
+				elif words[0] in ['if', 'for', 'elif', 'elsif', 'elseif', 'unless', 'case', 'when', 'capture', 'while', 'python']:
 					if len(words) == 1:
-						raise LiquidSyntaxError('No statements for {}'.format(words[0]), lineno, token)
+						raise LiquidSyntaxError('No statements for "{}"'.format(words[0]), lineno, token)
 					if words[0] == 'elsif' or words[0] == 'elseif':
 						words[0] = 'elif'
 					return getattr(Liquid, 'TOKEN_' + words[0].upper()), words[1] 
 				elif words[0] == 'assign':
 					if len(words) == 1:
-						raise LiquidSyntaxError('No statements for {}'.format(words[0]), lineno, token)
+						raise LiquidSyntaxError('No statements for "{}"'.format(words[0]), lineno, token)
 					equals = words[1].split('=', 1)
 					if len(equals) == 1:
 						raise LiquidSyntaxError('Malformat assignment, no equal sign found: {}'.format(words[0]), lineno, token)
@@ -430,11 +414,16 @@ class Liquid(object):
 		container = self.captured if capture else self.buffered
 		container.append(Liquid._exprCode(token, lineno, src))
 	
-	def _parsePythonLiteral(self, token, neattoken, colon = True, indent = False, dedent = False):
+	def _parsePythonLiteral(self, token, lineno = 0, src = None, neattoken = '', colon = True, indent = False, dedent = False):
 		self.logger.debug(' - parsing python literal: {} {}'.format(token, neattoken))
 		if dedent:
 			self.code.dedent()
-		self.code.addLine('{} {}{}'.format(token, neattoken, ':' if colon else ''))
+		src = src or token
+		line = LiquidLine('{}{}{}'.format(
+			token, 
+			' ' + neattoken if neattoken else ''
+			, ':' if colon else ''), lineno = lineno, src = src)
+		self.code.addLine(line)
 		if indent:
 			self.code.indent()
 
@@ -445,26 +434,26 @@ class Liquid(object):
 			self._parsePythonLiteral(
 				Liquid.TOKEN_ELIF, 
 				'{} == {}'.format(casevar, whenvar), 
-				indent = True, dedent = True)
+				indent = True, dedent = True, lineno = lineno, src = src)
 		else:
 			self._parsePythonLiteral(
 				Liquid.TOKEN_IF, 
 				'{} == {}'.format(casevar, whenvar), 
-				indent = True, dedent = False)
+				indent = True, dedent = False, lineno = lineno, src = src)
 
-	def _parseUnless(self, neattoken):
+	def _parseUnless(self, neattoken, lineno, src):
 		self.logger.debug(' - parsing unless: {}'.format(neattoken))
-		self.code.addLine('if not ({}):'.format(neattoken))
+		self.code.addLine(LiquidLine('if not ({}):'.format(neattoken), lineno = lineno, src = src))
 		self.code.indent()
 
 	def _parseAssign(self, equals, lineno, src):
-		self.code.addLine('{} = {}'.format(equals[0], Liquid._exprCode(equals[1], lineno, src)))
+		self.code.addLine(LiquidLine('{} = {}'.format(equals[0], Liquid._exprCode(equals[1], lineno, src)), lineno = lineno, src = src))
 
-	def _parseIncrement(self, var):
-		self.code.addLine('{var} = {var} + 1'.format(var = var))
+	def _parseIncrement(self, var, lineno, src):
+		self.code.addLine(LiquidLine('{} += 1'.format(var), lineno = lineno, src = src))
 
-	def _parseDecrement(self, var):
-		self.code.addLine('{} -= 1'.format(var))
+	def _parseDecrement(self, var, lineno, src):
+		self.code.addLine(LiquidLine('{} -= 1'.format(var), lineno = lineno, src = src))
 	
 	def _parseComment(self, literals, capture):
 		self.logger.debug(' - parsing comment: {!r}'.format(literals))
@@ -522,7 +511,6 @@ class Liquid(object):
 				if stack.startswith('File "<string>"'):
 					lineno = int(stack.split(', ')[1].split()[-1]) 
 					line   = self.code.lineByNo(lineno)
-					src    = line.src if line else '<unknown source>'
 					
-					raise Exception(stacks[0], src)
+					raise LiquidRenderError(stacks[0], repr(line))
 			raise
