@@ -16,7 +16,10 @@ install:
 script:
   - cd tests
   - coverage run testLiquid.py
-after_success:
-  - coverage xml
-  - coverage report
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then export CODACY_PROJECT_TOKEN=6d565255c0c6437d9a7d16410a5a2967; python-codacy-coverage -r coverage.xml; fi
+after_success: |
+  if [ $TRAVIS_PYTHON_VERSION == '2.7' ]; then
+    export CODACY_PROJECT_TOKEN=6d565255c0c6437d9a7d16410a5a2967
+    coverage xml
+    coverage report
+    python-codacy-coverage -r coverage.xml
+  fi
