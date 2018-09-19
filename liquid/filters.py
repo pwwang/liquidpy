@@ -32,6 +32,20 @@ def _split(val, sep, limit = -1):
 	val = list(val)
 	return val[:(limit - 1)] + ''.join(val[limit:])
 
+def _url_decode(val):
+	try:
+		from urllib import unquote
+	except ImportError:
+		from urllib.parse import unquote
+	return unquote(val)
+
+def _url_encode(val):
+	try:
+		from urllib import urlencode
+	except ImportError:
+		from urllib.parse import urlencode
+	return urlencode({'': val})[1:]
+
 filters = dict(
 	abs        = _abs,
 	append     = lambda x, y: str(x) + str(y),
@@ -76,6 +90,6 @@ filters = dict(
 	truncatewords = _truncatewords,
 	uniq       = lambda x: list(set(x)),
 	upcase     = lambda x: str(x).upper(),
-	url_encode = lambda x: __import__('urllib').urlencode({'': x})[1:],
-	url_decode = lambda x: __import__('urllib').unquote(x)
+	url_encode = _url_encode,
+	url_decode = _url_decode
 )
