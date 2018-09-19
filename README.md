@@ -1,6 +1,7 @@
 # pyliquid
-A port of liquid template engine for python  
-See liquid: https://shopify.github.io/liquid/
+A port of [liquid][1] template engine for python  
+
+![Pypi][2] ![Github][3] ![PythonVers][4] ![Travis building][5]  ![Codacy][6] ![Codacy coverage][7]
 
 ## Table of Contents
 
@@ -1011,4 +1012,10 @@ If you don't have to use global variables in `lambda`, you may also omit the `la
 The argument names start from `a`, up to `z`.
 
 
-
+[1]: https://shopify.github.io/liquid/
+[2]: https://img.shields.io/pypi/v/pyliquid.svg?style=flat-square
+[3]: https://img.shields.io/github/tag/pwwang/pyliquid.svg?style=flat-square
+[4]: https://img.shields.io/pypi/pyversions/pyliquid.svg?style=flat-square
+[5]: https://img.shields.io/travis/pwwang/pyliquid.svg?style=flat-square
+[6]: https://api.codacy.com/project/badge/Grade/ddbe1b0441f343f5abfdec3811a4e482
+[7]: https://api.codacy.com/project/badge/Coverage/ddbe1b0441f343f5abfdec3811a4e482
