@@ -1,4 +1,4 @@
-# pyliquid
+# liquid.py
 A port of [liquid][1] template engine for python  
 
 ![Pypi][2] ![Github][3] ![PythonVers][4] ![Travis building][5]  ![Codacy][6] ![Codacy coverage][7]
@@ -44,9 +44,9 @@ A port of [liquid][1] template engine for python
 # Install
 ```shell
 # install released version
-pip install pyliquid
+pip install liquid.py
 # install lastest version
-pip install https://github.com/pwwang/pyliquid.git
+pip install https://github.com/pwwang/liquid.py.git
 ```
 
 # Baisic usage
@@ -64,13 +64,13 @@ ret = liq.render({'a': "path/to/file.txt"})
 ```
 
 # Documentation
-`pyliquid` basically implements almost all the features supported by liquid, however, it has some differences and specific features due to the language feature itself.   
+`liquid.py` basically implements almost all the features supported by liquid, however, it has some differences and specific features due to the language feature itself.   
 __Anything that is different from `liquid` will be underscored.__
 ## Tags
-`pyliquid` supports all tags that `liquid` does: `{{`, `}}`, `{%`, `%}`, and their non-whitespace variants: `{{-`, `-}}`, `{%-` and `-%}`. __Beside these tags, `pyliquid` supports `{#`, `#}` (non-whitespace variants: `{#-`, `-#}` have some comments in the template.__
+`liquid.py` supports all tags that `liquid` does: `{{`, `}}`, `{%`, `%}`, and their non-whitespace variants: `{{-`, `-}}`, `{%-` and `-%}`. __Beside these tags, `liquid.py` supports `{#`, `#}` (non-whitespace variants: `{#-`, `-#}` have some comments in the template.__
 
 ## Operators, types, truthy and falsy
-They basically follow `python` syntax. Besides that, `pyliquid` also has `true`, `false` and `nil` keywords as `liquid` does, which correspond to `True`, `False` and `None` in `python`.  
+They basically follow `python` syntax. Besides that, `liquid.py` also has `true`, `false` and `nil` keywords as `liquid` does, which correspond to `True`, `False` and `None` in `python`.  
 
 ## White space control
 Same as liquid does, you can include a hyphen in your tag syntax `{{-`, `-}}`, `{%-`, `-%}`, `{#-` and `-#}` to strip whitespace from the left or right side of a rendered tag.  
@@ -127,7 +127,7 @@ tomato
 
 __NOTE: the leading spaces of the line is not stripped, this is slightly different from `liquid`__
 
-__The above behavior of the tags are in `loose` mode, which is a default mode of `pyliquid`. You may also change the default mode globally:__
+__The above behavior of the tags are in `loose` mode, which is a default mode of `liquid.py`. You may also change the default mode globally:__
 ```python
 from liquid import Liquid
 Liquid.DEFAULT_MODE = 'compact'
@@ -155,8 +155,8 @@ ___Unless decleared explictly, the mode will be `mixed` in this document.___
 
 ## Blocks
 ### Comment
-__Unlike `liquid`, `pyliquid` has two comment systems: comment block `{% comment %}...{% endcomment %}` and comment tag `{# ... #}`.__  
-__The former one is also supported by `liquid`, but acts differently. In `liquid`, anything between the comment block will be igored, however, it turns to python comments in `pyliquid`. If you want the comments to be ignore, you should use comment tag instead:__  
+__Unlike `liquid`, `liquid.py` has two comment systems: comment block `{% comment %}...{% endcomment %}` and comment tag `{# ... #}`.__  
+__The former one is also supported by `liquid`, but acts differently. In `liquid`, anything between the comment block will be igored, however, it turns to python comments in `liquid.py`. If you want the comments to be ignore, you should use comment tag instead:__  
 **Input**
 ```liquid
 Anything you put between
@@ -239,7 +239,7 @@ This would be the equivalent of doing the following:
 ```
 
 #### `elsif(elif, else if) / else`
-Adds more conditions within an if or unless block. `pyliquid` recoglizes not only `elsif` keyword as `liquid` does, it also treats `else if` and `elif` as `elsif` in `liquid`, or `elif` in `python`
+Adds more conditions within an if or unless block. `liquid.py` recoglizes not only `elsif` keyword as `liquid` does, it also treats `else if` and `elif` as `elsif` in `liquid`, or `elif` in `python`
 
 **Input**
 
@@ -279,7 +279,7 @@ Creates a switch statement to compare a variable with different values. case ini
 
 ### Iteration/Loop
 Iteration tags run blocks of code repeatedly.  
-__`for(parameters)`, `tablerow` and `cycle` are abandoned in `pyliquid`, because they can be easied performed using python expressions__  
+__`for(parameters)`, `tablerow` and `cycle` are abandoned in `liquid.py`, because they can be easied performed using python expressions__  
 
 #### `while`
 __`liquid` doesn't support `while`, but we have it here. Use it just like you are writing `python` codes:__  
@@ -476,7 +476,7 @@ Creates a new number variable, and decreases its value by one every time it is c
 ```
 
 ## Filters
-`pyliquid` tries to support `liquid` filters, however, to support `python` filters themselves, we put `@` before the filters to mark it as `liquid` filters.  
+`liquid.py` tries to support `liquid` filters, however, to support `python` filters themselves, we put `@` before the filters to mark it as `liquid` filters.  
 __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__  
 
 **Where you can use filters**  
@@ -1013,9 +1013,9 @@ The argument names start from `a`, up to `z`.
 
 
 [1]: https://shopify.github.io/liquid/
-[2]: https://img.shields.io/pypi/v/pyliquid.svg?style=flat-square
-[3]: https://img.shields.io/github/tag/pwwang/pyliquid.svg?style=flat-square
-[4]: https://img.shields.io/pypi/pyversions/pyliquid.svg?style=flat-square
-[5]: https://img.shields.io/travis/pwwang/pyliquid.svg?style=flat-square
+[2]: https://img.shields.io/pypi/v/liquid.py.svg?style=flat-square
+[3]: https://img.shields.io/github/tag/pwwang/liquid.py.svg?style=flat-square
+[4]: https://img.shields.io/pypi/pyversions/liquid.py.svg?style=flat-square
+[5]: https://img.shields.io/travis/pwwang/liquid.py.svg?style=flat-square
 [6]: https://api.codacy.com/project/badge/Grade/ddbe1b0441f343f5abfdec3811a4e482
 [7]: https://api.codacy.com/project/badge/Coverage/ddbe1b0441f343f5abfdec3811a4e482

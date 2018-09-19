@@ -7,14 +7,14 @@ with open(verfile) as vf:
 	VERSION = vf.readline().split('=')[1].strip()[1:-1]
 
 setup (
-	name             = 'pyliquid',
+	name             = 'liquid.py',
 	version          = VERSION,
 	description      = "A port of liquid template engine for python",
-	url              = "https://github.com/pwwang/pyliquid",
+	url              = "https://github.com/pwwang/liquid.py",
 	author           = "pwwang",
 	author_email     = "pwwang@pwwang.com",
 	license          = "Apache License Version 2.0",
-	long_description = "https://github.com/pwwang/pyliquid",
+	long_description = "https://github.com/pwwang/liquid.py",
 	packages         = find_packages(),
 	classifiers      = [
 		"Intended Audience :: Developers",
