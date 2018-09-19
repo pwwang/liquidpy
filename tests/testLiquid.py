@@ -481,6 +481,22 @@ is treated as comments
 		# 140
 		yield "{{ x | ['a']: }}", {'x': {'a': lambda: 2}}, '2'
 		yield "{{ x | ['a']() }}", {'x': {'a': lambda: 2}}, '2'
+		yield '''{% comment # %}
+a
+b
+c
+{% endcomment %}''', {}, '''# a
+# b
+# c
+'''
+		yield '''{% comment // %}
+a
+b
+c
+{% endcomment %}''', {}, '''// a
+// b
+// c
+'''
 	#endregion
 
 	def testRender(self, text, data, out):

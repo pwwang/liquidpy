@@ -188,14 +188,14 @@ class Liquid(object):
 					self.code.dedent()
 				elif tokentype in [Liquid.TOKEN_COMMENT, Liquid.TOKEN_RAW]:
 					self._flush(capname = Liquid._capname(opsStack))
-					opsStack.append((tokentype, ))
+					opsStack.append((tokentype, neattoken))
 				else:
 					self._parseLiteral(token, capture = Liquid._capname(opsStack))
 				
 			else: # raw/comment started
 				if opsStack[-1][0] == Liquid.TOKEN_COMMENT and tokentype == Liquid.TOKEN_ENDCOMMENT:
 					self._flush(capname = Liquid._capname(opsStack))
-					self._parseComment(literals, capture = Liquid._capname(opsStack))
+					self._parseComment(literals, sign = opsStack[-1][1], capture = Liquid._capname(opsStack))
 					literals = []
 					opsStack.pop(-1)
 				elif opsStack[-1][0] == Liquid.TOKEN_RAW and tokentype == Liquid.TOKEN_ENDRAW:
@@ -373,7 +373,7 @@ class Liquid(object):
 						raise LiquidSyntaxError('Additional statements for "{}"'.format(words[0]), lineno, token)
 					return getattr(Liquid, 'TOKEN_' + words[0].upper()), ''
 				elif words[0] == 'comment':
-					return Liquid.TOKEN_COMMENT, neattoken
+					return Liquid.TOKEN_COMMENT, words[1] if len(words) > 1 else '#'
 				elif words[0] in ['if', 'for', 'elif', 'elsif', 'elseif', 'unless', 'case', 'when', 'capture', 'while', 'python']:
 					if len(words) == 1:
 						raise LiquidSyntaxError('No statements for "{}"'.format(words[0]), lineno, token)
@@ -457,11 +457,11 @@ class Liquid(object):
 	def _parseDecrement(self, var, lineno, src):
 		self.code.addLine(LiquidLine('{} -= 1'.format(var), lineno = lineno, src = src))
 	
-	def _parseComment(self, literals, capture):
+	def _parseComment(self, literals, sign, capture):
 		self.logger.debug(' - parsing comment: {!r}'.format(literals))
 		container = self.captured if capture else self.buffered
 		container.extend([
-			repr('# {}'.format(line.lstrip())) 
+			repr('{} {}'.format(sign, line.lstrip())) 
 			for line in ''.join(literals).splitlines(True)
 		])
 
