@@ -471,10 +471,16 @@ is treated as comments
 		yield '{{ 1.234, 1+1 | [1] }}', {}, '2'
 		yield '{{ "/path/to/file.txt" | :len(a) - 4 }}', {}, '13'
 		yield '{{ "{}, {}!" | .format: "Hello", "world" }}', {}, 'Hello, world!'
-		yield '''{% python from os import path %}
+		yield '''{% mode compact %}
+{% python from os import path %}
 {{ "/path/to/file.txt" | lambda p, path = path: path.join( path.dirname(p), path.splitext(p)[0] + '.sorted' + path.splitext(p)[1] ) }}''', {}, '/path/to/file.sorted.txt'
 		yield "{{ '1' | .isdigit() }}", {}, 'True'
 		yield "{{ '1' | .isdigit: }}", {}, 'True'
+		yield "{{ x | ['a']: 1, 2 }}", {'x': {'a': lambda x, y: x+y}}, '3'
+		yield "{{ x | ['a'] }}", {'x': {'a': 1}}, '1'
+		# 140
+		yield "{{ x | ['a']: }}", {'x': {'a': lambda: 2}}, '2'
+		yield "{{ x | ['a']() }}", {'x': {'a': lambda: 2}}, '2'
 	#endregion
 
 	def testRender(self, text, data, out):
@@ -482,14 +488,31 @@ is treated as comments
 		self.assertEqual(l.render(**data), out)
 
 	def dataProvider_testInitException(self):
-		yield '''
-		\n
-		{% if %}{%endif%}''', LiquidSyntaxError, 'No statements for "if" at line 4: 		{% if %}'
+		yield '''{% capture x %}
+		wrer
+		{% endcapture %}
+		b
+		a
+		{% if %}{%endif%}''', LiquidSyntaxError, 'No statements for "if" at line 6: 		{% if %}'
 		yield '{% for %}', LiquidSyntaxError, 'No statements for "for" at line 1: {% for %}'
 		yield '{% while %}', LiquidSyntaxError, 'No statements for "while" at line 1: {% while %}'
 		yield '{% break %}', LiquidSyntaxError, '"break" must be in a loop block at line 1: {% break %}'
+		yield '{% elsif x %}', LiquidSyntaxError, '"elif" must be in an if/unless block at line 1: {% elsif x %}'
+		yield '{% else %}', LiquidSyntaxError, '"else" must be in an if/unless/case block at line 1: {% else %}'
+		yield '{% endif x %}', LiquidSyntaxError, 'Additional statements for endif at line 1: {% endif x %}'
+		yield '{% endx %}', LiquidSyntaxError, 'Unknown end tag endx at line 1: {% endx %}'
 		yield '{% continue %}', LiquidSyntaxError, '"continue" must be in a loop block at line 1: {% continue %}'
 		yield '{% when x %}', LiquidSyntaxError, 'No case opened for "when" at line 1: {% when x %}'
+		yield '{% endcapture %}', LiquidSyntaxError, 'Unmatched tag: /endcapture at line 1: {% endcapture %}'
+		yield '{% if x %}{% endfor %}', LiquidSyntaxError, 'Unmatched tag: if/endfor at line 1: {% endfor %}'
+		yield '{% if x %}', LiquidSyntaxError, 'Unclosed template tag: if'
+		yield '{{ x | @nosuch }}', LiquidSyntaxError, 'Unknown liquid filter [nosuch] at line 1: {{ x | @nosuch }}'
+		yield '{% break 1 %}', LiquidSyntaxError, 'Additional statements for "break" at line 1: {% break 1 %}'
+		yield '{% assign %}', LiquidSyntaxError, 'No statements for "assign" at line 1: {% assign %}'
+		yield '{% increment %}', LiquidSyntaxError, 'No variable for increment at line 1: {% increment %}'
+		yield '{% assign x %}', LiquidSyntaxError, 'Malformat assignment, no equal sign found: assign at line 1: {% assign x %}'
+		yield '{% if x %}{% else x %}{% endif %}', LiquidSyntaxError, '"Else" must be followed by "if" statement if any at line 1: {% else x %}'
+		yield '{% if x %}{% else if %}{% endif %}', LiquidSyntaxError, 'No statements for "else if" at line 1: {% else if %}'
 
 	def testInitException(self, text, exception, exmsg):
 		self.assertRaisesRegex(exception, exmsg, Liquid, text)
@@ -497,6 +520,17 @@ is treated as comments
 	def dataProvider_testRenderException(self):
 		yield '{{a}}', {}, LiquidRenderError, "NameError: name 'a' is not defined, in compiled source: _liquid_ret_append\(a\)"
 		yield '{% assign a.b = 1 %}', {}, LiquidRenderError, "NameError: name 'a' is not defined, at line 1: {% assign a.b = 1 %}"
+		yield '''{% capture x %}
+		wrer
+		x
+		{% endcapture %}
+		{{x}}
+		c
+		{# comment #}
+		b
+		a
+{% assign a.b = 1 %}
+''', {}, LiquidRenderError, "NameError: name 'a' is not defined, at line 10: {% assign a.b = 1 %}"
 		yield '{% python 1/0 %}', {}, LiquidRenderError, r"ZeroDivisionError: .+ by zero, at line 1: {% python 1/0 %}"
 		yield '{% assign a.b = 1 %}', {'a': 1}, LiquidRenderError, "AttributeError: 'int' object has no attribute 'b', at line 1: {% assign a.b = 1 %}"
 

@@ -130,12 +130,12 @@ class Liquid(object):
 					self._parsePythonLiteral(neattoken, lineno = lineno, src = token, colon = False)
 				elif tokentype == Liquid.TOKEN_ELIF:
 					if not opsStack or not any([op[0] in [Liquid.TOKEN_IF, Liquid.TOKEN_UNLESS] for op in opsStack]):
-						raise LiquidSyntaxError('"{}" must be in a if/unless block'.format(tokentype), lineno, token)
+						raise LiquidSyntaxError('"{}" must be in an if/unless block'.format(tokentype), lineno, token)
 					self._flush(capname = Liquid._capname(opsStack))
 					self._parsePythonLiteral(tokentype, neattoken, lineno = lineno, src = token, indent = True, dedent = True)
 				elif tokentype == Liquid.TOKEN_ELSE:
 					if not opsStack or not any([op[0] in [Liquid.TOKEN_IF, Liquid.TOKEN_UNLESS, Liquid.TOKEN_CASE] for op in opsStack]):
-						raise LiquidSyntaxError('"{}" must be in a if/unless/case block'.format(tokentype), lineno, token)
+						raise LiquidSyntaxError('"{}" must be in an if/unless/case block'.format(tokentype), lineno, token)
 					self._flush(capname = Liquid._capname(opsStack))
 					self._parsePythonLiteral(tokentype, neattoken, lineno = lineno, src = token, indent = True, dedent = True)
 				elif tokentype == Liquid.TOKEN_COMMENTTAG:
@@ -240,7 +240,7 @@ class Liquid(object):
 			# see https://shopify.github.io/liquid/filters/abs/
 			parts = filterstr[1:].split(':', 1)
 			if parts[0] not in filters:
-				raise LiquidSyntaxError('Unknown liquid filter [{}]'.format(filterstr), lineno, src)
+				raise LiquidSyntaxError('Unknown liquid filter [{}]'.format(filterstr[1:]), lineno, src)
 			if len(parts) == 1:
 				return '{}[{!r}]({})'.format(Liquid.COMPLIED_FILTERS, parts[0], valstr)
 			else:
@@ -254,16 +254,12 @@ class Liquid(object):
 				return '{}.{}({})'.format(valobj, parts[0], parts[1])
 		elif filterstr.startswith('['):
 			# getitem
-			parts = Liquid.split(filterstr, ':')
+			parts  = Liquid.split(filterstr, ':')
 			parts0 = parts.pop(0)
 			if not parts:
 				return '{}{}'.format(valobj, parts0)
 			else:
-				rest = ':'.join(parts)
-				if rest:
-					return '{}{}({})'.format(valobj, parts0, rest)
-				else:
-					return '{}{}'.format(valobj, parts0)
+				return '{}{}({})'.format(valobj, parts0, ':'.join(parts))
 		elif filterstr.startswith(':'):
 			# lambdas
 			argnames = list('abcdefghijklmnopqrstuvwxyz')
@@ -294,7 +290,7 @@ class Liquid(object):
 		return vals
 
 	@staticmethod
-	def split (s, delimter, trim = True):
+	def split (s, delimter, trim = True): # pragma: no cover
 		"""
 		Split a string using a single-character delimter
 		@params:
@@ -516,7 +512,5 @@ class Liquid(object):
 				stack = stack.strip()
 				if stack.startswith('File "<string>"'):
 					lineno = int(stack.split(', ')[1].split()[-1]) 
-					line   = self.code.lineByNo(lineno)
-					
-					raise LiquidRenderError(stacks[0], repr(line))
-			raise
+					raise LiquidRenderError(stacks[0], repr(self.code.codes[lineno - 1]))
+			raise # pragma: no cover

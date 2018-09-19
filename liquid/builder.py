@@ -78,34 +78,5 @@ class LiquidCode(object):
 		"""
 		self.ndent -= self.INDENT_STEP
 
-	def _nlines(self):
-		"""
-		Get the number of lines in the builder
-		@returns:
-			The number of lines.
-		"""
-		return sum(1 if isinstance(c, LiquidLine) else c._nlines() for c in self.codes)
-
-	def lineByNo(self, lineno):
-		"""
-		Get the line by line number
-		@params:
-			`lineno`: The line number
-		@returns:
-			The LiquidLine object at `lineno`.
-		"""
-		if lineno <= 0: return None
-
-		n = 0
-		for c in self.codes:
-			if isinstance(c, LiquidLine):
-				n += 1
-				if n == lineno: 
-					return c
-			else:
-				nlines = c._nlines()
-				n += nlines
-				if n >= lineno:
-					return c.lineByNo(lineno - n + nlines)
 
 
