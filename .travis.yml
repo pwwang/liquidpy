@@ -11,6 +11,7 @@ install:
   - python setup.py install
   - pip install coverage
   - pip install codacy-coverage
+  - pip install python-testly
 # command to run tests
 script:
   - cd tests
