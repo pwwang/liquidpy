@@ -1,3 +1,5 @@
+VERSION = '0.0.1'
+
 import re, traceback, logging
 from .builder import LiquidLine, LiquidCode
 from .exception import LiquidSyntaxError, LiquidRenderError

@@ -1,0 +1,22 @@
+language: python
+python:
+  - "2.7"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.6"
+  - "3.6-dev"
+# command to install dependencies
+install:
+  - python setup.py install
+  - pip install coverage
+  - pip install codacy-coverage
+# command to run tests
+script:
+  - cd tests
+  - coverage run testLiquid.py
+after_success:
+  - coverage xml
+  - coverage report
+  - export CODACY_PROJECT_TOKEN=c49564cadca3453e8926f23fc0d61dc9
+  - python-codacy-coverage -r coverage.xml
