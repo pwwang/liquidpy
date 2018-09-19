@@ -19,5 +19,4 @@ script:
 after_success:
   - coverage xml
   - coverage report
-  - export CODACY_PROJECT_TOKEN=c49564cadca3453e8926f23fc0d61dc9
-  - python-codacy-coverage -r coverage.xml
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then export CODACY_PROJECT_TOKEN=6d565255c0c6437d9a7d16410a5a2967; python-codacy-coverage -r coverage.xml; fi

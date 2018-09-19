@@ -1,0 +1,7 @@
+[run]
+source =
+	../liquid/__init__.py
+	../liquid/builder.py
+	../liquid/exception.py
+omit =
+	test*.py
