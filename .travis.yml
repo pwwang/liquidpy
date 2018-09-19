@@ -8,7 +8,8 @@ python:
   - "3.6-dev"
 # command to install dependencies
 install:
-  - python setup.py install
+  #- python setup.py install
+  - export PYTHONPATH="$(pwd):$PYTHONPATH"
   - pip install coverage
   - pip install codacy-coverage
   - pip install python-testly
