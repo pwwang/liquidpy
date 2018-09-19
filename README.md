@@ -192,6 +192,7 @@ This
 will be
 translated
 as comments
+{% endcomment %}
 ```
 **Output**
 ```
