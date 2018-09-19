@@ -64,7 +64,7 @@ filters = dict(
 	replace = lambda x, y, z, w = -1: str(x).replace(str(y), str(z), w),
 	replace_first = lambda x, y, z: str(x).replace(str(y), str(z), 1),
 	reverse    = lambda x: x[::-1],
-	round      = lambda x: round(float(x)),
+	round      = lambda x, n = 0: round(float(x), n),
 	rstrip     = lambda x: str(x).rstrip(),
 	size       = len,
 	slice      = lambda x, y, z = 1: x[y:(z if not z else z - y if y < 0 else z + y)],

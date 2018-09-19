@@ -2,7 +2,7 @@ from liquid import Liquid, LiquidSyntaxError, LiquidRenderError
 import testly, logging
 
 Liquid.LOGLEVEL = logging.DEBUG
-Liquid.DEFAULT_MODE = 'compact'
+Liquid.DEFAULT_MODE = 'mixed'
 
 class TestLiquid(testly.TestCase):
 	#region dataProvider_testRender
@@ -358,7 +358,7 @@ plums, peaches, oranges, apples'''
 		yield '{{ 1.2 | @round }}', {}, '1.0'
 		yield '{{ 2.7 | @round }}', {}, '3.0'
 		#92
-		yield '{{ 183.357 | @round }}', {}, '183.0'
+		yield '{{ 183.357 | @round: 2 }}', {}, '183.36'
 
 		yield '{{ "          So much room for activities!          " | @rstrip }}', {}, '          So much room for activities!'
 		yield '{{ "          So much room for activities!          " | @strip }}', {}, 'So much room for activities!'
@@ -460,6 +460,21 @@ is treated as comments
 {{i}}{% endfor %}
 {% endcapture %}
 {{a}}''', {}, '0134'
+		yield '{{len("123") | @plus: 3}}', {}, '6'
+		yield '{{1.234, 1+1 | round }}', {}, '1.23'
+		yield '{{1.234 | round: 2 }}', {}, '1.23'
+		yield '{{ [1,2,3] | [0] }}', {}, '1'
+		yield '{{ [1,2,3] | [1:] | sum }}', {}, '5'
+		yield '{{ {"a": 1} | ["a"] }}', {}, '1'
+		# 131
+		yield '{{ "," | .join: ["a", "b"] }}', {}, 'a,b'
+		yield '{{ 1.234, 1+1 | [1] }}', {}, '2'
+		yield '{{ "/path/to/file.txt" | :len(a) - 4 }}', {}, '13'
+		yield '{{ "{}, {}!" | .format: "Hello", "world" }}', {}, 'Hello, world!'
+		yield '''{% python from os import path %}
+{{ "/path/to/file.txt" | lambda p, path = path: path.join( path.dirname(p), path.splitext(p)[0] + '.sorted' + path.splitext(p)[1] ) }}''', {}, '/path/to/file.sorted.txt'
+		yield "{{ '1' | .isdigit() }}", {}, 'True'
+		yield "{{ '1' | .isdigit: }}", {}, 'True'
 	#endregion
 
 	def testRender(self, text, data, out):

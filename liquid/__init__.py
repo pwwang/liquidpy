@@ -3,7 +3,7 @@ from .builder import LiquidLine, LiquidCode
 from .exception import LiquidSyntaxError, LiquidRenderError
 from .filters import filters
 
-logging.basicConfig(format = '[%(asctime)s][%(levelname)7s] %(message)s')
+logging.basicConfig(format = '[%(asctime)s %(levelname)s] %(message)s')
 
 class Liquid(object): 
 
@@ -78,14 +78,11 @@ class Liquid(object):
 		self.buffered = []
 		self.captured = []
 
-		lines2  = self.text.split('\n', 1)
-		mode    = re.match(r'^\s*{%\s*mode\s*(compact|loose)\s*%}\s*$', lines2[0])
+		lines2    = self.text.split('\n', 1)
+		modematch = re.match(r'^\s*{%\s*mode\s*(compact|loose|mixed)\s*%}\s*$', lines2[0])
 		
-		if mode:
-			compact = mode.group(1) == 'compact'
-		else:
-			compact = Liquid.DEFAULT_MODE == 'compact'
-		self.logger.debug('Mode: {}'.format('compact' if compact else 'loose'))
+		mode = modematch.group(1) if modematch else Liquid.DEFAULT_MODE
+		self.logger.debug('Mode: {}'.format(mode))
 
 		# We construct a function in source form, then compile it and hold onto
 		# it, and execute it to render the template.
@@ -101,12 +98,14 @@ class Liquid(object):
 		opsStack = []
 
 		# Split the text to a list of tokens.
-		if mode:
+		if modematch:
 			text = lines2[1]
-		if compact:
+		if mode == 'compact':
+			tokens   = re.split(r"(?s)([ \t]*{{-?.*?-?}}[ \t]*\n?|[ \t]*{%-?.*?-?%}[ \t]*\n?|[ \t]*{#-?.*?-?#}[ \t]*\n?)", text)
+		elif mode == 'mixed':
 			tokens   = re.split(r"(?s)({{.*?}}|[ \t]*{%-?.*?-?%}[ \t]*\n?|[ \t]*{#-?.*?-?#}[ \t]*\n?)", text)
 		else:
-			tokens   = re.split(r"(?s)({{.*?}}|[ \t]*{%-.*?-%}[ \t]*\n?|{%.*?%}|[ \t]*{#-.*?-#}[ \t]*\n?|{#.*?#})", text)
+			tokens   = re.split(r"(?s)([ \t]*{{-.*?-}}[ \t]*\n?|{{.*?}}|[ \t]*{%-.*?-%}[ \t]*\n?|{%.*?%}|[ \t]*{#-.*?-#}[ \t]*\n?|{#.*?#})", text)
 		lineno   = 1
 		literals = []
 		for token in tokens:
@@ -127,7 +126,14 @@ class Liquid(object):
 				elif tokentype == Liquid.TOKEN_PYTHON:
 					self._flush(capname = Liquid._capname(opsStack))
 					self._parsePythonLiteral(neattoken, lineno = lineno, src = token, colon = False)
-				elif tokentype in [Liquid.TOKEN_ELIF, Liquid.TOKEN_ELSE]:
+				elif tokentype == Liquid.TOKEN_ELIF:
+					if not opsStack or not any([op[0] in [Liquid.TOKEN_IF, Liquid.TOKEN_UNLESS] for op in opsStack]):
+						raise LiquidSyntaxError('"{}" must be in a if/unless block'.format(tokentype), lineno, token)
+					self._flush(capname = Liquid._capname(opsStack))
+					self._parsePythonLiteral(tokentype, neattoken, lineno = lineno, src = token, indent = True, dedent = True)
+				elif tokentype == Liquid.TOKEN_ELSE:
+					if not opsStack or not any([op[0] in [Liquid.TOKEN_IF, Liquid.TOKEN_UNLESS, Liquid.TOKEN_CASE] for op in opsStack]):
+						raise LiquidSyntaxError('"{}" must be in a if/unless/case block'.format(tokentype), lineno, token)
 					self._flush(capname = Liquid._capname(opsStack))
 					self._parsePythonLiteral(tokentype, neattoken, lineno = lineno, src = token, indent = True, dedent = True)
 				elif tokentype == Liquid.TOKEN_COMMENTTAG:
@@ -161,13 +167,13 @@ class Liquid(object):
 					self._parseAssign(neattoken, lineno, token)
 				elif tokentype == Liquid.TOKEN_INCREMENT:
 					self._flush(capname = Liquid._capname(opsStack))
-					self._parseIncrement(neattoken, lineno = lineno, src = src)
+					self._parseIncrement(neattoken, lineno = lineno, src = token)
 				elif tokentype == Liquid.TOKEN_DECREMENT:
 					self._flush(capname = Liquid._capname(opsStack))
-					self._parseDecrement(neattoken, lineno = lineno, src = src)
+					self._parseDecrement(neattoken, lineno = lineno, src = token)
 				elif tokentype == Liquid.TOKEN_UNLESS:
 					self._flush(capname = Liquid._capname(opsStack))
-					self._parseUnless(neattoken)
+					self._parseUnless(neattoken, lineno = lineno, src = token)
 					opsStack.append((tokentype, neattoken))
 				elif tokentype in [
 					Liquid.TOKEN_ENDIF, Liquid.TOKEN_ENDFOR, Liquid.TOKEN_ENDWHILE, 
@@ -220,7 +226,8 @@ class Liquid(object):
 
 	@staticmethod
 	def _exprFilter(valstr, filterstr, lineno, src):
-		if len(Liquid.split(valstr, ',')) > 1:
+		nvar = len(Liquid.split(valstr, ','))
+		if nvar > 1:
 			valtuple = '({})'.format(valstr)
 			valobj   = valtuple
 		else:
@@ -242,10 +249,7 @@ class Liquid(object):
 			if len(parts) == 1:
 				return '{}.{}'.format(valobj, parts[0])
 			else:
-				if parts[1]:
-					return '{}.{}({})'.format(valobj, parts[0], parts[1])
-				else:
-					return '{}.{}'.format(valobj, parts[0])
+				return '{}.{}({})'.format(valobj, parts[0], parts[1])
 		elif filterstr.startswith('['):
 			# getitem
 			parts = Liquid.split(filterstr, ':')
@@ -261,7 +265,7 @@ class Liquid(object):
 		elif filterstr.startswith(':'):
 			# lambdas
 			argnames = list('abcdefghijklmnopqrstuvwxyz')
-			return '(lambda {}{})({})'.format(', '.join(argnames[:len(valtuple)], filterstr, valstr))
+			return '(lambda {}{})({})'.format(', '.join(argnames[:nvar]), filterstr, valstr)
 		elif filterstr.startswith('lambda'):
 			# real lambda
 			return '({})({})'.format(filterstr, valstr)
@@ -414,7 +418,7 @@ class Liquid(object):
 		container = self.captured if capture else self.buffered
 		container.append(Liquid._exprCode(token, lineno, src))
 	
-	def _parsePythonLiteral(self, token, lineno = 0, src = None, neattoken = '', colon = True, indent = False, dedent = False):
+	def _parsePythonLiteral(self, token, neattoken = '', lineno = 0, src = None, colon = True, indent = False, dedent = False):
 		self.logger.debug(' - parsing python literal: {} {}'.format(token, neattoken))
 		if dedent:
 			self.code.dedent()
