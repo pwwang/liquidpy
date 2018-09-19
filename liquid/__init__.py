@@ -5,8 +5,6 @@ from .builder import LiquidLine, LiquidCode
 from .exception import LiquidSyntaxError, LiquidRenderError
 from .filters import filters
 
-logging.basicConfig(format = '[%(asctime)s %(levelname)s] %(message)s')
-
 class Liquid(object): 
 
 	"""
@@ -66,8 +64,13 @@ class Liquid(object):
 			`**envs`: The context used to render.
 		"""
 		self.logger = logging.getLogger(self.__class__.__name__)
+		for handler in self.logger.handlers:
+			handler.close()
+		del self.logger.handlers[:]
+		handler = logging.StreamHandler()
+		handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s] %(message)s'))
+		self.logger.addHandler(handler)
 		self.logger.setLevel(Liquid.LOGLEVEL)
-		#self.logger.setLevel(logging.CRITICAL)
 
 		self.envs  = {
 			Liquid.COMPLIED_FILTERS: filters,
