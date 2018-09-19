@@ -440,8 +440,7 @@ Creates a new number variable, and decreases its value by one every time it is c
 `pyliquid` tries to support `liquid` filters, however, to support `python` filters themselves, we put `@` before the filters to mark it as `liquid` filters.  
 __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__  
 
-### `liquid` filters
-#### Where you can use filters
+**Where you can use filters**  
 
 - In expression tags: `{{`, `}}` and `{{-`, `-}}`
 - In `assign` block: `{% assign a = "abc" | len %}`
@@ -456,6 +455,8 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
       {{Other length}}
   {% endcase %}
   ```  
+
+### `liquid` filters
 
 #### Math filters  
 - `abs`: Returns the absolute value of a number. 
