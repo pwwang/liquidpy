@@ -1016,6 +1016,6 @@ The argument names start from `a`, up to `z`.
 [2]: https://img.shields.io/pypi/v/liquid.py.svg?style=flat-square
 [3]: https://img.shields.io/github/tag/pwwang/liquid.py.svg?style=flat-square
 [4]: https://img.shields.io/pypi/pyversions/liquid.py.svg?style=flat-square
-[5]: https://img.shields.io/travis/pwwang/liquid.py.svg?style=flat-square
+[5]: https://img.shields.io/travis/pwwang/pyliquid.svg?style=flat-square
 [6]: https://api.codacy.com/project/badge/Grade/ddbe1b0441f343f5abfdec3811a4e482
 [7]: https://api.codacy.com/project/badge/Coverage/ddbe1b0441f343f5abfdec3811a4e482
