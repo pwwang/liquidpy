@@ -11,7 +11,7 @@ A port of [liquid][1] template engine for python
       * [Tags](#tags)
       * [Operators, types, truthy and falsy](#operators-types-truthy-and-falsy)
       * [White space control](#white-space-control)
-      * [Debug](#Debug)
+      * [Debug](#debug)
       * [Blocks](#blocks)
          * [Comment](#comment)
          * [Python source](#python-source)
