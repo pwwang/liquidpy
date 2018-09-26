@@ -11,8 +11,8 @@ class Liquid(object):
 	Implement liquid
 
 	@static variable
-	`LOGLEVEL`: The logger level. Default: `logging.CRITICAL`. Set it to `logging.DEBUG` to show debug information
-	`DEFAULT_MODE`: The default white space control mode: `loose`. Change it to `compact` if you want compact mode
+	`DEBUG`: The debug flag. Default: False
+	`MODE` : The mode of the template. Default: loose
 	"""
 	COMPLIED_RENDERED_STR = '_liquid_rendered_str'
 	COMPLIED_RENDERED     = '_liquid_rendered'
@@ -52,8 +52,8 @@ class Liquid(object):
 	TOKEN_WHILE           = 'while'
 	TOKEN_ENDWHILE        = 'endwhile'
 
-	LOGLEVEL     = logging.CRITICAL
-	DEFAULT_MODE = 'loose'
+	DEBUG = False
+	MODE  = 'loose'
 
 	def __init__(self, text, **envs):
 		"""
@@ -70,7 +70,7 @@ class Liquid(object):
 		handler = logging.StreamHandler()
 		handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s] %(message)s'))
 		self.logger.addHandler(handler)
-		self.logger.setLevel(Liquid.LOGLEVEL)
+		#self.logger.setLevel(Liquid.LOGLEVEL)
 
 		self.envs  = {
 			Liquid.COMPLIED_FILTERS: filters,
@@ -84,10 +84,20 @@ class Liquid(object):
 		self.captured = []
 
 		lines2    = self.text.split('\n', 1)
-		modematch = re.match(r'^\s*{%\s*mode\s*(compact|loose|mixed)\s*%}\s*$', lines2[0])
+		modematch = re.match(r'^\s*{%\s*mode\s+(.+)%}\s*$', lines2[0])
 		
-		mode = modematch.group(1) if modematch else Liquid.DEFAULT_MODE
-		self.logger.debug('Mode: {}'.format(mode))
+		mode  = Liquid.MODE
+		debug = Liquid.DEBUG
+		if modematch:
+			mm = modematch.group(1)
+			if 'nodebug' in mm:   debug = False
+			elif 'debug' in mm:   debug = True
+			if 'loose' in mm:     mode = 'loose'
+			elif 'mixed' in mm:   mode = 'mixed'
+			elif 'compact' in mm: mode = 'compact'
+		
+		self.logger.setLevel(logging.DEBUG if debug else logging.CRITICAL)
+		self.logger.debug('Mode: {} {}'.format(mode, 'debug' if debug else ''))
 
 		# We construct a function in source form, then compile it and hold onto
 		# it, and execute it to render the template.

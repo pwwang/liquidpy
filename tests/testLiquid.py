@@ -1,8 +1,8 @@
+import testly
 from liquid import Liquid, LiquidSyntaxError, LiquidRenderError
-import testly, logging
 
-Liquid.LOGLEVEL = logging.DEBUG
-Liquid.DEFAULT_MODE = 'mixed'
+Liquid.DEBUG = True
+Liquid.MODE  = 'mixed'
 
 class TestLiquid(testly.TestCase):
 	#region dataProvider_testRender
@@ -548,7 +548,8 @@ c
 {% assign a.b = 1 %}
 ''', {}, LiquidRenderError, "NameError: name 'a' is not defined, at line 10: {% assign a.b = 1 %}"
 		yield '{% python 1/0 %}', {}, LiquidRenderError, r"ZeroDivisionError: .+ by zero, at line 1: {% python 1/0 %}"
-		yield '{% assign a.b = 1 %}', {'a': 1}, LiquidRenderError, "AttributeError: 'int' object has no attribute 'b', at line 1: {% assign a.b = 1 %}"
+		yield '''{% mode nodebug %}
+{% assign a.b = 1 %}''', {'a': 1}, LiquidRenderError, "AttributeError: 'int' object has no attribute 'b', at line 1: {% assign a.b = 1 %}"
 
 	def testRenderException(self, text, data, exception, exmsg):
 		liquid = Liquid(text, **data)

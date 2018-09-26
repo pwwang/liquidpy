@@ -11,6 +11,7 @@ A port of [liquid][1] template engine for python
       * [Tags](#tags)
       * [Operators, types, truthy and falsy](#operators-types-truthy-and-falsy)
       * [White space control](#white-space-control)
+      * [Debug](#Debug)
       * [Blocks](#blocks)
          * [Comment](#comment)
          * [Python source](#python-source)
@@ -64,10 +65,10 @@ ret = liq.render({'a': "path/to/file.txt"})
 ```
 
 # Documentation
-`liquidpy` basically implements almost all the features supported by liquid, however, it has some differences and specific features due to the language feature itself.   
-__Anything that is different from `liquid` will be underscored.__
+`liquidpy` basically implements almost all the features supported by `liquid`. However, it has some differences and specific features due to the language feature itself.   
+__Anything that is different from `liquid` will be bolded.__
 ## Tags
-`liquidpy` supports all tags that `liquid` does: `{{`, `}}`, `{%`, `%}`, and their non-whitespace variants: `{{-`, `-}}`, `{%-` and `-%}`. __Beside these tags, `liquidpy` supports `{#`, `#}` (non-whitespace variants: `{#-`, `-#}` have some comments in the template.__
+`liquidpy` supports all tags that `liquid` does: `{{`, `}}`, `{%`, `%}`, and their non-whitespace variants: `{{-`, `-}}`, `{%-` and `-%}`. __Beside these tags, `liquidpy` also recognizes `{#`, `#}` (non-whitespace variants: `{#-`, `-#}` have some comments in the template.__
 
 ## Operators, types, truthy and falsy
 They basically follow `python` syntax. Besides that, `liquidpy` also has `true`, `false` and `nil` keywords as `liquid` does, which correspond to `True`, `False` and `None` in `python`.  
@@ -130,7 +131,7 @@ __NOTE: the leading spaces of the line is not stripped, this is slightly differe
 __The above behavior of the tags are in `loose` mode, which is a default mode of `liquidpy`. You may also change the default mode globally:__
 ```python
 from liquid import Liquid
-Liquid.DEFAULT_MODE = 'compact'
+Liquid.MODE = 'compact'
 ```
 __By change the default mode to `compact`, then the whitespace tags will act exactly the same as the non-whitespace tags.__  
 
@@ -152,6 +153,44 @@ __You may also change the mode for each `Liquid` instance. Put `{% mode compact 
   Wow, John G. Chalmers-Smith, you have a long name!
 ```  
 ___Unless decleared explictly, the mode will be `mixed` in this document.___
+
+## Debug
+You may print debug information by setting `Liquid.DEBUG = True` globally to show the parsing and rendering processes. 
+```python
+Liquid.DEBUG = True
+Liquid('{% python 1/0 %}').render()
+```
+```log
+[2018-09-26 10:53:36,912 DEBUG] Mode: mixed debug
+[2018-09-26 10:53:36,912 DEBUG] Token type: 'python', content: '1/0' at line 1: '{% python 1/0 %}'
+[2018-09-26 10:53:36,912 DEBUG]  - parsing python literal: 1/0 
+[2018-09-26 10:53:36,912 DEBUG] Python source:
+[2018-09-26 10:53:36,912 DEBUG] --------------------------------------------------------------------------------
+[2018-09-26 10:53:36,912 DEBUG] _liquid_rendered = []
+[2018-09-26 10:53:36,912 DEBUG] _liquid_captured = []
+[2018-09-26 10:53:36,912 DEBUG] _liquid_ret_append = _liquid_rendered.append
+[2018-09-26 10:53:36,912 DEBUG] _liquid_ret_extend = _liquid_rendered.extend
+[2018-09-26 10:53:36,912 DEBUG] _liquid_cap_append = _liquid_captured.append
+[2018-09-26 10:53:36,912 DEBUG] _liquid_cap_extend = _liquid_captured.extend
+[2018-09-26 10:53:36,912 DEBUG] 1/0
+[2018-09-26 10:53:36,912 DEBUG] _liquid_rendered_str = ''.join(str(x) for x in _liquid_rendered)
+[2018-09-26 10:53:36,912 DEBUG] del _liquid_captured
+[2018-09-26 10:53:36,913 DEBUG] del _liquid_cap_append
+[2018-09-26 10:53:36,913 DEBUG] del _liquid_cap_extend
+[2018-09-26 10:53:36,913 DEBUG] del _liquid_filters
+[2018-09-26 10:53:36,913 DEBUG] del _liquid_rendered
+[2018-09-26 10:53:36,913 DEBUG] del _liquid_ret_append
+[2018-09-26 10:53:36,913 DEBUG] del _liquid_ret_extend
+# raise LiquidRenderError: ZeroDivisionError: integer division or modulo by zero, at line 1: {% python 1/0 %}
+```
+
+You may turn `DEBUG` mode on/off for single `Liquid` instance by just putting `debug` or `nodebug` in the FIRST LINE of your template:
+```liquid
+{% mode compact, nodebug %}
+{% python 1/0 %}
+# no debug information will be shown
+# raise LiquidRenderError: ZeroDivisionError: integer division or modulo by zero, at line 1: {% python 1/0 %}
+```
 
 ## Blocks
 ### Comment
@@ -260,7 +299,7 @@ This would be the equivalent of doing the following:
 Adds more conditions within an if or unless block. `liquidpy` recoglizes not only `elsif` keyword as `liquid` does, it also treats `else if` and `elif` as `elsif` in `liquid`, or `elif` in `python`
 
 **Input**
-
+```liquid
 {% if customer.name == 'kevin' %}
   Hey Kevin!
 {% elsif customer.name == 'anonymous' %}
@@ -268,6 +307,7 @@ Adds more conditions within an if or unless block. `liquidpy` recoglizes not onl
 {% else %}
   Hi Stranger!
 {% endif %}
+```
 
 **Output**
 ```
