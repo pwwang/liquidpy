@@ -530,7 +530,6 @@ class Liquid(object):
 				stack = stack.strip()
 				if stack.startswith('File "<string>"'):
 					lineno = int(stack.split(', ')[1].split()[-1])
-					code   = self.code.codes[lineno - 1]
 					source = []
 					if 'NameError:' in stacks[0]:
 						source.append('Do you forget to provide the data?')
