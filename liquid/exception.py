@@ -8,5 +8,6 @@ class LiquidSyntaxError(Exception):
 			super(LiquidSyntaxError, self).__init__(msg)
 
 class LiquidRenderError(Exception):
-	def __init__(self, exc, msg):
-		super(LiquidRenderError, self).__init__("{}, {}".format(exc, msg))
+	def __init__(self, exc, msg = ''):
+
+		super(LiquidRenderError, self).__init__("{}{}".format(exc, ', ' + msg if msg else ''))

@@ -68,7 +68,7 @@ class Liquid(object):
 			handler.close()
 		del self.logger.handlers[:]
 		handler = logging.StreamHandler()
-		handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s] %(message)s'))
+		handler.setFormatter(logging.Formatter('[%(asctime)s Liquid] %(message)s', '%Y-%m-%d %H:%M:%S'))
 		self.logger.addHandler(handler)
 		#self.logger.setLevel(Liquid.LOGLEVEL)
 
@@ -87,17 +87,17 @@ class Liquid(object):
 		modematch = re.match(r'^\s*{%\s*mode\s+(.+)%}\s*$', lines2[0])
 		
 		mode  = Liquid.MODE
-		debug = Liquid.DEBUG
+		self.debug = Liquid.DEBUG
 		if modematch:
 			mm = modematch.group(1)
-			if 'nodebug' in mm:   debug = False
-			elif 'debug' in mm:   debug = True
+			if 'nodebug' in mm:   self.debug = False
+			elif 'debug' in mm:   self.debug = True
 			if 'loose' in mm:     mode = 'loose'
 			elif 'mixed' in mm:   mode = 'mixed'
 			elif 'compact' in mm: mode = 'compact'
 		
-		self.logger.setLevel(logging.DEBUG if debug else logging.CRITICAL)
-		self.logger.debug('Mode: {} {}'.format(mode, 'debug' if debug else ''))
+		self.logger.setLevel(logging.DEBUG if self.debug else logging.CRITICAL)
+		self.logger.debug('Mode: {} {}'.format(mode, 'debug' if self.debug else ''))
 
 		# We construct a function in source form, then compile it and hold onto
 		# it, and execute it to render the template.
@@ -236,8 +236,13 @@ class Liquid(object):
 
 		self.logger.debug('Python source:')
 		self.logger.debug('-' * 80)
-		for line in self.code.codes:
-			self.logger.debug(str(line).rstrip())
+
+		if self.debug:
+			import math
+			nlines = len(self.code.codes)
+			nbit   = int(math.log(nlines, 10)) + 3
+			for i, line in enumerate(self.code.codes):
+				self.logger.debug((str(i+1) + '.').ljust(nbit) + str(line).rstrip())
 
 	@staticmethod
 	def _exprFilter(valstr, filterstr, lineno, src):
@@ -524,6 +529,23 @@ class Liquid(object):
 			for stack in stacks:
 				stack = stack.strip()
 				if stack.startswith('File "<string>"'):
-					lineno = int(stack.split(', ')[1].split()[-1]) 
-					raise LiquidRenderError(stacks[0], repr(self.code.codes[lineno - 1]))
+					lineno = int(stack.split(', ')[1].split()[-1])
+					code   = self.code.codes[lineno - 1]
+					source = []
+					if 'NameError:' in stacks[0]:
+						source.append('Do you forget to provide the data?')
+
+					import math
+					source.append('\nCompiled source (use debug mode to see full source):')
+					source.append('---------------------------------------------------')
+					nlines = len(self.code.codes)
+					nbit   = int(math.log(nlines, 10)) + 3
+					for i, line in enumerate(self.code.codes):
+						if i - 7 > lineno or i + 9 < lineno: continue
+						if i + 1 != lineno:
+							source.append('  ' + (str(i+1) + '.').ljust(nbit) + str(line).rstrip())
+						else:
+							source.append('* ' + (str(i+1) + '.').ljust(nbit) + str(line).rstrip())
+					
+					raise LiquidRenderError(stacks[0], repr(self.code.codes[lineno - 1]) + '\n' + '\n'.join(source))
 			raise # pragma: no cover
