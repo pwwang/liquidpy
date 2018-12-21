@@ -54,13 +54,13 @@ pip install https://github.com/pwwang/liquidpy.git
 ```python
 from liquid import Liquid
 liq = Liquid('{{a}}')
-ret = liq.render({'a': 1})
+ret = liq.render(a = 1)
 # ret == '1'
 ```
 With environments:
 ```python
-liq = Liquid('{{os.path.basename(a)}}', {'os': __import__('os')})
-ret = liq.render({'a': "path/to/file.txt"})
+liq = Liquid('{{os.path.basename(a)}}', os = __import__('os'))
+ret = liq.render(a = "path/to/file.txt")
 # ret == 'file.txt'
 ```
 
