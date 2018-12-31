@@ -372,13 +372,13 @@ class Liquid(object):
 			neattoken = neattoken[2:-2].strip()
 			istag = True
 
-		# raw/comment
-		if Liquid.TOKEN_RAW in ops and (tag2[1] != '%' or neattoken != Liquid.TOKEN_ENDRAW):
-			return Liquid.TOKEN_LITERAL, ''
-		if Liquid.TOKEN_COMMENT in ops and (tag2[1] != '%' or neattoken != Liquid.TOKEN_ENDCOMMENT):
-			return Liquid.TOKEN_LITERAL, ''
-		
 		if istag:
+			# raw/comment
+			if Liquid.TOKEN_RAW in ops and (tag2[1] != '%' or neattoken != Liquid.TOKEN_ENDRAW):
+				return Liquid.TOKEN_LITERAL, ''
+			if Liquid.TOKEN_COMMENT in ops and (tag2[1] != '%' or neattoken != Liquid.TOKEN_ENDCOMMENT):
+				return Liquid.TOKEN_LITERAL, ''
+
 			if tag2[1] == '#':
 				return Liquid.TOKEN_COMMENTTAG, ''
 			elif tag2[1] == '{':
@@ -546,5 +546,11 @@ class Liquid(object):
 						else:
 							source.append('* ' + (str(i+1) + '.').ljust(nbit) + str(line).rstrip())
 					
-					raise LiquidRenderError(stacks[0], repr(self.code.codes[lineno - 1]) + '\n' + '\n'.join(source))
+					raise LiquidRenderError(
+						stacks[0], 
+						repr(self.code.codes[lineno - 1]) + 
+						'\n' + '\n'.join(source) + 
+						'\n\nPREVIOUS EXCEPTION:\n------------------\n' + 
+						'\n'.join(stacks)
+					)
 			raise # pragma: no cover
