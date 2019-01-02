@@ -610,6 +610,12 @@ c
 		yield "{{(1,2), (3,4), (5,6) | *lambda a, b, c, d = (7, 8): dict([a,b,c,d])}}", {}, "{1: 2, 3: 4, 5: 6, 7: 8}"
 		# {{ x, y, z | &filter: w }} => (x, y, z, filter((x, y, z), w)
 		yield "{{(1,2), (3,4), (5,6) | &lambda a, b = (7, 8): dict(list(a + (b, )))}}", {}, "((1, 2), (3, 4), (5, 6), {1: 2, 3: 4, 5: 6, 7: 8})"
+
+		yield '{{"a,b,c,d", "," | repr}}', {}, "('a,b,c,d', ',')"
+		yield '{{ 1, | repr }}', {}, '(1,)'
+		yield '{{ 1 | :(a,) }}', {}, '(1,)'
+		yield '{{x | &isinstance: int | *:[a, b+1][int(b)] }}', {'x': None}, 'None'
+		yield '{{x | &isinstance: int | *:[a, b+1][int(b)] }}', {'x': 1}, '2'
 		
 	#endregion
 

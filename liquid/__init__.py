@@ -1,4 +1,4 @@
-VERSION = '0.0.5'
+VERSION = '0.0.6'
 
 import re, traceback, logging
 from .builder import LiquidLine, LiquidCode

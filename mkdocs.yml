@@ -1,0 +1,24 @@
+site_name: liquidpy
+theme: 
+    name: 'material'
+    font:
+      text: 'Ubuntu'
+      code: 'Ubuntu Mono'
+markdown_extensions:
+    - markdown.extensions.admonition
+    - markdown.extensions.extra
+    - pymdownx.superfences:
+        preserve_tabs: true
+    - toc:
+        baselevel: 2
+extra_css:
+    - 'extra.css'
+nav:
+    - 'Introduction': 'index.md'
+    - 'Tags/Operators': 'tags.md'
+    - 'White space control': 'wscontrol.md'
+    - 'Debug': 'debug.md'
+    - 'Blocks': 'blocks.md'
+    - 'Filters': 'filters.md'
+    - 'Modifiers': 'modifiers.md'
+    - 'Change log': 'changelog.md'
