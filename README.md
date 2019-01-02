@@ -8,7 +8,7 @@ A port of [liquid][1] template engine for python
 # install released version
 pip install liquidpy
 # install lastest version
-pip install https://github.com/pwwang/liquidpy.git
+pip install git+https://github.com/pwwang/liquidpy.git
 ```
 
 ## Full Documentation
