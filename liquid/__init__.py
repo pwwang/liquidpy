@@ -245,53 +245,109 @@ class Liquid(object):
 				self.logger.debug((str(i+1) + '.').ljust(nbit) + str(line).rstrip())
 
 	@staticmethod
-	def _exprFilter(valstr, filterstr, lineno, src):
-		nvar = len(Liquid.split(valstr, ','))
-		if nvar > 1:
-			valtuple = '({})'.format(valstr)
-			valobj   = valtuple
-		else:
-			valtuple = '({}, )'.format(valstr)
-			valobj   = valstr
+	def _exprFilter(argstr, filterstr, lineno, src):
+		argstup = '({})'.format(argstr)
+		expand = chain = False
+		if filterstr.startswith('*'):
+			expand = True
+			filterstr = filterstr[1:]
+		if filterstr.startswith('&'):
+			chain  = True
+			filterstr = filterstr[1:]
+
 		if filterstr.startswith('@'):
 			# liquid filters, now need to start with @
 			# see https://shopify.github.io/liquid/filters/abs/
-			parts = filterstr[1:].split(':', 1)
-			if parts[0] not in filters:
-				raise LiquidSyntaxError('Unknown liquid filter [{}]'.format(filterstr[1:]), lineno, src)
-			if len(parts) == 1:
-				return '{}[{!r}]({})'.format(Liquid.COMPLIED_FILTERS, parts[0], valstr)
-			else:
-				return '{}[{!r}]({}, {})'.format(Liquid.COMPLIED_FILTERS, parts[0], valstr, parts[1])
+			filterstr = filterstr[1:]
+			tmp = Liquid.split(filterstr, ':', limit = 1)
+			func, arg = tmp if len(tmp) == 2 else (tmp[0], None)
+			if func not in filters:
+				raise LiquidSyntaxError('Unknown liquid filter: @{}'.format(filterstr), lineno, src)
+			# {{ x | @filter }} => filter(x)
+			# {{ x | @filter: a }} => filter(x, a)
+			# {{ x, y | *@filter: a }} => filter(x, y, a)
+			# {{ x, y | @filter: a }} => filter((x, y), a)
+			# {{ x, y | *&@filter: a }} => (x, y, filter(x, y, a))
+			# {{ x, y | &@filter: a }} => (x, y, filter((x, y), a))
+			ret = '{}[{!r}]({}{})'.format(
+				Liquid.COMPLIED_FILTERS, 
+				func, 
+				argstr if expand else argstup,
+				', {}'.format(arg) if arg else ''
+			)
 		elif filterstr.startswith('.'):
 			# attributes
-			parts = filterstr[1:].split(':', 1)
-			if len(parts) == 1:
-				return '{}.{}'.format(valobj, parts[0])
-			else:
-				return '{}.{}({})'.format(valobj, parts[0], parts[1])
+			filterstr = filterstr[1:]
+			tmp = Liquid.split(filterstr, ':', limit = 1)
+			func, arg = tmp if len(tmp) == 2 else (tmp[0], None)
+			# {{ x | .__file__}} => x.__file__
+			# {{ x | .join(["a", "b"]) }} => x.join(["a", "b"])
+			# {{ x | .join: ["a", "b"]}} => x.join(["a", "b"])
+			# {{ x | &.attr }} => (x, x.attr)
+			# {{ x, y | .count(1) }} => (x, y).count(1)
+			# {{ x, y | .count: 1 }} => (x, y).count(1)
+			# {{ x, y | *.join: ["a", "b"] }} => x.join(["a", "b"]) # y lost!!
+			# {{ x, y | &.count:1 }} => (x, y, (x, y).count(1))
+			# {{ x, y | *&.join: ["a", "b"] }} => (x, y, x.join(["a", "b"]))
+			args = Liquid.split(argstr, ',', limit = 1)
+			ret = '{}.{}{}'.format(
+				args[0] if expand else argstup,
+				func,
+				'' if arg is None else '({})'.format(arg)
+			)
 		elif filterstr.startswith('['):
 			# getitem
-			parts  = Liquid.split(filterstr, ':')
-			parts0 = parts.pop(0)
-			if not parts:
-				return '{}{}'.format(valobj, parts0)
-			else:
-				return '{}{}({})'.format(valobj, parts0, ':'.join(parts))
+			tmp = Liquid.split(filterstr, ':', limit = 1)
+			func, arg = tmp if len(tmp) == 2 else (tmp[0], None)
+			# {{ x | [0] }} => x[0]
+			# {{ x | &[0] }} => (x, x[0])
+			# {{ x | [0](1) }} => x[0](1)
+			# {{ x | [0]: 1 }} => x[0](1)
+			# {{ x, y | [0] }} => (x, y)[0] == x
+			# {{ x, y | &[0] }} => (x, y, (x, y)[0]) == (x, y, x)
+			# {{ x, y | *[0] }} => x[0]
+			# {{ x, y | *&[0] }} => (x, y, x[0])
+			# {{ x, y | [0]: 1 }} => (x, y)[0](1)
+			args = Liquid.split(argstr, ',', limit = 1)
+			ret = '{}{}{}'.format(
+				args[0] if expand else argstup,
+				func,
+				'' if arg is None else '({})'.format(arg)
+			)
 		elif filterstr.startswith(':'):
 			# lambdas
 			argnames = list('abcdefghijklmnopqrstuvwxyz')
-			return '(lambda {}{})({})'.format(', '.join(argnames[:nvar]), filterstr, valstr)
+			# {{ x | :a[1]}} => (lambda a: a[1])(x)
+			# {{ x | &:a[1] }} => (x, (lambda a: a[1])(x))
+			# {{ x, y | *:a+b }} => (lambda a, b: a+b)(x, y)
+			# {{ x, y | :sum(a)}} => (lambda a: sum(a))((x, y))
+			if expand:
+				funcargs, args = ', '.join(argnames[:len(Liquid.split(argstr, ','))]), argstr
+			else:
+				funcargs, args = argnames[0], '({})'.format(argstr)
+			ret = '(lambda {}{})({})'.format(funcargs, filterstr, args)
 		elif filterstr.startswith('lambda'):
 			# real lambda
-			return '({})({})'.format(filterstr, valstr)
+			# {{ x | lambda a:a[1]}} => (lambda a: a[1])(x)
+			# {{ x | &lambda a:a[1] }} => (x, (lambda a: a[1])(x))
+			# {{ x, y | *lambda a, b: a+b }} => (lambda a, b: a+b)(x, y)
+			# {{ x, y | lambda a:sum(a)}} => (lambda a: sum(a))((x, y))
+			ret = '({})({})'.format(filterstr, argstr if expand else argstup)
 		else:
-			# builtin, or passed functions
-			if ':' not in filterstr:
-				return '{}({})'.format(filterstr, valstr)
-			
-			func, arg = filterstr.split(':', 1)
-			return '{}({}, {})'.format(func, valstr, arg)
+			# {{ [1,2,3] | len }} => len([1,2,3])
+			# {{ 1 | &isinstance:int }} => (1, isinstance(1, int)) => (1, True)
+			# {{ x, y, z | &tuple }} => (x, y, z, (x, y, z))
+			# {{ x, y, z | *&filter: w }} => (x, y, z, filter(x, y, z, w))
+			# {{ x, y, z | *filter: w }} => filter(x, y, z, w)
+			# {{ x, y, z | &filter: w }} => (x, y, z, filter((x, y, z), w)
+			tmp = Liquid.split(filterstr, ':', limit = 1)
+			func, arg = tmp if len(tmp) == 2 else (tmp[0], None)
+			ret = '{}({}{})'.format(
+				func,
+				argstr if expand else argstup,
+				', {}'.format(arg) if arg else ''
+			)
+		return '{}, {}'.format(argstr, ret) if chain else ret
 
 	@staticmethod
 	def _capname(opsStack):
@@ -305,10 +361,10 @@ class Liquid(object):
 		vals  = pipes.pop(0)
 		for pipe in pipes:
 			vals = Liquid._exprFilter(vals, pipe, lineno, src)
-		return vals
+		return '({})'.format(vals)
 
 	@staticmethod
-	def split (s, delimter, trim = True): # pragma: no cover
+	def split (s, delimter, trim = True, limit = 0): # pragma: no cover
 		"""
 		Split a string using a single-character delimter
 		@params:
@@ -328,14 +384,17 @@ class Liquid(object):
 		special1 = ['(', ')', '[', ']', '{', '}']
 		special2 = ['\'', '"']
 		special3 = '\\'
-		flags1   = [0, 0, 0]
-		flags2   = [False, False]
-		flags3   = False
-		start = 0
+		flags1 = [0, 0, 0]
+		flags2 = [False, False]
+		flags3 = False
+		start  = 0
+		nlim   = 0
 		for i, c in enumerate(s):
 			if c == special3:
+				# next char is escaped
 				flags3 = not flags3
 			elif not flags3:
+				# no escape
 				if c in special1:
 					index = special1.index(c)
 					if index % 2 == 0:
@@ -350,7 +409,11 @@ class Liquid(object):
 					if trim: r = r.strip()
 					ret.append(r)
 					start = i + 1
+					nlim = nlim + 1
+					if limit and nlim >= limit:
+						break
 			else:
+				# escaping closed
 				flags3 = False
 		r = s[start:]
 		if trim: r = r.strip()

@@ -1,7 +1,18 @@
+import sys
+from os import path
+sys.path.insert(0,
+	path.dirname(path.dirname(path.realpath(__file__)))
+)
+import liquid
+# make sure the right one was loaded.
+assert path.realpath(liquid.__file__).startswith(
+	path.join(sys.path[0], 'liquid', '__init__.py')
+)
+
 import testly
 from liquid import Liquid, LiquidSyntaxError, LiquidRenderError
 
-Liquid.DEBUG = True
+Liquid.DEBUG = False
 Liquid.MODE  = 'mixed'
 
 class TestLiquid(testly.TestCase):
@@ -461,7 +472,8 @@ is treated as comments
 {% endcapture %}
 {{a}}''', {}, '0134'
 		yield '{{len("123") | @plus: 3}}', {}, '6'
-		yield '{{1.234, 1+1 | round }}', {}, '1.23'
+		# 126
+		yield '{{1.234, 1+1 | *round }}', {}, '1.23'
 		yield '{{1.234 | round: 2 }}', {}, '1.23'
 		yield '{{ [1,2,3] | [0] }}', {}, '1'
 		yield '{{ [1,2,3] | [1:] | sum }}', {}, '5'
@@ -470,11 +482,13 @@ is treated as comments
 		yield '{{ "," | .join: ["a", "b"] }}', {}, 'a,b'
 		yield '{{ 1.234, 1+1 | [1] }}', {}, '2'
 		yield '{{ "/path/to/file.txt" | :len(a) - 4 }}', {}, '13'
+		# 134
 		yield '{{ "{}, {}!" | .format: "Hello", "world" }}', {}, 'Hello, world!'
 		yield '''{% mode compact %}
 {% python from os import path %}
 {{ "/path/to/file.txt" | lambda p, path = path: path.join( path.dirname(p), path.splitext(p)[0] + '.sorted' + path.splitext(p)[1] ) }}''', {}, '/path/to/file.sorted.txt'
 		yield "{{ '1' | .isdigit() }}", {}, 'True'
+		# 137
 		yield "{{ '1' | .isdigit: }}", {}, 'True'
 		yield "{{ x | ['a']: 1, 2 }}", {'x': {'a': lambda x, y: x+y}}, '3'
 		yield "{{ x | ['a'] }}", {'x': {'a': 1}}, '1'
@@ -497,6 +511,106 @@ c
 // b
 // c
 '''
+		# 144
+		yield "{{ x | &isinstance: list | [0] | sum }}", {'x': [1,2,3]}, '6'
+		yield "{{ x | &@append: '.html' | len }}", {'x': 'test'}, '2'
+		yield "{{ x | &@append: '.html' | *:a+b }}", {'x': 'test'}, 'testtest.html'
+
+		# 147
+		# {{ x | @filter }} => filter(x)
+		yield "{{ -1 | @abs}}", {}, '1'
+		# {{ x | @filter: a }} => filter(x, a)
+		yield "{{ 183.357 | @round: 2}}", {}, '183.36'
+		# {{ x, y | *@filter: a }} => filter(x, y, a)
+		yield "{{ 'a,b,c,d', ',' | *@replace: '|' }}", {}, "a|b|c|d"
+		
+		# 150
+		# {{ x, y | @filter: a }} => filter((x, y), a)
+		yield "{{ 1,2 | @concat: (3,4) | sum}}", {}, '10'
+		yield "{{ 1,2 | :a + (3,4) | sum}}", {}, '10'
+		# {{ x, y | *&@filter: a }} => (x, y, filter(x, y, a))
+		yield "{{ 'a,b,c,d', ',' | *&@replace: '|' | :'-'.join(a) }}", {}, 'a,b,c,d-,-a|b|c|d'
+		# {{ x, y | &@filter: a }} => (x, y, filter((x, y), a))
+		yield "{{ 1,2 | &@concat: (3,4) }}", {}, '(1, 2, (1, 2, 3, 4))'
+
+		# 154
+		# {{ x | .__file__}} => x.__file__
+		yield "{{path | .__file__}}", {'path': path}, path.__file__
+		# {{ x | .join(["a", "b"]) }} => x.join(["a", "b"])
+		yield "{{',' | .join(['a', 'b']) }}", {}, 'a,b'
+		# {{ x | .join: ["a", "b"]}} => x.join(["a", "b"])
+		yield "{{',' | .join: ['a', 'b'] }}", {}, 'a,b'
+		# {{ x | &.attr }} => (x, x.attr)
+		yield "{{'a' | &.isupper()}}", {}, "('a', False)"
+		# {{ x, y | .count(1) }} => (x, y).count(1)
+		yield "{{ 1,2 | .count(1) }}", {}, '1'
+		# {{ x, y | .count: 1 }} => (x, y).count(1)
+		yield "{{ 1,2 | .count: 2 }}", {}, '1'
+
+		# 160
+		# {{ x, y | *.join: ["a", "b"] }} => x.join(["a", "b"]) # y lost!!
+		yield "{{ ',', '.' | *.join: ['a', 'b']}}", {}, 'a,b'
+		# {{ x, y | &.count:1 }} => (x, y, (x, y).count(1))
+		yield "{{ 1,2 | &.count: 2 }}", {}, '(1, 2, 1)'
+		# {{ x, y | *&.join: ["a", "b"] }} => (x, y, x.join(["a", "b"]))
+		yield "{{ ',', '.' | *&.join: ['a', 'b']}}", {}, "(',', '.', 'a,b')"
+
+		# 163
+		# {{ x | [0] }} => x[0]
+		yield "{{[1,2] | [0]}}", {}, '1'
+		# {{ x | &[0] }} => (x, x[0])
+		yield "{{[1,2] | &[0]}}", {}, '([1, 2], 1)'
+		# {{ x | [0](1) }} => x[0](1)
+		yield "{{[lambda a: a*10,2] | [0](1) }}", {}, '10'
+		# {{ x | [0]: 1 }} => x[0](1)
+		yield "{{[lambda a: a*10,2] | [0]: 1 }}", {}, '10'
+		# {{ x, y | [0] }} => (x, y)[0] == x
+		yield "{{ [1,2], 3 | [0] }}", {}, '[1, 2]'
+		# {{ x, y | *[0] }} => x[0]
+		yield "{{ [1,2], 3 | *[0] }}", {}, '1'
+		# {{ x, y | &[0] }} => (x, y, (x, y)[0]) == (x, y, x)
+		yield "{{ [1,2], 3 | &[0] }}", {}, '([1, 2], 3, [1, 2])'
+
+		# 170
+		# {{ x, y | *&[0] }} => (x, y, x[0])
+		yield "{{ [1,2], 3 | *&[0] }}", {}, '([1, 2], 3, 1)'
+		# {{ x, y | [0]: 1 }} => (x, y)[0](1)
+		yield "{{lambda a: a*10, 2 | [0]: 1 }}", {}, '10'
+
+		# 172
+		# {{ x | :a[1]}} => (lambda a: a[1])(x)
+		yield "{{[1,2] | :a[1]}}", {}, '2'
+		# {{ x | &:a[1] }} => (x, (lambda a: a[1])(x))
+		yield "{{[1,2] | &:a[1]}}", {}, '([1, 2], 2)'
+		# {{ x, y | *:a+b }} => (lambda a, b: a+b)(x, y)
+		yield "{{1, 2 | *:a+b}}", {}, '3'
+		# {{ x, y | :sum(a)}} => (lambda a: sum(a))((x, y))
+		yield "{{1, 2 | :sum(a)}}", {}, '3'
+
+		# 176 real lambda
+		# {{ x | lambda a:a[1]}} => (lambda a: a[1])(x)
+		yield "{{ 1 | lambda a: a*10}}", {}, '10'
+		# {{ x | &lambda a:a[1] }} => (x, (lambda a: a[1])(x))
+		yield "{{ 1 | &lambda a: a*10}}", {}, '(1, 10)'
+		# {{ x, y | *lambda a, b: a+b }} => (lambda a, b: a+b)(x, y)
+		yield "{{1, 2 | *lambda a, b: a+b}}", {}, '3'
+		# {{ x, y | lambda a:sum(a)}} => (lambda a: sum(a))((x, y))
+		yield "{{1, 2 | lambda a:sum(a)}}", {}, '3'
+
+		# 180
+		# {{ [1,2,3] | len }} => len([1,2,3])
+		yield "{{ [1,2,3] | len }}", {}, '3'
+		# {{ 1 | &isinstance:int }} => (1, isinstance(1, int)) => (1, True)
+		yield "{{ 1 | &isinstance:int }}", {}, "(1, True)"
+		# {{ x, y, z | &tuple }} => (x, y, z, tuple(x, y, z))
+		yield "{{ 1,2,3 | &tuple }}", {}, "(1, 2, 3, (1, 2, 3))"
+		# {{ x, y, z | *&filter: w }} => (x, y, z, filter(x, y, z, w))
+		yield "{{(1,2), (3,4), (5,6) | *&lambda a, b, c, d = (7, 8): dict([a,b,c,d])}}", {}, "((1, 2), (3, 4), (5, 6), {1: 2, 3: 4, 5: 6, 7: 8})"
+		# {{ x, y, z | *filter: w }} => filter(x, y, z, w)
+		yield "{{(1,2), (3,4), (5,6) | *lambda a, b, c, d = (7, 8): dict([a,b,c,d])}}", {}, "{1: 2, 3: 4, 5: 6, 7: 8}"
+		# {{ x, y, z | &filter: w }} => (x, y, z, filter((x, y, z), w)
+		yield "{{(1,2), (3,4), (5,6) | &lambda a, b = (7, 8): dict(list(a + (b, )))}}", {}, "((1, 2), (3, 4), (5, 6), {1: 2, 3: 4, 5: 6, 7: 8})"
+		
 	#endregion
 
 	def testRender(self, text, data, out):
@@ -534,7 +648,7 @@ c
 		self.assertRaisesRegex(exception, exmsg, Liquid, text)
 
 	def dataProvider_testRenderException(self):
-		yield '{{a}}', {}, LiquidRenderError, "NameError: name 'a' is not defined, in compiled source: _liquid_ret_append\(a\)"
+		yield '{{a}}', {}, LiquidRenderError, "NameError: name 'a' is not defined, in compiled source: _liquid_ret_append\(\(a\)\)"
 		yield '{% assign a.b = 1 %}', {}, LiquidRenderError, "NameError: name 'a' is not defined, at line 1: {% assign a.b = 1 %}"
 		yield '''{% capture x %}
 		wrer
