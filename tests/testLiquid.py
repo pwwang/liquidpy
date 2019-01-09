@@ -616,6 +616,8 @@ c
 		yield '{{ 1 | :(a,) }}', {}, '(1,)'
 		yield '{{x | &isinstance: int | *:[a, b+1][int(b)] }}', {'x': None}, 'None'
 		yield '{{x | &isinstance: int | *:[a, b+1][int(b)] }}', {'x': 1}, '2'
+
+		yield "{{ x | :(a, a+'.html') | :a[0]+a[1] }}", {'x': 'test'}, 'testtest.html'
 		
 	#endregion
 
