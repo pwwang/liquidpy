@@ -608,12 +608,17 @@ class Liquid(object):
 							source.append('  ' + (str(i+1) + '.').ljust(nbit) + str(line).rstrip())
 						else:
 							source.append('* ' + (str(i+1) + '.').ljust(nbit) + str(line).rstrip())
-					
+
 					raise LiquidRenderError(
 						stacks[0], 
 						repr(self.code.codes[lineno - 1]) + 
 						'\n' + '\n'.join(source) + 
 						'\n\nPREVIOUS EXCEPTION:\n------------------\n' + 
-						'\n'.join(stacks)
+						'\n'.join(stacks) + '\n' +
+						'\nCONTEXT:\n------------------\n' +
+						'\n'.join(
+							'  ' + key + ': ' + str(val) 
+							for key, val in localns.items() if not key.startswith('_liquid_') and not key.startswith('__')
+						) + '\n'
 					)
 			raise # pragma: no cover
