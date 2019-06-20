@@ -1,5 +1,5 @@
 [TAGIT]
-changelog = py:'docs/changeLog.md'
+changelog = py:'docs/changelog.md'
 publish = py:False
 checktoml = py:True
 increment = patch
