@@ -1,5 +1,5 @@
 # liquidpy
-A port of [liquid][1] template engine for python  
+A port of [liquid][1] template engine for python
 
 ![Pypi][2] ![Github][3] ![PythonVers][4] ![Travis building][5]  ![Codacy][6] ![Codacy coverage][7]
 
@@ -12,7 +12,7 @@ pip install git+https://github.com/pwwang/liquidpy.git
 ```
 
 ## Full Documentation
-[Full documentation][8]
+[ReadTheDocs][8]
 
 ## Baisic usage
 ```python
@@ -35,4 +35,4 @@ ret = liq.render(a = "path/to/file.txt")
 [5]: https://img.shields.io/travis/pwwang/liquidpy.svg?style=flat-square
 [6]: https://api.codacy.com/project/badge/Grade/ddbe1b0441f343f5abfdec3811a4e482
 [7]: https://api.codacy.com/project/badge/Coverage/ddbe1b0441f343f5abfdec3811a4e482
-[8]: https://pwwang.github.io/liquidpy/
+[8]: https://liquidpy.readthedocs.io/en/latest/
