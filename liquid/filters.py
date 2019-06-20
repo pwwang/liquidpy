@@ -19,7 +19,7 @@ def _date(val, outformat, informat = None):
 def _truncatewords(val, l, end = '...'):
 	words = val.split()
 	if len(words) <= l:
-		return words
+		return ' '.join(words)
 	return ' '.join(words[:l]) + end
 
 def _split(val, sep, limit = -1):
@@ -30,7 +30,7 @@ def _split(val, sep, limit = -1):
 	if limit == 0:
 		return [val]
 	val = list(val)
-	return val[:(limit - 1)] + ''.join(val[limit:])
+	return val[:limit] + [''.join(val[limit:])]
 
 def _url_decode(val):
 	try:

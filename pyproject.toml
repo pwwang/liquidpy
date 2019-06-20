@@ -1,0 +1,24 @@
+[build-system]
+requires = [ "poetry>=0.12",]
+build-backend = "poetry.masonry.api"
+
+[tool.poetry]
+name = "liquidpy"
+version = "0.0.6"
+description = "A port of liquid template engine for python"
+authors = [ "pwwang <pwwang@pwwang.com>",]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/pwwang/liquidpy"
+repository = "https://github.com/pwwang/liquidpy"
+
+[[tool.poetry.packages]]
+include = 'liquid/*.py'
+
+[tool.poetry.dependencies]
+python = "^3.5"
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+pytest-cov = "*"
+python-box = "^3.4"

@@ -1,26 +1,27 @@
+sudo: false
 language: python
 python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
   - "3.5"
   - "3.6"
-  - "3.6-dev"
-# command to install dependencies
+matrix:
+  include:
+    - python: 3.7
+      dist: xenial
+before_install:
+  - pip install poetry
 install:
-  #- python setup.py install
-  - export PYTHONPATH="$(pwd):$PYTHONPATH"
-  - pip install coverage
+  - poetry install -v
+  - pip install tox-travis
   - pip install codacy-coverage
-  - pip install python-testly
-# command to run tests
 script:
-  - cd tests
-  - coverage run testLiquid.py
+  - pytest tests/
 after_success: |
-  if [ $TRAVIS_PYTHON_VERSION == '2.7' ]; then
-    export CODACY_PROJECT_TOKEN=6d565255c0c6437d9a7d16410a5a2967
-    coverage xml
-    coverage report
-    python-codacy-coverage -r coverage.xml
+  if [ "$TRAVIS_PYTHON_VERSION" == "3.7" ]; then
+    python-codacy-coverage -r .coverage.xml
   fi
+deploy:
+  provider: script
+  script: poetry publish --build -u $PYPI_USER -p $PYPI_PASSWORD
+  on:
+    tags: true
+    condition: "$TRAVIS_PYTHON_VERSION == 3.7"
