@@ -111,7 +111,5 @@ LIQUID_FILTERS = dict(
 )
 
 PYTHON_FILTERS = dict(
-	ifelse = lambda _, condition, yes, no: (yes(_) if callable(yes) else yes) \
-		if (condition(_) if callable(condition) else condition) \
-		else (no(_) if callable(no) else no)
+
 )

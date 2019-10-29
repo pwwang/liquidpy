@@ -5,7 +5,6 @@ The nodes supported by liquidpy
 import logging
 from .stream import Stream
 from .filters import LIQUID_FILTERS
-from .exceptions import LiquidSyntaxError
 from .defaults import LIQUID_LOGGER_NAME, LIQUID_MODES, \
 	LIQUID_LIQUID_FILTERS, LIQUID_COMPILED_RR_APPEND, LIQUID_COMPILED_RR_EXTEND, \
 	LIQUID_COMPILED_RENDERED
@@ -255,6 +254,16 @@ class NodeExpression(_Node):
 					for part in parts))
 		return NodeExpression._parse_base(parts[0], single = True)
 
+	def _get_modifiers(self, filt):
+		"""Get the modifiers from a filter"""
+		modifiers = {'?': False, '*': False, '@': False}
+		while filt[0] in modifiers:
+			if modifiers[filt[0]]:
+				self.meta['raise']('Repeated modifier: {!r}'.format(filt[0]))
+			modifiers[filt[0]] = True
+			filt = filt[1:]
+		return modifiers, filt
+
 	def _parse_filter(self, expr, args, tenary_stack):
 		"""Parse the following part of an expression
 		1. {{a | .a.b.c}}
@@ -268,18 +277,13 @@ class NodeExpression(_Node):
 		9. {{a | : _ + 1}}
 		10.{{a, b | *min}}
 		"""
-		modifiers = {'?': False, '*': False, '@': False}
-		while expr[0] in modifiers:
-			if modifiers[expr[0]]:
-				self.meta['raise']('Repeated modifier: {!r}'.format(expr[0]))
-			modifiers[expr[0]] = True
-			expr = expr[1:]
-		if modifiers['?']:
-			if tenary_stack:
-				self.meta['raise'](
-					'Unnecessary modifier "?", expect filters for True/False conditions')
-			else:
-				tenary_stack.append('?')
+		modifiers, expr = self._get_modifiers(expr)
+
+		if modifiers['?'] and tenary_stack:
+			self.meta['raise'](
+				'Unnecessary modifier "?", expect filters for True/False conditions')
+		elif modifiers['?']:
+			tenary_stack.append('?')
 
 		eparts    = Stream.from_string(expr).split(':', limit = 1)
 		base      = None
@@ -297,31 +301,29 @@ class NodeExpression(_Node):
 		filter_name = '{}[{!r}]'.format(
 			LIQUID_LIQUID_FILTERS, eparts[0]) if modifiers['@'] else eparts[0]
 
-		if len(eparts) == 2:
-			if base: # 2, 4, 5
-				return '{}({})'.format(base, eparts[1])
-			if eparts[0].startswith('lambda '): # 8, 9
-				return '({}: ({}))({}{})'.format(eparts[0], eparts[1], argprefix, args)
-			# 6, 7
-			fastream = Stream.from_string(eparts[1])
-			faparts = fastream.split(',')
-			if len(faparts) == 1 and not faparts[0]:
-				faparts = ['_']
+		if len(eparts) == 1:
+			#      1, 3 or 10
+			return base or '{}({})'.format(filter_name, argprefix + args)
+		if base: # 2, 4, 5
+			return '{}({})'.format(base, eparts[1])
+		if eparts[0].startswith('lambda '): # 8, 9
+			return '({}: ({}))({}{})'.format(eparts[0], eparts[1], argprefix, args)
+		# 6, 7
+		fastream = Stream.from_string(eparts[1])
+		faparts = fastream.split(',')
+		faparts = ['_'] if len(faparts) == 1 and not faparts[0] else faparts
 
-			found_args = False
-			if not found_args:
-				for i, fapart in enumerate(faparts):
-					if fapart == '_':
-						faparts[i] = argprefix + args
-						found_args = True
-					elif fapart[0] == '_' and fapart[1:].isdigit():
-						faparts[i] = '{}[{}]'.format(args, fapart[1:])
-						found_args = True
-			if not found_args:
-				faparts.insert(0, argprefix + args)
-			return '{}({})'.format(filter_name, ', '.join(faparts))
-		#      1, 3 or 10
-		return base or '{}({})'.format(filter_name, argprefix + args)
+		found_args = False
+		for i, fapart in enumerate(faparts):
+			if fapart == '_':
+				faparts[i] = argprefix + args
+				found_args = True
+			elif fapart[0] == '_' and fapart[1:].isdigit():
+				faparts[i] = '{}[{}]'.format(args, fapart[1:])
+				found_args = True
+		if not found_args:
+			faparts.insert(0, argprefix + args)
+		return '{}({})'.format(filter_name, ', '.join(faparts))
 
 	def _parse(self, string):
 		"""Start to parse the node"""

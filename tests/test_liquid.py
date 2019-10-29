@@ -500,7 +500,7 @@ c
 /* b */
 /* c */'''),
 		# 144
-	("{{ x | ifelse: (lambda a: isinstance(a, list)), (lambda b: [b]), None | [0] | sum }}", {'x': [1,2,3]}, '6'),
+	#("{{ x | ifelse: (lambda a: isinstance(a, list)), (lambda b: [b]), None | [0] | sum }}", {'x': [1,2,3]}, '6'),
 	("{{ x | @append: '.html' | len }}", {'x': 'test'}, '9'),
 	("{{ x | : _, _ + '.html' | *lambda _1, _2:_1+_2 }}", {'x': 'test'}, 'testtest.html'),
 
@@ -520,6 +520,8 @@ c
 	("{{ 'a,b,c,d', ',' | *@replace: '|' | @split: '|' | :'-'.join(_) }}", {}, 'a-b-c-d'),
 		# {{ x, y | &@filter: a }} => (x, y, filter((x, y), a))
 	("{{ 1,2 | @concat: (3,4) }}", {}, '(1, 2, 3, 4)'),
+	("{{ 'a/b/c.txt' | Path | .name }}", {'Path': __import__('pathlib').Path}, 'c.txt'),
+	("{{ 'a/b/c.txt' | Path | .is_file: }}", {'Path': __import__('pathlib').Path}, 'False')
 ])
 def test_render_9(text, data, out):
 	l = Liquid(text)
@@ -599,7 +601,7 @@ def test_render_10(text, data, out):
 		# {{ [1,2,3] | len }} => len([1,2,3])
 	("{{ [1,2,3] | len }}", {}, '3'),
 		# {{ 1 | &isinstance:int }} => (1, isinstance(1, int)) => (1, True)
-	("{{ 1 | ifelse: (lambda a: isinstance(a, int)), (lambda b: (b, True)), None }}", {}, "(1, True)"),
+	#("{{ 1 | ifelse: (lambda a: isinstance(a, int)), (lambda b: (b, True)), None }}", {}, "(1, True)"),
 		# {{ x, y, z | &tuple }} => (x, y, z, tuple(x, y, z))
 	("{{ 1,2,3 | :_[0],_[1],_[2],_ }}", {}, "(1, 2, 3, (1, 2, 3))"),
 		# {{ x, y, z | *&filter: w }} => (x, y, z, filter(x, y, z, w))
@@ -612,8 +614,8 @@ def test_render_10(text, data, out):
 	('{{"a,b,c,d", "," | repr}}', {}, "('a,b,c,d', ',')"),
 	('{{ 1, | repr }}', {}, '(1,)'),
 	('{{ 1 | :(_,) }}', {}, '(1,)'),
-	('{{x | ifelse: (lambda a: isinstance(a, int)), (lambda a: (a, a)), (lambda a: (a, None)) | :_[1] }}', {'x': None}, 'None'),
-	('{{x | ifelse: (lambda a: isinstance(a, int)), (lambda a: (a, a+1)), (lambda a: (a, 3)) | :_[1] }}', {'x': 1}, '2'),
+	#('{{x | ifelse: (lambda a: isinstance(a, int)), (lambda a: (a, a)), (lambda a: (a, None)) | :_[1] }}', {'x': None}, 'None'),
+	#('{{x | ifelse: (lambda a: isinstance(a, int)), (lambda a: (a, a+1)), (lambda a: (a, 3)) | :_[1] }}', {'x': 1}, '2'),
 
 	("{{ x | :(_, _+'.html') | :_[0]+_[1] }}", {'x': 'test'}, 'testtest.html'),
 
