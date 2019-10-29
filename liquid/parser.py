@@ -1,3 +1,6 @@
+"""
+The parser for liquidpy
+"""
 import logging
 from . import nodes as liquid_nodes
 from .exceptions import LiquidSyntaxError
@@ -29,9 +32,11 @@ class LiquidLine:
 		self.ndent  = indent
 
 	def __repr__(self):
+		"""Get the repr of the object"""
 		return '<LiquidLine {!r} (compiled from #{!r})>'.format(self.line, self.lineno)
 
 	def __str__(self):
+		"""Stringify the object"""
 		return "{}{}\n".format(" " * 2 * self.ndent, self.line)
 
 class LiquidCode(object):
@@ -45,8 +50,7 @@ class LiquidCode(object):
 		"""
 		Constructor of code builder
 		@params:
-			`envs`  : The envs to compile the template
-			`indent`: The initial indent level
+			indent (int): The initial indent level
 		"""
 		self.codes = []
 		self.ndent = indent
@@ -64,7 +68,7 @@ class LiquidCode(object):
 		Add a line of source to the code.
 		Indentation and newline will be added for you, don't provide them.
 		@params:
-			`line`: The line to add
+			line (str): The line to add
 		"""
 		if not isinstance(line, LiquidLine):
 			line = LiquidLine(line, lineno)
@@ -72,6 +76,12 @@ class LiquidCode(object):
 		self.codes.append(line)
 
 	def add_code(self, code):
+		"""
+		Add a LiquidCode object to the code.
+		Indentation and newline will be added for you, don't provide them.
+		@params:
+			code (LiquidCode): The LiquidCode object to add
+		"""
 		assert isinstance(code, LiquidCode)
 		code.ndent += self.ndent
 		self.codes.extend(code.codes)
@@ -90,8 +100,18 @@ class LiquidCode(object):
 
 
 class LiquidParser:
+	"""
+	The parser class for liquidpy
+	"""
 
 	def __init__(self, stream, precode, code):
+		"""
+		Initialize the parser
+		@params:
+			stream (Stream): The stream of the template
+			precode (LiquidCode): The precode object
+			code (LiquidCode): The main code object
+		"""
 		self.stream    = stream
 		self.meta      = {
 			'mode'    : LIQUID_DEFAULT_MODE,
@@ -105,12 +125,20 @@ class LiquidParser:
 		self.nodes  = {name: node(self.meta) for name, node in LIQUID_NODES.items()}
 
 	def raise_ex(self, msg):
+		"""
+		Raise the exception according to the debug level
+		@params:
+			msg (str): The error message
+		"""
 		if LOGGER.level < 20:
 			raise LiquidSyntaxError(msg, self.lineno, self.stream) from None
 		else:
 			raise LiquidSyntaxError(msg, self.lineno) from None
 
 	def parse(self):
+		"""
+		Parse the template
+		"""
 		string, tag = self.stream.until(LIQUID_OPEN_TAGS, wraps = [], quotes = [])
 
 		self.parse_literal(string, tag)
@@ -129,6 +157,14 @@ class LiquidParser:
 			self.raise_ex('Statement {!r} not closed'.format(self.meta['stack'][-1]))
 
 	def _expect_closing_tag(self, tag):
+		"""
+		Get the closing tag of an open one
+		@params:
+			tag (str): The open tag
+		@returns:
+			The content of the node.
+			For example: `abc` of `{% abc %}`. `%}` will be saved in `self.endtag`
+		"""
 		for ptags in LIQUID_PAIRED_TAGS:
 			if tag not in ptags[0]:
 				continue
@@ -142,12 +178,23 @@ class LiquidParser:
 			return nodestr
 
 	def parse_comment(self, tag):
+		"""
+		Parse the comment tag `{##}` or `{#--#}`
+		@params:
+			tag (str): The open tag.
+		"""
 		nodestr = self._expect_closing_tag(tag)
 		LOGGER.debug("Comment tag found at line %s: %s %s %s",
 			self.lineno, tag,
 			nodestr if len(nodestr) < 14 else nodestr[:5] + ' ... ' + nodestr[:-5], self.endtag)
 
 	def parse_literal(self, string, tag):
+		"""
+		Parse the literal texts
+		@params:
+			string (str): The literal text
+			tag (str): The end tag
+		"""
 		LOGGER.debug("Literals wrapped by tags [%r, %r] found at line %s: %r",
 			self.endtag, tag, self.lineno,
 			string if len(string) < 13 else string[:5] + ' ... ' + string[:-5])
@@ -158,13 +205,23 @@ class LiquidParser:
 		self.nodes['literal'].start(string, self.lineno)
 
 	def parse_expression(self, tag):
+		"""
+		Parse the expressions like `{{ 1 }}`
+		@params:
+			tag (str): The open tag
+		"""
 		nodestr = self._expect_closing_tag(tag)
 		LOGGER.debug("Expression found at line %s: %s %s %s",
 			self.lineno, tag, nodestr, self.endtag)
 		self.nodes['expression'].start(nodestr, self.lineno)
 
 	def parse_raw(self, tag, endtag):
-
+		"""
+		Parse the raw node
+		@params:
+			tag (str): The open tag
+			endtag (str): The end tag
+		"""
 		opentags  = LIQUID_STATE_OPENTAG,  LIQUID_STATE_OPENTAG_COMPACT
 		closetags = LIQUID_STATE_CLOSETAG, LIQUID_STATE_CLOSETAG_COMPACT
 		endraws   = []
@@ -193,6 +250,11 @@ class LiquidParser:
 		self.nodes['raw'].start(string, self.lineno)
 
 	def parse_statement(self, tag):
+		"""
+		Parse the statement node
+		@params:
+			tag (str): The open tag
+		"""
 		nodestr = self._expect_closing_tag(tag)
 		if nodestr == 'raw':
 			self.parse_raw(tag, self.endtag)

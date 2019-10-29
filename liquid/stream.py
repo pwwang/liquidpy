@@ -11,6 +11,10 @@ def words_to_matrix(words):
 		{'-': 1}
 	]
 	```
+	@params:
+		words: The words to be converted
+	@returns:
+		The converted matrix
 	"""
 	matrix = [{} for _ in range(max(len(word) for word in words))]
 	for word in words:
@@ -21,41 +25,94 @@ def words_to_matrix(words):
 	return matrix
 
 class Stream:
-
+	"""
+	The stream helper for liquidpy
+	"""
 	def __init__(self, stream):
+		"""
+		Initialize the stream
+		@params:
+			stream (Stream): A python stream
+		"""
 		self.stream = stream
 		self.cursor = stream.tell()
 
 	@staticmethod
 	def from_file(path):
+		"""
+		Get stream of a file
+		@params:
+			path (str): The path of the file
+		@returns:
+			Stream
+		"""
 		return Stream(io.open(path))
 
 	@staticmethod
 	def from_string(string):
+		"""
+		Get stream of a string
+		@params:
+			string (str): The string
+		@returns:
+			Stream
+		"""
 		return Stream(io.StringIO(string))
 
 	@staticmethod
 	def from_stream(stream):
+		"""
+		Get stream of a stream
+		@params:
+			stream (Stream): A stream
+		@returns:
+			Stream
+		"""
 		return Stream(stream)
 
+	def __del__(self):
+		"""
+		Close the stream when GC
+		"""
+		self.close()
+
 	def close(self):
-		if self.stream:
+		"""
+		Close the stream
+		"""
+		if self.stream and not self.stream.closed:
 			self.stream.close()
 
 	def next(self):
+		"""
+		Read next character from the stream
+		@returns:
+			str: the next character
+		"""
 		ret = self.stream.read(1)
 		self.cursor += 1
 		return ret
 
 	def back(self):
+		"""
+		Put cursor 1-character back
+		"""
 		self.cursor -= 1
 		self.stream.seek(self.cursor)
 
 	def rewind(self):
+		"""
+		Rewind the stream
+		"""
 		self.stream.seek(0)
 		self.cursor = 0
 
 	def eos(self):
+		"""
+		Tell if the stream is ended
+		@returns:
+			`True` if it is else `False`
+		"""
 		nchar = self.next()
 		if not nchar:
 			return True
@@ -64,10 +121,27 @@ class Stream:
 		return False
 
 	def dump(self):
+		"""
+		Dump the rest of the stream
+		@returns:
+			str: The rest of the stream
+		"""
 		return self.stream.read()
 
 	def split(self, delimiter, limit = 0, trim = True,
 		wraps = ['{}', '[]', '()'], quotes = '"\'`', escape = '\\'):
+		"""
+		Split the string of the stream
+		@params:
+			delimiter (str): The delimiter
+			limit (int): The max limit of the split
+			trim (bool): Whether to trim each part or not
+			wraps (list): A list of paired wraps to skip of the delimiter is wrapped by them
+			quotes (str): A series of quotes to skip of the delimiter is wrapped by them
+			escape (str): The escape character to see if any character is escaped
+		@returns:
+			list: The split strings
+		"""
 		preceding, stop = self.until([delimiter], False, wraps, quotes, escape)
 		ret = [preceding.strip() if trim else preceding]
 		nsplit = 0
@@ -94,6 +168,17 @@ class Stream:
 		s.until(["x", "xy"]) == "abcdefg", ""
 		# cursor point to eos
 		```
+		@params:
+			words (list): A list of words to search
+			greedy (bool): Whether do a greedy search or not
+				- Only effective when the words have prefices in common. For example
+				- ['abc', 'ab'], then abc will be matched first
+			wraps (list): A list of paired wraps to skip of the delimiter is wrapped by them
+			quotes (str): A series of quotes to skip of the delimiter is wrapped by them
+			escape (str): The escape character to see if any character is escaped
+		@returns:
+			str: The string that has been searched
+			str: The matched word
 		"""
 		ret               = ''
 		matrix            = words_to_matrix(words)

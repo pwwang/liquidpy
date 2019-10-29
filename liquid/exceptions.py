@@ -1,8 +1,20 @@
+"""
+Exceptions used in liquidpy
+"""
 
 import math
 from .defaults import LIQUID_DEBUG_SOURCE_CONTEXT
 
 def _show_source_context(source, lineno, context):
+	"""
+	Show the line of source code and its context
+	@params:
+		source (list): The whole source code
+		lineno (int): Line number of current line
+		context (int): How many lines of context to show
+	@returns:
+		The formated code with context
+	"""
 	ret = []
 	maxline = lineno + context
 	nbit = math.ceil(math.log(maxline + 1, 10))
@@ -17,8 +29,16 @@ def _show_source_context(source, lineno, context):
 	return ret
 
 class LiquidSyntaxError(Exception):
+	"""Raises when there is a syntax error in the template"""
 
 	def __init__(self, msg, lineno = 0, stream = None):
+		"""
+		Initialize the exception
+		@params:
+			msg (str): The error message
+			lineno (int): The line number of current source code
+			stream (Stream): Stream of the whole source code
+		"""
 		if stream:
 			msg = [	"{} at line {}".format(msg, lineno),
 					"",
@@ -35,9 +55,14 @@ class LiquidSyntaxError(Exception):
 		super().__init__(msg)
 
 class LiquidRenderError(Exception):
+	"""Raises when the template fails to render"""
 	def __init__(self, exc, msg = ''):
-
+		"""Initialize the exception
+		@params:
+			exc (Exception): The original exception
+			msg (str): The error message
+		"""
 		super(LiquidRenderError, self).__init__("{}{}".format(exc, ', ' + msg if msg else ''))
 
 class LiquidWrongKeyWord(Exception):
-	pass
+	"""Raises when the key of the environment or context is invalid"""

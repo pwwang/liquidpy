@@ -1,6 +1,11 @@
+"""
+Built-in filters for liquidpy
+"""
+
 __all__ = ['liquid_filters', 'python_filters']
 
 def _abs(val):
+	"""Return the absolute value of val"""
 	if not isinstance(val, int) and not isinstance(val, float):
 		if val.isdigit() or (val[0] in ['+', '-'] and val[1:].isdigit()):
 			return abs(int(val))
@@ -9,6 +14,7 @@ def _abs(val):
 	return abs(val)
 
 def _date(val, outformat, informat = None):
+	"""Convert the date between specified formats"""
 	from datetime import datetime
 	if val == 'now':
 		return datetime.now().strftime(outformat)
@@ -17,12 +23,14 @@ def _date(val, outformat, informat = None):
 	return datetime.strptime(val, informat).strftime(outformat)
 
 def _truncatewords(val, l, end = '...'):
+	"""Truncate a sentence"""
 	words = val.split()
 	if len(words) <= l:
 		return ' '.join(words)
 	return ' '.join(words[:l]) + end
 
 def _split(val, sep, limit = -1):
+	"""Split a string"""
 	if sep:
 		return val.split(sep, limit)
 	if limit < 0 or limit >= len(val):
@@ -33,6 +41,7 @@ def _split(val, sep, limit = -1):
 	return val[:limit] + [''.join(val[limit:])]
 
 def _url_decode(val):
+	"""Url-decode a string"""
 	try:
 		from urllib import unquote
 	except ImportError:
@@ -40,6 +49,7 @@ def _url_decode(val):
 	return unquote(val)
 
 def _url_encode(val):
+	"""Url-decode a string"""
 	try:
 		from urllib import urlencode
 	except ImportError:
@@ -47,6 +57,7 @@ def _url_encode(val):
 	return urlencode({'': val})[1:]
 
 def _map(objs, attr):
+	"""Map an attribute to all objects"""
 	try:
 		return [getattr(obj, attr) for obj in objs]
 	except AttributeError:

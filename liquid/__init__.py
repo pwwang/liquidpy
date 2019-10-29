@@ -1,3 +1,6 @@
+"""
+Liquid template engine for python
+"""
 import logging
 import keyword
 
@@ -18,6 +21,14 @@ from .exceptions import LiquidSyntaxError, LiquidRenderError, LiquidWrongKeyWord
 from .filters import liquid_filters, python_filters
 
 def _check_envs(envs, additional = None):
+	"""
+	Check the keys of environment. Because we are using the keys as variable name in the template,
+	so we have to make sure they are valid.
+	@params:
+		additional (list): A list of additional keys to check.
+	@returns:
+		`True` if passed else `False`
+	"""
 	additional = additional or []
 	for kw in envs:
 		if not kw or not kw.strip():
@@ -36,8 +47,18 @@ def _check_envs(envs, additional = None):
 
 class Liquid:
 
+	"""The main class"""
+
 	@staticmethod
 	def debug(dbg = None):
+		"""
+		Set or get the debug mode
+		@params:
+			dbg: `None` to return if now we are in debug mode
+				- True/False to turn on/off the debug mode
+		@returns:
+			Return the current debug mode when `dbg` is `None`
+		"""
 		if dbg is None:
 			return LOGGER.level <= logging.DEBUG
 		if dbg:
@@ -46,6 +67,13 @@ class Liquid:
 			LOGGER.setLevel(logging.INFO)
 
 	def __init__(self, text = '', **envs):
+		"""
+		Initialize a liquid object
+		@params:
+			text (str): The template string
+			**envs (kwargs): The environment.
+				- If `from_file` provided, use it as the template
+		"""
 		if 'from_file' in envs and text:
 			raise ValueError('Cannot have both "text" and "from_file" specified, '
 				'choose either one.')
@@ -73,6 +101,11 @@ class Liquid:
 		self.code.add_line("return ''.join(str(x) for x in {})".format(LIQUID_COMPILED_RENDERED))
 
 	def render(self, **context):
+		"""
+		Render the template
+		@params:
+			**context: The context for rendering.
+		"""
 		_check_envs(context)
 		final_context = self.envs.copy()
 		final_context.update(context)

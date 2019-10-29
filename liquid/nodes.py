@@ -1,3 +1,6 @@
+"""
+The nodes supported by liquidpy
+"""
 import logging
 from .stream import Stream
 from .filters import liquid_filters
@@ -8,12 +11,14 @@ from .defaults import LIQUID_LOGGER_NAME, LIQUID_MODES, \
 
 
 def pushstack(func):
+	"""Push the node to the stack"""
 	def retfunc(self, *args, **kwargs):
 		self.meta['stack'].append(self.name)
 		func(self, *args, **kwargs)
 	return retfunc
 
 def popstack(func):
+	"""Pop the node from the stack"""
 	def retfunc(self, *args, **kwargs):
 		last = self.meta['stack'] and self.meta['stack'].pop() or None
 		if last != self.name:
@@ -25,33 +30,41 @@ def popstack(func):
 	return retfunc
 
 def dedent(func):
+	"""Dedent the code"""
 	def retfunc(self, *args, **kwargs):
 		func(self, *args, **kwargs)
 		self.meta['code'].dedent()
 	return retfunc
 
 class _Node:
-
+	"""The base class"""
 	def __init__(self, meta):
+		"""Initialize the node"""
 		self.meta = meta
 		self.name = self.__class__.__name__[4:].lower()
 
 	def start(self, string, lineno):
-		"""Start to parse the node"""
+		"""Start to compile the node"""
 
 	@popstack
 	@dedent
 	def end(self):
-		pass
+		"""end node hit"""
+
 
 class NodeMode(_Node):
+	"""
+	Node '{% mode ... %}'
+	"""
 
 	def _set_mode(self, mode):
+		"""Set the mode"""
 		if mode not in LIQUID_MODES:
 			self.meta['raise']('Not a valid mode: {!r}'.format(mode))
 		self.meta['mode'] = mode
 
 	def _set_loglevel(self, loglevel):
+		"""Set the loglevel"""
 		loglevel = loglevel.upper()
 		if not NodeMode._is_loglevel(loglevel):
 			self.meta['raise']('Not a valid loglevel: {!r}'.format(loglevel))
@@ -59,9 +72,11 @@ class NodeMode(_Node):
 
 	@staticmethod
 	def _is_loglevel(loglevel):
+		"""Tell if a string is a valid loglevel"""
 		return isinstance(logging.getLevelName(loglevel), int)
 
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		if not string:
 			raise LiquidSyntaxError('Expecting a mode value')
 		parts = string.split()
@@ -88,8 +103,12 @@ class NodeMode(_Node):
 
 class NodeIf(_Node):
 
+	"""
+	Node '{% if ... %} {% endif %}'
+	"""
 	@pushstack
 	def start(self, string, lineno, prefix = 'if ', suffix = ''):
+		"""Start to compile the node"""
 		if not string:
 			self.meta['raise']('No expressions for statement "{}"'.format(self.name))
 		sstream = Stream.from_string(string)
@@ -118,7 +137,12 @@ class NodeIf(_Node):
 
 class NodeElse(_Node):
 
+	"""
+	Node '{% else/else if... %}'
+	"""
+
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		if not self.meta['stack'] or self.meta['stack'][-1] not in ('case', 'if', 'unless'):
 			self.meta['raise']('"else" must be in an if/unless/case statement')
 		# see if it is else if
@@ -137,8 +161,12 @@ class NodeElse(_Node):
 			self.meta['raise']('"else" should not be followed by any expressions')
 
 class NodeElseif(_Node):
+	"""
+	Node '{% elseif ... %} '
+	"""
 
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		if not self.meta['stack'] or self.meta['stack'][-1] != 'if':
 			self.meta['raise']('"elseif/elif/elsif" must be in an "if/unless" statement')
 		ifnode = NodeIf(self.meta)
@@ -150,8 +178,11 @@ class NodeElseif(_Node):
 NodeElif = NodeElsif = NodeElseif
 
 class NodeLiteral(_Node):
-
+	"""
+	Literal node
+	"""
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		if not string:
 			return
 		lines = string.splitlines(keepends = True)
@@ -169,7 +200,9 @@ class NodeLiteral(_Node):
 NodeRaw = NodeLiteral
 
 class NodeExpression(_Node):
-
+	"""
+	Expression node
+	"""
 	LIQUID_DOT_FUNC_NAME = '_liquid_dodots_function'
 
 	@staticmethod
@@ -284,6 +317,7 @@ class NodeExpression(_Node):
 			return '{}({})'.format(filter_name, argprefix + args)
 
 	def _parse(self, string):
+		"""Start to parse the node"""
 		#if not string: # Empty node
 		#	self.meta['raise']('Nothing found for expression')
 
@@ -314,14 +348,19 @@ class NodeExpression(_Node):
 		return value
 
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		self.meta['code'].add_line('{}({})'.format(
 			LIQUID_COMPILED_RR_APPEND, self._parse(string)), lineno)
 
 class NodeFor(_Node):
+	"""
+	Node '{% for ... %} {% endfor %}'
+	"""
 	LIQUID_FORLOOP_CLASS = '_Liquid_forloop_class'
 
 	@pushstack
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		# i, v in x | range
 
 		if  not hasattr(self.meta['precode'], NodeFor.LIQUID_FORLOOP_CLASS) or \
@@ -400,10 +439,15 @@ class NodeFor(_Node):
 
 class NodeComment(_Node):
 
+	"""
+	Node '{% comment ... %} {% endcomment %}'
+	"""
+
 	LIQUID_COMMENTS = '_liquid_node_comments'
 
 	@pushstack
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		string = string or '#'
 		self.prefix = string.split()
 		if len(self.prefix) > 2:
@@ -416,6 +460,7 @@ class NodeComment(_Node):
 
 	@popstack
 	def end(self):
+		"""End node hit"""
 		self.meta['code'].add_line("{} = {}.append".format(
 			LIQUID_COMPILED_RR_APPEND, LIQUID_COMPILED_RENDERED))
 		self.meta['code'].add_line("{} = {}.extend".format(
@@ -447,47 +492,67 @@ class NodeComment(_Node):
 		self.meta['code'].add_line('del {}'.format(NodeComment.LIQUID_COMMENTS))
 
 class NodePython(_Node):
-
+	"""
+	Node '{% python ... %}'
+	"""
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		self.meta['code'].add_line(string)
 
 class NodeFrom(_Node):
-
+	"""
+	Node '{% from ... %}'
+	"""
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		self.meta['code'].add_line('from ' + string)
 
 class NodeImport(_Node):
-
+	"""
+	Node '{% import ... %}'
+	"""
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		self.meta['code'].add_line('import ' + string)
 
 class NodeUnless(_Node):
-
+	"""
+	Node '{% unless %}'
+	"""
 	@pushstack
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		ifnode = NodeIf(self.meta)
 		ifnode.start(string, lineno, prefix = 'if not (', suffix = ')')
 		ifnode.end()
 		self.meta['code'].indent()
 
 class NodeCase(_Node):
+	"""
+	Node '{% case ... %} {% endcase %}'
+	"""
 	LIQUID_CASE_VARNAME = '_liquid_case_var'
 
 	@pushstack
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		self.meta['code'].add_line('{} = {}'.format(
 			NodeCase.LIQUID_CASE_VARNAME, NodeExpression(self.meta)._parse(string)))
 		self.meta['case_started'] = True
 
 	@popstack
 	def end(self):
+		"""End node hit"""
 		del self.meta['case_started']
 		self.meta['code'].dedent()
 		self.meta['code'].add_line('del {}'.format(NodeCase.LIQUID_CASE_VARNAME))
 
 class NodeWhen(_Node):
-
+	"""
+	Node '{% when ... %}'
+	"""
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		if not self.meta['stack'] or self.meta['stack'][-1] != 'case':
 			self.meta['raise']('"when" must be in a "case" statement')
 		if self.meta.get('case_started'):
@@ -504,8 +569,11 @@ class NodeWhen(_Node):
 		self.meta['code'].indent()
 
 class NodeAssign(_Node):
-
+	"""
+	Node '{% assign ... %}'
+	"""
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		parts = string.split('=', 1)
 		if len(parts) == 1:
 			self.meta['raise'](
@@ -517,8 +585,11 @@ class NodeAssign(_Node):
 			parts[0].strip(), NodeExpression(self.meta)._parse(parts[1].strip())), lineno)
 
 class NodeBreak(_Node):
-
+	"""
+	Node '{% break %}'
+	"""
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		if string:
 			self.meta['raise']('Additional expressions for {!r}'.format(self.name))
 		if  not self.meta['stack'] or \
@@ -527,14 +598,19 @@ class NodeBreak(_Node):
 		self.meta['code'].add_line(self.name)
 
 class NodeContinue(NodeBreak):
-	pass
+	"""
+	Node '{% continue %}'
+	"""
 
 class NodeCapture(_Node):
-
+	"""
+	Node '{% capture ... %} {% endcapture %}'
+	"""
 	LIQUID_CAPTURES = '_liquid_captures'
 
 	@pushstack
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		from . import _check_envs
 		_check_envs({string:1})
 
@@ -548,6 +624,7 @@ class NodeCapture(_Node):
 
 	@popstack
 	def end(self):
+		"""End node hit"""
 		self.meta['code'].add_line("{} = {}.append".format(
 			LIQUID_COMPILED_RR_APPEND, LIQUID_COMPILED_RENDERED))
 		self.meta['code'].add_line("{} = {}.extend".format(
@@ -556,20 +633,29 @@ class NodeCapture(_Node):
 			self.variable, NodeCapture.LIQUID_CAPTURES))
 
 class NodeIncrement(_Node):
-
+	"""
+	Node '{% increment ... %}'
+	"""
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		if not string:
 			self.meta['raise']('No variable specified for {!r}'.format(self.name))
 		self.meta['code'].add_line('{} += 1'.format(string))
 
 class NodeDecrement(_Node):
-
+	"""
+	Node '{% decrement ... %}'
+	"""
 	def start(self, string, lineno):
+		"""Start to compile the node"""
 		if not string:
 			self.meta['raise']('No variable specified for {!r}'.format(self.name))
 		self.meta['code'].add_line('{} -= 1'.format(string))
 
 class NodeWhile(NodeIf):
-
+	"""
+	Node '{% while ... %} {% endwhile %}'
+	"""
 	def start(self, string, lineno, prefix = 'while ', suffix = ''):
+		"""Start to compile the node"""
 		super().start(string, lineno, prefix, suffix)

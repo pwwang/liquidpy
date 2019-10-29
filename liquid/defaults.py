@@ -1,3 +1,6 @@
+"""
+Default values for liquidpy
+"""
 
 LIQUID_LOGGER_NAME = 'liquidpy'
 LIQUID_DEFAULT_MODE = 'mixed'
