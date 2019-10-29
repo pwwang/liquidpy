@@ -15,9 +15,8 @@ repository = "https://github.com/pwwang/liquidpy"
 include = "liquid/*.py"
 
 [tool.poetry.dependencies]
-python = "^3.5"
+python = "^3.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
 pytest-cov = "*"
-python-box = "^3.4"
