@@ -115,7 +115,7 @@ class NodeIf(_Node):
 			self.meta['raise']('No expressions for statement "{}"'.format(self.name))
 		sstream = Stream.from_string(string)
 		# merge multiple lines
-		sstream = Stream.from_string(' '.join(sstream.split(['\\\n'])))
+		#sstream = Stream.from_string(' '.join(sstream.split(['\\\n'])))
 		prestr, bracket = sstream.until(['`'])
 		ifexpr = prefix
 		if not bracket:

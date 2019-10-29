@@ -23,9 +23,9 @@ def _show_source_context(source, lineno, context):
 		if i+1 < lineno - context or i+1 > maxline:
 			continue
 		if i+1 == lineno:
-			ret.append("> {}. {}".format(str(i+1).ljust(nbit), line))
+			ret.append("> {}. {}".format(str(i+1).rjust(nbit), line))
 		else:
-			ret.append("  {}. {}".format(str(i+1).ljust(nbit), line))
+			ret.append("  {}. {}".format(str(i+1).rjust(nbit), line))
 	return ret
 
 class LiquidSyntaxError(Exception):

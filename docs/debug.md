@@ -4,7 +4,7 @@ You may print debug information by setting `Liquid.debug(True)` globally to show
 Liquid.debug(True)
 Liquid('{% python 1/0 %}').render()
 ```
-```log
+```python
 [2019-10-29 00:36:40,592 DEBUG] Literals wrapped by tags [None, '{%'] found at line 1: ''
 [2019-10-29 00:36:40,592 DEBUG] Statement found at line 1: {% python 1/0 %}
 [2019-10-29 00:36:40,592 DEBUG] Literals wrapped by tags ['%}', None] found at line 1: ''
@@ -19,14 +19,6 @@ def _liquid_render_function(_liquid_context):
   _liquid_ret_extend = _liquid_rendered.extend
   1/0
   return ''.join(str(x) for x in _liquid_rendered)
-
-Traceback (most recent call last):
-  File "/.../liquidpy/liquid/__init__.py", line 129, in render
-    return localns[LIQUID_RENDER_FUNC_NAME](final_context)
-  File "_liquidpy_source", line 9, in _liquid_render_function
-ZeroDivisionError: division by zero
-
-During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -60,14 +52,6 @@ You may turn `DEBUG` mode on/off for single `Liquid` instance by just putting `d
 # no detailed debug information will be shown
 ```
 ```python
-Traceback (most recent call last):
-  File "/.../liquidpy/liquid/__init__.py", line 129, in render
-    return localns[LIQUID_RENDER_FUNC_NAME](final_context)
-  File "_liquidpy_source", line 9, in _liquid_render_function
-ZeroDivisionError: division by zero
-
-During handling of the above exception, another exception occurred:
-
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "/.../liquidpy/liquid/__init__.py", line 148, in render

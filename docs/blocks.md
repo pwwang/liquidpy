@@ -323,7 +323,9 @@ Repeatedly executes a block of code. For a full list of attributes available wit
 
 Input:
 ```liquid
-{# collection.products = [Product(title = 'hat'), Product(title = 'shirt'), Product(title = 'pants')] #}
+{# collection.products = [Product(title = 'hat'),
+                          Product(title = 'shirt'),
+                          Product(title = 'pants')] #}
 {% for product in collection.products %}
   {{ product.title }}
 {% endfor %}
@@ -347,7 +349,9 @@ Output:
 Input (forloop object support):
 See: https://help.shopify.com/en/themes/liquid/objects/for-loops
 ```liquid
-{# collection.products = [Product(title = 'hat'), Product(title = 'shirt'), Product(title = 'pants')] #}
+{# collection.products = [Product(title = 'hat'),
+                          Product(title = 'shirt'),
+                          Product(title = 'pants')] #}
 {% for product in collection.products %}
   {% if forloop.first %}
   {{ product.title }}
@@ -374,7 +378,9 @@ Exit the loop or skip current iteration.
 
 Input:
 ```liquid
-{# collection.products = [Product(title = 'hat'), Product(title = 'shirt'), Product(title = 'pants')] #}
+{# collection.products = [Product(title = 'hat'),
+                          Product(title = 'shirt'),
+                          Product(title = 'pants')] #}
 {% for product in collection.products %}
   {% if product.title == 'shirt' %}
     {% break %}
@@ -398,7 +404,9 @@ Output:
 <div markdown="1" class="two-column">
 
 ```liquid
-{# collection.products = [Product(title = 'hat'), Product(title = 'shirt'), Product(title = 'pants')] #}
+{# collection.products = [Product(title = 'hat'),
+                          Product(title = 'shirt'),
+                          Product(title = 'pants')] #}
 {% for product in collection.products %}
   {% if product.title == 'shirt' %}
     {% continue %}
@@ -490,7 +498,7 @@ barfoo
 ---
 
 ## `capture`
-Captures the string inside of the opening and closing tags and assigns it to a variable. Variables created through {% capture %} are strings.
+Captures the string inside of the opening and closing tags and assigns it to a variable. Variables created through `{% capture %}` are strings.
 
 <div markdown="1" class="two-column">
 

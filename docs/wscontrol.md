@@ -113,16 +113,16 @@ tomato
 !!! note
     __the leading spaces of the line is not stripped, this is slightly different from `liquid`__
 
-__The above behavior of normal tags (tags without hyphen, `{%`, `{#`, `{{` and their compartments) are in `mixed` mode, which means it does not strip the whitespaces. This is a default mode of `liquidpy`. You may also change the default mode globally:__
+__The above behavior of normal tags (tags without hyphen, `{%`, `{#`, `{{` and their compartments) are in `loose` mode, which means it does not strip the whitespaces. This is a default mode of `liquidpy`. You may also change the default mode globally:__
 ```python
 from liquid import defaults
 defaults.LIQUID_DEFAULT_MODE = 'compact'
 ```
 
 !!! note
-    __By change the default mode to `compact`, then the whitespace tags will act exactly the same as the non-whitespace tags.__
+    __By changing the default mode to `compact`, then the whitespace tags will act exactly the same as the non-whitespace tags.__
 
-    __You may also change the mode for each `Liquid` instance. Put `{% mode compact %}`, `{% mode mixed %}` or `{% mode loose %}` to tell the engine to use the corresponding mode.__
+    __You may also change the mode for each `Liquid` instance. Put `{% mode compact %}` or `{% mode loose %}` to tell the engine to use the corresponding mode.__
 
 <div markdown="1" class="two-column">
 

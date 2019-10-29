@@ -688,6 +688,31 @@ def test_initException(text, exception, exmsg):
 		Liquid(text)
 	assert exmsg in str(exc.value)
 
+
+def test_multiline_support():
+	Liquid.debug(True)
+	liq = Liquid("""{% mode compact %}
+{{ a | @append: ".html"
+	 | @append: ".txt"
+	 | @append: ".gz"}}
+""")
+	assert liq.render(a = 'test') == "test.html.txt.gz"
+
+	liq = Liquid("""{% mode compact %}
+{% if a == "test" or
+	  a == "text" %}
+{{a}}
+{% endif %}
+""")
+	assert liq.render(a = 'test') == "test"
+
+	liq = Liquid("""{% mode compact %}
+{# if a == "test" or
+	  a == "text" #}
+""")
+	assert liq.render(a = 'test') == ""
+	Liquid.debug(False)
+
 @pytest.mark.parametrize('text, data, exception, exmsg', [
 	('{{a}}', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?\n\nAt source line 1:"),
 	('{% assign a.b = 1 %}', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?\n\nAt source line 1:"),

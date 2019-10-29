@@ -152,6 +152,26 @@ class LiquidParser:
 		if self.meta['stack']:
 			self.raise_ex('Statement {!r} not closed'.format(self.meta['stack'][-1]))
 
+	@staticmethod
+	def _multi_line_support(string):
+		"""
+		Support multi-line statements, comments (tag) and expressions
+		Turn this:
+		```
+		assign a = xyz | filter1
+		               | filter2
+		```
+		to:
+		```
+		assign a = xyz | filter1 | filter2
+		```
+		"""
+		lines = string.splitlines()
+		lens  = len(lines)
+		lines = (line.rstrip() if i == 0 else line.lstrip() if i == lens - 1 else line.strip()
+				  for i, line in enumerate(lines))
+		return ' '.join(lines)
+
 	def _expect_closing_tag(self, tag):
 		"""
 		Get the closing tag of an open one
@@ -180,6 +200,7 @@ class LiquidParser:
 			tag (str): The open tag.
 		"""
 		nodestr = self._expect_closing_tag(tag)
+		nodestr = LiquidParser._multi_line_support(nodestr)
 		LOGGER.debug("Comment tag found at line %s: %s %s %s",
 			self.lineno, tag,
 			nodestr if len(nodestr) < 14 else nodestr[:5] + ' ... ' + nodestr[:-5], self.endtag)
@@ -191,6 +212,8 @@ class LiquidParser:
 			string (str): The literal text
 			tag (str): The end tag
 		"""
+		if not string:
+			return
 		LOGGER.debug("Literals wrapped by tags [%r, %r] found at line %s: %r",
 			self.endtag, tag, self.lineno,
 			string if len(string) < 13 else string[:5] + ' ... ' + string[:-5])
@@ -207,6 +230,7 @@ class LiquidParser:
 			tag (str): The open tag
 		"""
 		nodestr = self._expect_closing_tag(tag)
+		nodestr = LiquidParser._multi_line_support(nodestr)
 		LOGGER.debug("Expression found at line %s: %s %s %s",
 			self.lineno, tag, nodestr, self.endtag)
 		self.nodes['expression'].start(nodestr, self.lineno)
@@ -255,6 +279,8 @@ class LiquidParser:
 		if nodestr == 'raw':
 			self.parse_raw(tag, self.endtag)
 			return
+
+		nodestr = LiquidParser._multi_line_support(nodestr)
 		try:
 			name, rest = nodestr.split(maxsplit = 1)
 		except ValueError:

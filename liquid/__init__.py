@@ -145,7 +145,7 @@ class Liquid:
 				self.stream.stream.readlines(), finalcode.codes[lineno-1].lineno, 1))
 
 			if not stack_with_file or not Liquid.debug(): # not at debug level
-				raise LiquidRenderError('\n'.join(msg))
+				raise LiquidRenderError('\n'.join(msg)) from None
 
 			msg.append('')
 			msg.append('Compiled source (turn debug off to hide this):')
@@ -159,4 +159,4 @@ class Liquid:
 			for key, val in context.items():
 				msg.append('  {}: {!r}'.format(key, val))
 
-			raise LiquidRenderError('\n'.join(msg))
+			raise LiquidRenderError('\n'.join(msg)) from None

@@ -45,3 +45,8 @@ def test_parser_parse_mode(liqparser):
 def test_liquidline():
 	ll = LiquidLine("abcde", 99)
 	assert repr(ll) == "<LiquidLine 'abcde' (compiled from #99)>"
+
+def test_multiline_support_func():
+	assert LiquidParser._multi_line_support("""     a
+		b
+			c    """) == """     a b c    """

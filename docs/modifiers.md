@@ -5,7 +5,7 @@
 
 In this section, we will be talking about the unpacking and ternary modifiers.
 
-See [filters](./filters) for liquid modifiers.
+See [filters](https://liquidpy.readthedocs.io/en/latest/filters/) for liquid modifiers.
 
 # Unpacking modifier: `*`
 
@@ -34,7 +34,8 @@ Output:
 <div markdown="1" class="two-column">
 
 ```liquid
-{# with expansion, they can be passed as separate arguments to next filter #}
+{# with expansion, they can be passed
+   as separate arguments to next filter #}
 {{"a,b,c,d", "," | *@replace: "|"}}
 ```
 

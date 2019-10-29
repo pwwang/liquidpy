@@ -444,7 +444,7 @@ If you have a tuple as your base value, you can use `_1`, `_2`, ..., `_N` for ea
 {# 1.23 #}
 ```
 
-See section [Modifiers](./modifiers) for details of unpacking modifier.
+See section [Modifiers](https://liquidpy.readthedocs.io/en/latest/modifiers/) for details of unpacking modifier.
 
 ## Direct filters
 Any function in the environment that takes the first arguments as the values on the left of the expression (value before `|`) could be used as direct filters:
@@ -530,14 +530,21 @@ To call it:
 You may also apply lambda filters:
 ```liquid
 {% import os %}
-{{ "/path/to/file.txt" | lambda p: os.path.join( os.path.dirname(p), os.path.splitext(p)[0] + '.sorted' + os.path.splitext(p)[1] ) }}
+{{ "/path/to/file.txt" | lambda p: os.path.join(
+                            os.path.dirname(p),
+                            os.path.splitext(p)[0]
+                          + '.sorted'
+                          + os.path.splitext(p)[1] ) }}
 {# output: /path/to/file.sorted.txt #}
 ```
 
 With a single element as base value, you can even omit the `lambda` keyword:
 ```
 {% import os %}
-{{ "/path/to/file.txt" | : os.path.join( os.path.dirname(_), os.path.splitext(_)[0] + '.sorted' + os.path.splitext(_)[1] ) }}
+{{ "/path/to/file.txt" | : os.path.join(os.path.dirname(_),
+                                        os.path.splitext(_)[0]
+                                      + '.sorted'
+                                      + os.path.splitext(_)[1] ) }}
 {# output: /path/to/file.sorted.txt #}
 ```
 
@@ -545,7 +552,9 @@ With a single element as base value, you can even omit the `lambda` keyword:
 See example:
 
 ```liquid
-{{ x | ?isinstance: list | : "A list with length %s" % len(_) | : "Other iterable with length %s" % len(_) }}
+{{ x | ?isinstance: list
+     | : "A list with length %s" % len(_)
+     | : "Other iterable with length %s" % len(_) }}
 
 {# liquid.render(x = [1,2,3]): A list with length 3 #}
 {# liquid.render(x = "123"): Other iterable with length 3 #}
