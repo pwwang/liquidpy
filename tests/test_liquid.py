@@ -271,8 +271,8 @@ def test_render_4(text, data, out):
 	('{{ article.published_at | @date: "%a, %b %d, %y", "%m/%d/%Y" }}', {'article': dict(published_at = '07/17/2015')}, 'Fri, Jul 17, 15'),
 	('{{ article.published_at | @date: "%Y", "%m/%d/%Y" }}', {'article': dict(published_at = '07/17/2015')}, '2015'),
 	('{{ "March 14, 2016" | @date: "%b %d, %y", "%B %d, %Y" }}', {}, 'Mar 14, 16'),
-	('This page was last updated at {{ "now" | @date: "%Y-%m-%d %H:%M" }}.', {}, 'This page was last updated at {}.'.format(__import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M"))),
-	('This page was last updated at {{ "today" | @date: "%Y-%m-%d %H:%M" }}.', {}, 'This page was last updated at {}.'.format(__import__('datetime').datetime.today().strftime("%Y-%m-%d %H:%M"))),
+	('This page was last updated at {{ "now" | @date: "%Y-%m-%d %H" }}.', {}, 'This page was last updated at {}.'.format(__import__('datetime').datetime.now().strftime("%Y-%m-%d %H"))),
+	('This page was last updated at {{ "today" | @date: "%Y-%m-%d %H" }}.', {}, 'This page was last updated at {}.'.format(__import__('datetime').datetime.today().strftime("%Y-%m-%d %H"))),
 
 	('{{ product_price | @default: 2.99 }}', {'product_price': None}, '2.99'),
 	('{{ product_price | @default: 2.99 }}', {'product_price': 4.99}, '4.99'),

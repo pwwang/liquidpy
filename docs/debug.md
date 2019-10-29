@@ -1,37 +1,81 @@
 
-You may print debug information by setting `Liquid.DEBUG = True` globally to show the parsing and rendering processes. 
+You may print debug information by setting `Liquid.debug(True)` globally to show the parsing and rendering processes.
 ```python
-Liquid.DEBUG = True
+Liquid.debug(True)
 Liquid('{% python 1/0 %}').render()
 ```
 ```log
-[2018-09-26 10:53:36,912 DEBUG] Mode: mixed debug
-[2018-09-26 10:53:36,912 DEBUG] Token type: 'python', content: '1/0' at line 1: '{% python 1/0 %}'
-[2018-09-26 10:53:36,912 DEBUG]  - parsing python literal: 1/0 
-[2018-09-26 10:53:36,912 DEBUG] Python source:
-[2018-09-26 10:53:36,912 DEBUG] --------------------------------------------------------------------------------
-[2018-09-26 10:53:36,912 DEBUG] _liquid_rendered = []
-[2018-09-26 10:53:36,912 DEBUG] _liquid_captured = []
-[2018-09-26 10:53:36,912 DEBUG] _liquid_ret_append = _liquid_rendered.append
-[2018-09-26 10:53:36,912 DEBUG] _liquid_ret_extend = _liquid_rendered.extend
-[2018-09-26 10:53:36,912 DEBUG] _liquid_cap_append = _liquid_captured.append
-[2018-09-26 10:53:36,912 DEBUG] _liquid_cap_extend = _liquid_captured.extend
-[2018-09-26 10:53:36,912 DEBUG] 1/0
-[2018-09-26 10:53:36,912 DEBUG] _liquid_rendered_str = ''.join(str(x) for x in _liquid_rendered)
-[2018-09-26 10:53:36,912 DEBUG] del _liquid_captured
-[2018-09-26 10:53:36,913 DEBUG] del _liquid_cap_append
-[2018-09-26 10:53:36,913 DEBUG] del _liquid_cap_extend
-[2018-09-26 10:53:36,913 DEBUG] del _liquid_filters
-[2018-09-26 10:53:36,913 DEBUG] del _liquid_rendered
-[2018-09-26 10:53:36,913 DEBUG] del _liquid_ret_append
-[2018-09-26 10:53:36,913 DEBUG] del _liquid_ret_extend
-# raise LiquidRenderError: ZeroDivisionError: integer division or modulo by zero, at line 1: {% python 1/0 %}
+[2019-10-29 00:36:40,592 DEBUG] Literals wrapped by tags [None, '{%'] found at line 1: ''
+[2019-10-29 00:36:40,592 DEBUG] Statement found at line 1: {% python 1/0 %}
+[2019-10-29 00:36:40,592 DEBUG] Literals wrapped by tags ['%}', None] found at line 1: ''
+[2019-10-29 00:36:40,592 DEBUG] The compiled code:
+def _liquid_render_function(_liquid_context):
+  true = _liquid_context['true']
+  false = _liquid_context['false']
+  nil = _liquid_context['nil']
+  _liquid_liquid_filters = _liquid_context['_liquid_liquid_filters']
+  _liquid_rendered = []
+  _liquid_ret_append = _liquid_rendered.append
+  _liquid_ret_extend = _liquid_rendered.extend
+  1/0
+  return ''.join(str(x) for x in _liquid_rendered)
+
+Traceback (most recent call last):
+  File "/.../liquidpy/liquid/__init__.py", line 129, in render
+    return localns[LIQUID_RENDER_FUNC_NAME](final_context)
+  File "_liquidpy_source", line 9, in _liquid_render_function
+ZeroDivisionError: division by zero
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/.../liquidpy/liquid/__init__.py", line 162, in render
+    raise LiquidRenderError('\n'.join(msg))
+liquid.exceptions.LiquidRenderError: ZeroDivisionError: division by zero
+
+At source line 1:
+----------------------------------------------
+> 1. {% python 1/0 %}
+
+Compiled source (turn debug off to hide this):
+----------------------------------------------
+  4 .   nil = _liquid_context['nil']
+  5 .   _liquid_liquid_filters = _liquid_context['_liquid_liquid_filters']
+  6 .   _liquid_rendered = []
+  7 .   _liquid_ret_append = _liquid_rendered.append
+  8 .   _liquid_ret_extend = _liquid_rendered.extend
+> 9 .   1/0
+  10.   return ''.join(str(x) for x in _liquid_rendered)
+
+Context:
+----------------------------------------------
+
 ```
 
-You may turn `DEBUG` mode on/off for single `Liquid` instance by just putting `debug` or `nodebug` in the FIRST LINE of your template:
+You may turn `DEBUG` mode on/off for single `Liquid` instance by just putting `debug` or `info` in the `{% mode ... %}` block:
 ```liquid
-{% mode compact, nodebug %}
+{% mode compact info %}
 {% python 1/0 %}
-# no debug information will be shown
-# raise LiquidRenderError: ZeroDivisionError: integer division or modulo by zero, at line 1: {% python 1/0 %}
+# no detailed debug information will be shown
+```
+```python
+Traceback (most recent call last):
+  File "/.../liquidpy/liquid/__init__.py", line 129, in render
+    return localns[LIQUID_RENDER_FUNC_NAME](final_context)
+  File "_liquidpy_source", line 9, in _liquid_render_function
+ZeroDivisionError: division by zero
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/.../liquidpy/liquid/__init__.py", line 148, in render
+    raise LiquidRenderError('\n'.join(msg))
+liquid.exceptions.LiquidRenderError: ZeroDivisionError: division by zero
+
+At source line 1:
+----------------------------------------------
+> 1. {% python 1/0 %}
+
 ```

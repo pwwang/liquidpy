@@ -528,7 +528,7 @@ class NodePython(_Node):
 	"""
 	def start(self, string, lineno):
 		"""Start to compile the node"""
-		self.meta['code'].add_line(string)
+		self.meta['code'].add_line(string, lineno)
 
 class NodeFrom(_Node):
 	"""

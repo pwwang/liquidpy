@@ -1,14 +1,13 @@
-`liquidpy` has 2 (actually 3) unique modifiers: `*`, `&`( and `@`). 
-	- `@` modifier is used to tell the modifier is coming from original `liquid`. 
-	- `*` modifier is used to expand the arguments in previous expression.
-	- `&` modifier is used to chain the values from previous expression.  
+`liquidpy` has 3 unique modifiers: `*`, `?` and `@`.
+	- `@` liquid modifier is used to tell that the filter is a `liquid` filter.
+	- `*` unpacking modifier is used to unpack the tuple values in previous expression.
+	- `?` ternary modifier is used to mark that this filter is the condition of a ternary operation.
 
-!!! danger
-	Expansion (`*`) modifier has to be placed before other modifiers. That is to say: `*&@filter` will be legal, while `&*@filter` is not.
+In this section, we will be talking about the unpacking and ternary modifiers.
 
-In this section, we will be talking about the expansion and chaining modifiers.
+See [filters](./filters) for liquid modifiers.
 
-# Expansion modifier: `*`
+# Unpacking modifier: `*`
 
 This modifier is used to flatten to values or expression in the previous expression (before the pipe `|`), so that they can be used as arguments of the filter, instead of a `tuple`.
 
@@ -26,7 +25,7 @@ Input:
 Output:
 ```
 ('a,b,c,d', ',')
-```  
+```
 
 </div>
 
@@ -44,7 +43,7 @@ Output:
 
 ```
 a|b|c|d
-```  
+```
 
 </div>
 
@@ -53,39 +52,29 @@ a|b|c|d
 !!! note
 	When there is only one value or expression, it will be always the value itself instead of a tuple. In this case, expansion modifier doesn't work.
 
-	If you want to convert a single value or expression into a tuple, you can add an extra comma next to the value or expression:  
-	`{{ 1, | repr}} => (1,)`  
-	Or `{{ 1 | :(a,) }} => (1,)`
+	If you want to convert a single value or expression into a tuple, you can add an extra comma next to the value or expression:
+	`{{ 1, | repr}} => (1,)`
+	Or `{{ (1, ) | repr }} => (1,)`
 
 !!! attention
-	For `getitem` and `attribute` filters, expansion modifier will break down the tuple, leaving only the first element. For example:  
-	```liquid
-	{{ ',', '.' | *.join: ['a', 'b']}}
-	{# output: a,b #}
-	```
+	For `getitem` and `attribute` filters, unpacking modifier is not allowed.
 
-# Chaining modifer: `&`
+# ternary modifer: `?`
 
-This modifier brings the values from previous expression. Let's say we want to increment a value if it is an integer, otherwise leave it alone:
-```python
-Liquid("{{x | @plus: 1}}").render(x = None)
-# TypeError: unsupported operand type(s) for +: 'NoneType' and 'int'
+The ternary modifier marks a filter as a condition of a ternary operation, and initates it.
+```liquid
+{{ x | ?bool | : "Yes" | : "No" }}
 ```
-Instead, we could do:
-```python
-tpl = '{{x | &isinstance: int | *:[a, b+1][int(b)] }}'
-Liquid(tpl).render(x = None) # None
-Liquid(tpl).render(x = 1) # 2
-# the last expression is expanded to:
-# (lambda a, b: [a, b+1][int(b)])(
-#	x, isinstance(x, int)
-# )
-# Without & before instance, the argument for lambda is only isinstance(x, int) 
-```
+It has to be followed by two filters, one calculates the value when the condition is True, the other does when the condition is False.
 
-__Both modifiers can be used on the same filter__:  
+You can also use the base value as the argument for the True/False filters:
 
 ```liquid
-{{ 'a,b,c,d', ',' | *&@replace: '|' | :'/'.join(a) }}
-{# output: 'a,b,c,d/,/a|b|c|d' #}
+{{ x | ?bool | : str(_) +  " is true" | : str(_) + " is false"
+```
+
+You may also chain another filter after the ternary:
+
+```liquid
+{{ x | ?bool | : str(_), "true" | : str(_), "false" | @join: " is "
 ```

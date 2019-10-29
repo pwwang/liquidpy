@@ -1,34 +1,23 @@
 
-`liquidpy` tries to support `liquid` filters, however, to support `python` filters themselves, we put `@` before the filters to mark it as `liquid` filters.  
-__`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__  
+`liquidpy` tries to support `liquid` filters, however, to support `python` filters themselves, we put `@` before the filters to mark it as `liquid` filters.
+__`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
 
-**Where you can use filters**  
+**Where you can use filters**
 
 - In expression tags: `{{`, `}}` and `{{-`, `-}}`
-- In `assign` block: `{% assign a = "abc" | len %}`
-- In `case/when` block: 
-  ```liquid
-  {% case var | len %}
-    {% when -3 | @abs %}
-      {{Length is 3}}
-    {% when 2 %}
-      {{Length is 2}}
-    {% else %}
-      {{Other length}}
-  {% endcase %}
-  ```  
+- Anywhere else an expression applys, such as in `for/unless/while` conditions, `assign`, `case` block, etc.
 
 # `liquid` filters
 
-## Math filters  
-- `abs`: Returns the absolute value of a number. 
+## Math filters
+- `abs`: Returns the absolute value of a number.
   ```liquid
   {{ -17 | @abs }}
   {# output: 17 #}
-  
+
   {{ 4 | @abs }}
   {# output: 4 #}
-  
+
   {{ "-19.86" | @abs }}
   {# output: 19.86 #}
   ```
@@ -37,13 +26,13 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ 4 | @at_least: 5 }}
   {# output: 5 #}
-  
+
   {{ 4 | @at_least: 3 }}
   {# output: 4 #}
-  
+
   {{ 4 | @at_most: 5 }}
   {# output: 4 #}
-  
+
   {{ 4 | @at_most: 3 }}
   {# output: 3 #}
   ```
@@ -51,13 +40,13 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ 1.2 | @ceil }}
   {# output: 2.0 #}
-  
+
   {{ 2.0 | @ceil }}
   {# output: 2.0 #}
-  
+
   {{ 183.357 | @ceil }}
   {# output: 184.0 #}
-  
+
   {{ "3.5" | @ceil }}
   {# output: 4.0 #}
   ```
@@ -65,7 +54,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ 16 | @divided_by: 4 | int }}
   {# output: 4 #}
-  
+
   {{ 5 | @divided_by: 3 | int }}
   {# output: 1 #}
   ```
@@ -73,24 +62,24 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ 1.2 | @floor }}
   {# output: 1.0 #}
-  
+
   {{ 2.0 | @floor }}
   {# output: 2.0 #}
-  
+
   {{ 183.357 | @floor }}
   {# output: 183.0 #}
-  
+
   {{ "3.5" | @floor }}
   {# output: 3.0 #}
   ```
-- `minus`: Subtracts a number from another number. 
+- `minus`: Subtracts a number from another number.
   ```liquid
   {{ 4 | @minus: 2 }}
   {# output: 2 #}
-  
+
   {{ 16 | @minus: 4 }}
   {# output: 12 #}
-  
+
   {{ 183.357 | @minus: 12 }}
   {# output: 171.357 #}
   ```
@@ -99,10 +88,10 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   {{ 3 | @modulo: 2 }}
   {# python2 output: 1 #}
   {# python3 output: 1.0 #}
-  
+
   {{ 24 | @mod: 7 | int }}
   {# output: 3 #}
-  
+
   {{ 183.357 | @mod: 12 | int }}
   {# output: 3 #}
   ```
@@ -110,10 +99,10 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ 4 | @plus: 2 }}
   {# output: 6 #}
-  
+
   {{ 16 | @plus: 4 }}
   {# output: 20 #}
-  
+
   {{ 183.357 | @plus: 12 }}
   {# output: 195.357 #}
   ```
@@ -121,10 +110,10 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ 1.2 | @round }}
   {# output: 1 #}
-  
+
   {{ 2.7 | @round }}
   {# output: 3 #}
-  
+
   {{ 183.357 | @round: 2 }}
   {# output: 183.36 #}
   ```
@@ -132,20 +121,20 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ 3 | @times: 2 }}
   {# output: 6 #}
-  
+
   {{ 24 | @times: 7 }}
   {# output: 168 #}
-  
+
   {{ 183.357 | @times: 12 }}
   {# output: 2200.284 #}
   ```
 
-## String filters  
+## String filters
 - `append`: Concatenates two strings and returns the concatenated value.
   ```liquid
   {{ "/my/fancy/url" | @append: ".html" }}
   {# output: /my/fancy/url.html #}
-  
+
   {% assign filename = "/index.html" %}
   {{ "website.com" | @append: filename }}
   {# output: website.com/index.html #}
@@ -154,7 +143,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "title" | @capitalize }}
   {# output: Title #}
-  
+
   {{ "my great title" | @capitalize }}
   {# output: My great title #}
   ```
@@ -162,7 +151,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "Parker Moore" | @downcase }}
   {# output: parker moore #}
-  
+
   {{ "apple" | @downcase }}
   {# output: apple #}
   ```
@@ -170,7 +159,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "Have you read 'James & the Giant Peach'?" | @escape }}
   {# output: Have you read 'James &amp; the Giant Peach'? #}
-  
+
   {{ "Tetsuro Takara" | @escape }}
   {# output: Tetsuro Takara #}
   ```
@@ -198,7 +187,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "apples, oranges, and bananas" | @prepend: "Some fruit: " }}
   {# output: Some fruit: apples, oranges, and bananas #}
-  
+
   {% assign url = "liquidmarkup.com" %}
   {{ "/index.html" | @prepend: url }}
   {# output: liquidmarkup.com/index.html #}
@@ -208,7 +197,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "I strained to see the train through the rain" | @remove: "rain" }}
   {# output: I sted to see the t through the #}
-  
+
   {{ "I strained to see the train through the rain" | @remove_first: "rain" }}
   {# output: I sted to see the train through the rain #}
   ```
@@ -217,7 +206,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "Take my protein pills and put my helmet on" | @replace: "my", "your" }}
   {# output: Take your protein pills and put your helmet on #}
-  
+
   {% assign my_string = "Take my protein pills and put my helmet on" %}
   {{ my_string | @replace_first: "my", "your" }}
   {# output: Take your protein pills and put my helmet on #}
@@ -231,17 +220,17 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "Liquid" | @slice: 0 }}
   {# output: L #}
-  
+
   {{ "Liquid" | @slice: 2 }}
   {# output: q #}
-  
+
   {{ "Liquid" | @slice: 2, 5 }}
   {# output: quid #}
-  
+
   {{ "Liquid" | @slice: -3, 2 }}
   {# output: ui #}
   ```
-- `split`: Divides an input string into an array using the argument as a separator. 
+- `split`: Divides an input string into an array using the argument as a separator.
   ```liquid
   {% assign beatles = "John, Paul, George, Ringo" | @split: ", " %}
   {% for member in beatles %}
@@ -273,19 +262,19 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "Ground control to Major Tom." | @truncate: 20 }}
   {# output: Ground control to... #}
-  
+
   {{ "Ground control to Major Tom." | @truncate: 25, ", and so on" }}
   {# output: Ground control, and so on #}
-  
+
   {{ "Ground control to Major Tom." | @truncate: 20, "" }}
   {# output: Ground control to Ma #}
-  
+
   {{ "Ground control to Major Tom." | @truncatewords: 3 }}
   {# output: Ground control to... #}
-  
+
   {{ "Ground control to Major Tom." | @truncatewords: 3, "--" }}
   {# output: Ground control to-- #}
-  
+
   {{ "Ground control to Major Tom." | @truncatewords: 3, "" }}
   {# output: Ground control to #}
   ```
@@ -293,7 +282,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "Parker Moore" | @upcase }}
   {# output: PARKER MOORE #}
-  
+
   {{ "APPLE" | @upcase }}
   {# output: APPLE #}
   ```
@@ -302,10 +291,10 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "%27Stop%21%27%20said%20Fred" | @url_decode }}
   {# output: 'Stop!' said Fred #}
-  
+
   {{ "john@liquid.com" | @url_encode }}
   {# output: john%40liquid.com #}
-  
+
   {{ "Tetsuro Takara" | @url_encode }}
   {# output: Tetsuro+Takara #}
   ```
@@ -321,13 +310,13 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   Output:
     business
     celebrities
-  
+
     lifestyle
     sports
-  
+
     technology
   {% endcomment %}
-  
+
   {% assign site_categories = site.pages | @map: 'category' | @compact %}
   {% for category in site_categories %}
     {{ category }}
@@ -393,20 +382,20 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   {# output: ants, bugs, bees #}
   ```
 
-## Other filters  
+## Other filters
 - `date`: Converts a date format into another date format. The format for this syntax is the same as `datetime.datetime.strptime` and `datetime.datetime.strftime`
   ```liquid
   {% assign article = lambda: None %}
   {% assign article.published_at = '07/17/2015' %}
   {{ article.published_at | @date: "%a, %b %d, %y", "%m/%d/%Y" }}
   {# output: Fri, Jul 17, 15 #}
-  
+
   {{ article.published_at | @date: "%Y", "%m/%d/%Y" }}
   {# output: 2015 #}
-  
+
   {{ "March 14, 2016" | @date: "%b %d, %y", "%B %d, %Y" }}
   {# output: Mar 14, 16 #}
-  
+
   This page was last updated at {{ "now" | @date: "%Y-%m-%d %H:%M" }}.
   {# output: This page was last updated at 2018-09-19 21:18 #}
   ```
@@ -415,11 +404,11 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   {% assign product_price = None %}
   {{ product_price | @default: 2.99 }}
   {# output: 2.99 #}
-  
+
   {% assign product_price = 4.99 %}
   {{ product_price | @default: 2.99 }}
   {# output: 4.99 #}
-  
+
   {% assign product_price = "" %}
   {{ product_price | @default: 2.99 }}
   {# output: 2.99 #}
@@ -428,33 +417,46 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```liquid
   {{ "Ground control to Major Tom." | @size }}
   {# output: 28 #}
-  
+
   {% assign my_array = "apples, oranges, peaches, plums" | @split: ", " %}
   {{ my_array | @size }}
   {# output: 4 #}
   ```
 
 # Python filters
+
+## Position of arguments
+For all liquid filters, the argument should be at the first place. So it can be omitted. For example, `{{ 1.234 | @round: 2}}` is actually compiled as `round(1.234, 2)`. We can also specify the position of the arguments explictly:
+
+```liquid
+{{2 | @round: 1.234, _}}
+{# 1.23 #}
+```
+
+If you have a tuple as your base value, you can use `_1`, `_2`, ..., `_N` for each element, respectively. For example:
+```liquid
+{{2, 1.234 | *@round: _2, _1}}
+{# 1.23 #}
+```
+
+```liquid
+{{1.234, 2 | *@round}}
+{# 1.23 #}
+```
+
+See section [Modifiers](./modifiers) for details of unpacking modifier.
+
 ## Direct filters
-Any function in the environment that takes the first arguments as the values on the left of the expression (value before `|`) could be used as direct filters:  
+Any function in the environment that takes the first arguments as the values on the left of the expression (value before `|`) could be used as direct filters:
 ```liquid
 {{"123" | len}}
 {# output: 3 #}
 
-{{ 1.234, 2 | round }}
+{{ 1.234, 2 | *round }}
 {# output: 1.23 #}
 ```
 
-You can even use python expressions on the left:  
-```liquid
-{{len("123") | @plus: 3}}
-{# output: 6 #}
-
-{{ 1.234, 1+1 | round }}
-{# output: 1.23 #}
-```
-
-Extra arguments can be pass as `liquid` filters:  
+Extra arguments can be pass as `liquid` filters:
 ```liquid
 {{ 1.234 | round: 2 }}
 {# output: 1.23 #}
@@ -471,7 +473,7 @@ liq.render()
 ```
 
 ## Getitem filters
-You can get the items directly from the values on the left:  
+You can get the items directly from the values on the left:
 ```liquid
 {{ [1,2,3] | [0] }}
 {# output: 1 #}
@@ -481,25 +483,31 @@ You can get the items directly from the values on the left:
 
 {{ {"a": 1} | ["a"] }}
 {# output: 1 #}
+
+{{ {"a": {"b": (lambda x: x*10)} } | ["a"].b: 10 }}
+{# output: 100 #}
 ```
 
-Remember if you if have multiple values on the left, they will be treated as a `tuple`:  
+Remember if you if have multiple values on the left, they will be treated as a `tuple`:
 ```liquid
-{{ 1.234, 1+1 | [1] }}
+{{ 1.234, 2 | [1] }}
 {# output: 2 #}
 ```
 
 ## Attribute filters
-Get the value from the attribute of an object. If it is `callable`, you can also use it as a filter:  
+Get the value from the attribute of an object. If it is `callable`, you can also use it as a filter:
 ```liquid
 {{ "," | .join: ['a', 'b'] }}
 {# output: a,b #}
 
 {{ "{}, {}!" | .format: "Hello", "world" }}
 {# output: Hello, world! #}
+
+{{ {"x": "{}, {}!"} | .x.format: "Hello", "world" }}
+{# output: Hello, world! #}
 ```
 
-Get non-callable attribute values:  
+Get non-callable attribute values:
 ```liquid
 {{ '' | .__doc__ }}
 {# output: str(object='') ... #}
@@ -511,7 +519,7 @@ What if callable attribute takes no argument:
 {# output: <function isdigit> #}
 ```
 
-To call it:   
+To call it:
 ```liquid
 {{ '1' | .isdigit() }}
 {# or #}
@@ -519,17 +527,26 @@ To call it:
 ```
 
 ## Lambda filters
-You may also apply lambda filters:  
+You may also apply lambda filters:
 ```liquid
-{% python from os import path %}
-{{ "/path/to/file.txt" | lambda p, path = path: path.join( path.dirname(p), path.splitext(p)[0] + '.sorted' + path.splitext(p)[1] ) }}
+{% import os %}
+{{ "/path/to/file.txt" | lambda p: os.path.join( os.path.dirname(p), os.path.splitext(p)[0] + '.sorted' + os.path.splitext(p)[1] ) }}
 {# output: /path/to/file.sorted.txt #}
 ```
 
-If you don't have to use global variables in `lambda`, you may also omit the `lambda` keyword:
+With a single element as base value, you can even omit the `lambda` keyword:
+```
+{% import os %}
+{{ "/path/to/file.txt" | : os.path.join( os.path.dirname(_), os.path.splitext(_)[0] + '.sorted' + os.path.splitext(_)[1] ) }}
+{# output: /path/to/file.sorted.txt #}
+```
+
+## tenary filters
+See example:
 
 ```liquid
-{{ "/path/to/file.txt" | :len(a) - 4 }}
-{# output: 13 #}
+{{ x | ?isinstance: list | : "A list with length %s" % len(_) | : "Other iterable with length %s" % len(_) }}
+
+{# liquid.render(x = [1,2,3]): A list with length 3 #}
+{# liquid.render(x = "123"): Other iterable with length 3 #}
 ```
-The argument names start from `a`, up to `z`.

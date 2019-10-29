@@ -1,7 +1,7 @@
 
 # Comment
-__Unlike `liquid`, `liquidpy` has two comment systems: comment block `{% comment %}...{% endcomment %}` and comment tag `{# ... #}`.__  
-__The former one is also supported by `liquid`, but acts differently. In `liquid`, anything between the comment block will be igored, however, it turns to python comments in `liquidpy`. If you want the comments to be ignore, you should use comment tag instead:__  
+__Unlike `liquid`, `liquidpy` has two comment systems: comment block `{% comment %}...{% endcomment %}` and comment tag `{# ... #}`.__
+__The former one is also supported by `liquid`, but acts differently. In `liquid`, anything between the comment block will be igored. However, it turns to python comments in `liquidpy`. If you want the comments to be ignore, you should use comment tag instead:__
 
 <div markdown="1" class="two-column">
 
@@ -9,7 +9,7 @@ Input:
 ```liquid
 Anything you put between
 {% comment %}
-and 
+and
 {% endcomment %}
 tags is turned into a comment.
 ```
@@ -48,7 +48,7 @@ tags is turned into a comment.
 
 ---
 
-Use a different comment sign: 
+Use a different comment sign:
 
 <div markdown="1" class="two-column">
 
@@ -73,15 +73,44 @@ as comments
 
 </div>
 
+
+---
+
+Use a comment wrapper:
+
+<div markdown="1" class="two-column">
+
+```liquid
+{% comment /* */ %}
+This
+will be
+translated
+as comments
+{% endcomment %}
+```
+
+</div>
+<div markdown="1" class="two-column">
+
+```
+/* This */
+/* will be */
+/* translated */
+/* as comments */
+```
+
+</div>
+
 ---
 
 # Python source
-__You may also insert python source code to the template, one line each time__  
+__You may also insert python source code to the template, one line each time__
 
 <div markdown="1" class="two-column">
 
 Input:
 ```liquid
+{% mode compact %}
 {% python from os import path %}
 {% python from glob import glob %}
 {% python d = './date' %}
@@ -103,10 +132,36 @@ Output:
 </div>
 
 ---
+<div markdown="1" class="two-column">
+
+Input:
+```liquid
+{% mode compact %}
+{% import os %}
+{% from glob import glob %}
+{% python d = './date' %}
+{% for filepath in glob(os.path.join(d, '*.txt')) %}
+  {{os.path.basename(filepath)}}
+{% endfor %}
+
+```
+
+</div>
+<div markdown="1" class="two-column">
+
+Output:
+```
+  a.txt
+  b.txt
+```
+
+</div>
+
+---
 
 # Control flow
 ## `if`
-Executes a block of code only if a certain condition is `True`.  
+Executes a block of code only if a certain condition is `True`.
 
 <div markdown="1" class="two-column">
 
@@ -126,6 +181,17 @@ Output:
 ```
 
 </div>
+
+You can also use `liquidpy` expressions (`{{ ... }}`) in the conditions, but you have to use backticks to quote them. For example:
+```liquid
+{% if `product.title | .lower:` == 'awesome shoes' %}
+  These shoes are awesome!
+{% endif %}
+```
+
+!!! note:
+
+    We support "dot" operation to get the value of a key from dictionaries. For example: `Liquid("{{a.x}}").render(a = {"x": 1})`. However, when you use it in `if/unless/while` conditions, you have to use backticks to quote it.
 
 ---
 
@@ -160,7 +226,7 @@ This would be the equivalent of doing the following:
 {% endif %}
 ```
 
-## `elsif(elif, else if) / else`
+## `elsif(elif, elseif, else if) / else`
 Adds more conditions within an if or unless block. `liquidpy` recoglizes not only `elsif` keyword as `liquid` does, it also treats `else if` and `elif` as `elsif` in `liquid`, or `elif` in `python`
 
 <div markdown="1" class="two-column">
@@ -219,11 +285,11 @@ Output:
 ---
 
 # Iteration/Loop
-Iteration tags run blocks of code repeatedly.  
-__`for(parameters)`, `tablerow` and `cycle` are abandoned in `liquidpy`, because they can be easied performed using python expressions__  
+Iteration tags run blocks of code repeatedly.
+__`for(parameters)`, `tablerow` and `cycle` are abandoned in `liquidpy`, because they can be easied performed using python expressions__
 
 ## `while`
-__`liquid` doesn't support `while`, but we have it here. Use it just like you are writing `python` codes:__  
+__`liquid` doesn't support `while`, but we have it here. Use it just like you are writing `python` codes:__
 
 <div markdown="1" class="two-column">
 
@@ -251,7 +317,7 @@ Output:
 ---
 
 ## `for`
-Repeatedly executes a block of code. For a full list of attributes available within a for loop.  
+Repeatedly executes a block of code. For a full list of attributes available within a for loop.
 
 <div markdown="1" class="two-column">
 
@@ -276,9 +342,33 @@ Output:
 </div>
 
 ---
+<div markdown="1" class="two-column">
+
+Input (forloop object support):
+See: https://help.shopify.com/en/themes/liquid/objects/for-loops
+```liquid
+{# collection.products = [Product(title = 'hat'), Product(title = 'shirt'), Product(title = 'pants')] #}
+{% for product in collection.products %}
+  {% if forloop.first %}
+  {{ product.title }}
+  {% endif %}
+{% endfor %}
+```
+
+</div>
+<div markdown="1" class="two-column">
+
+Output:
+```
+  hat
+```
+
+</div>
+
+---
 
 ## `break/continue`
-Exit the loop or skip current iteration.  
+Exit the loop or skip current iteration.
 
 <div markdown="1" class="two-column">
 
@@ -330,7 +420,7 @@ Output:
 ---
 
 # Raw
-Raw temporarily disables tag processing. This is useful for generating content (eg, Mustache, Handlebars) which uses conflicting syntax.  
+Raw temporarily disables tag processing. This is useful for generating content (eg, Mustache, Handlebars) which uses conflicting syntax.
 
 <div markdown="1" class="two-column">
 
@@ -357,7 +447,7 @@ Output:
 
 # Variable
 ## `assign`
-Creates a new variable.  
+Creates a new variable.
 
 <div markdown="1" class="two-column">
 
@@ -384,7 +474,7 @@ Output:
 <div markdown="1" class="two-column">
 
 ```liquid
-{% assign foo = "bar" %}
+{% assign foo = "bar" | @append: "foo" %}
 {{ foo }}
 ```
 
@@ -392,7 +482,7 @@ Output:
 <div markdown="1" class="two-column">
 
 ```
-bar
+barfoo
 ```
 
 </div>
@@ -400,7 +490,7 @@ bar
 ---
 
 ## `capture`
-Captures the string inside of the opening and closing tags and assigns it to a variable. Variables created through {% capture %} are strings.  
+Captures the string inside of the opening and closing tags and assigns it to a variable. Variables created through {% capture %} are strings.
 
 <div markdown="1" class="two-column">
 
@@ -432,6 +522,7 @@ Input:
 {% assign age = 35 %}
 {% capture about_me %}
 I am {{ age }} and my favorite food is {{ favorite_food }}.
+{% if false %}Something you dont't want{% endif %}
 {% endcapture %}
 {{ about_me }}
 ```
@@ -484,7 +575,7 @@ Output:
 	__Unlike `liquid`, Variables created through the increment tag affects variables created through assign or capture.__
 
 ## `decrement`
-Creates a new number variable, and decreases its value by one every time it is called.  
+Creates a new number variable, and decreases its value by one every time it is called.
 
 <div markdown="1" class="two-column">
 
