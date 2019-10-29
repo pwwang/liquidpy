@@ -2,7 +2,7 @@ import logging
 from .stream import Stream
 from .filters import liquid_filters
 from .exceptions import LiquidSyntaxError
-from .defaults import LIQUID_COMPILED_CONTEXT, LIQUID_LOGGER_NAME, LIQUID_MODES, \
+from .defaults import LIQUID_LOGGER_NAME, LIQUID_MODES, \
 	LIQUID_LIQUID_FILTERS, LIQUID_COMPILED_RR_APPEND, LIQUID_COMPILED_RR_EXTEND, \
 	LIQUID_COMPILED_RENDERED
 
@@ -307,7 +307,7 @@ class NodeExpression(_Node):
 		exprs   = sstream.split('|')
 		value   = NodeExpression._parse_base(exprs[0])
 
-		for i, expr in enumerate(exprs[1:]):
+		for expr in exprs[1:]:
 			if not expr:
 				self.meta['raise']('No filter specified')
 			value = self._parse_filter(expr, value)

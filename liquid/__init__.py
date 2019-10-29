@@ -94,7 +94,7 @@ class Liquid:
 			localns = {}
 			exec(strcode, None, localns)
 			return localns[LIQUID_RENDER_FUNC_NAME](final_context)
-		except Exception as ex:
+		except Exception:
 			import traceback
 			stacks = list(reversed(traceback.format_exc().splitlines()))
 			stack_with_file = [stack.strip() for stack in stacks
