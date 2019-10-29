@@ -627,6 +627,8 @@ def test_render_10(text, data, out):
 	("{{ (('a', 'b')) | *lambda _1, _2: _1 + _2 }}", {}, 'ab'),
 	("{{ (('a', 'b')) | len: }}", {}, '2'),
 	("{{ (('a', 'b')) | len: _1 }}", {}, '1'),
+	("{{ '' | ?bool | :'Yes' | :'No' }}", {}, 'No'),
+	("{{ '1' | ?bool | :'Yes' | :'No' | @append: 'Sir' }}", {}, 'YesSir'),
 ])
 def test_render(text, data, out):
 	Liquid.DEBUG = True
@@ -675,6 +677,9 @@ def test_render(text, data, out):
 	('{{ "" | @:_ }}', LiquidSyntaxError, "Unknown liquid filter: '@lambda _' at line 1"),
 	('{{ "" | }}', LiquidSyntaxError, "No filter specified"),
 	('{{ }}', LiquidSyntaxError, "Empty node"),
+	('{{ "" | ?bool }}', LiquidSyntaxError, "Missing True/False actions for ternary filter"),
+	('{{ "" | ??bool }}', LiquidSyntaxError, "Repeated modifier: '?'"),
+	('{{ "" | ?bool | ?:"Yes"}}', LiquidSyntaxError, 'Unnecessary modifier "?", expect filters for True/False conditions'),
 ])
 def test_initException(text, exception, exmsg):
 	with pytest.raises(exception) as exc:

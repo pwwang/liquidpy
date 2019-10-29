@@ -13,6 +13,7 @@ from .defaults import LIQUID_LOGGER_NAME, LIQUID_MODES, \
 def pushstack(func):
 	"""Push the node to the stack"""
 	def retfunc(self, *args, **kwargs):
+		"""Push the tag in stack and then do the stuff"""
 		self.meta['stack'].append(self.name)
 		func(self, *args, **kwargs)
 	return retfunc
@@ -20,6 +21,7 @@ def pushstack(func):
 def popstack(func):
 	"""Pop the node from the stack"""
 	def retfunc(self, *args, **kwargs):
+		"""Pop the tag in stack and then do the stuff"""
 		last = self.meta['stack'].pop() if self.meta['stack'] else None
 		if last != self.name:
 			if last:
@@ -32,6 +34,7 @@ def popstack(func):
 def dedent(func):
 	"""Dedent the code"""
 	def retfunc(self, *args, **kwargs):
+		"""Do the stuff and dedent the code"""
 		func(self, *args, **kwargs)
 		self.meta['code'].dedent()
 	return retfunc
@@ -78,13 +81,13 @@ class NodeMode(_Node):
 	def start(self, string, lineno):
 		"""Start to compile the node"""
 		if not string:
-			raise LiquidSyntaxError('Expecting a mode value')
+			self.meta['raise']('Expecting a mode value')
 		parts = string.split()
 		if len(parts) == 1:
 			parts = parts[0].split(',')
 		parts  = [part.strip() for part in parts]
 		if len(parts) > 2:
-			raise LiquidSyntaxError('Mode can only take at most 2 values')
+			self.meta['raise']('Mode can only take at most 2 values')
 
 		if len(parts) == 1:
 			if NodeMode._is_loglevel(parts[0].upper()):
@@ -252,7 +255,7 @@ class NodeExpression(_Node):
 					for part in parts))
 		return NodeExpression._parse_base(parts[0], single = True)
 
-	def _parse_filter(self, expr, args):
+	def _parse_filter(self, expr, args, tenary_stack):
 		"""Parse the following part of an expression
 		1. {{a | .a.b.c}}
 		2. {{a | .a.b: 1,2}}
@@ -265,22 +268,34 @@ class NodeExpression(_Node):
 		9. {{a | : _ + 1}}
 		10.{{a, b | *min}}
 		"""
-		estream   = Stream.from_string(expr)
-		eparts    = estream.split(':', limit = 1)
+		modifiers = {'?': False, '*': False, '@': False}
+		while expr[0] in modifiers:
+			if modifiers[expr[0]]:
+				self.meta['raise']('Repeated modifier: {!r}'.format(expr[0]))
+			modifiers[expr[0]] = True
+			expr = expr[1:]
+		if modifiers['?']:
+			if tenary_stack:
+				self.meta['raise'](
+					'Unnecessary modifier "?", expect filters for True/False conditions')
+			else:
+				tenary_stack.append('?')
+
+		eparts    = Stream.from_string(expr).split(':', limit = 1)
 		base      = None
-		argprefix = '*' if args[0] == '(' and args[-1] == ')' and '*' in expr[:2] else ''
-		liquid = '@' in expr[:2]
+		argprefix = '*' if args[0] == '(' and args[-1] == ')' and modifiers['*'] else ''
 		eparts[0] = eparts[0].lstrip('*@')
 		eparts[0] = eparts[0] or 'lambda _'
 
 		if eparts[0][0] in ('.', '['):
-			if '*' in expr[:2] or liquid:
-				raise self.meta['raise']('Attribute filter should not have modifiers')
+			if modifiers['*'] or modifiers['@']:
+				self.meta['raise']('Attribute filter should not have modifiers')
 			base = NodeExpression._parse_base(args + eparts[0], single = True)
 
-		if liquid and eparts[0] not in LIQUID_FILTERS:
-			raise self.meta['raise']("Unknown liquid filter: '@{}'".format(eparts[0]))
-		filter_name = '{}[{!r}]'.format(LIQUID_LIQUID_FILTERS, eparts[0]) if liquid else eparts[0]
+		if modifiers['@'] and eparts[0] not in LIQUID_FILTERS:
+			self.meta['raise']("Unknown liquid filter: '@{}'".format(eparts[0]))
+		filter_name = '{}[{!r}]'.format(
+			LIQUID_LIQUID_FILTERS, eparts[0]) if modifiers['@'] else eparts[0]
 
 		if len(eparts) == 2:
 			if base: # 2, 4, 5
@@ -329,14 +344,36 @@ class NodeExpression(_Node):
 			self.meta['precode'].dedent()
 			self.meta['precode'].add_line('')
 
-		sstream = Stream.from_string(string)
-		exprs   = sstream.split('|')
-		value   = NodeExpression._parse_base(exprs[0])
-
+		sstream      = Stream.from_string(string)
+		exprs        = sstream.split('|')
+		value        = NodeExpression._parse_base(exprs[0])
+		# tenary_stack: {{ x | ?bool | :"Yes" | :"No" }}
+		# 0: ? The mark for the start of tenary filter
+		# 1: x The base value
+		# 2: bool(x) The condition
+		# 3: lambda _: "Yes" The value for True
+		# 4: lambda _: "No" The value for False
+		tenary_stack = []
 		for expr in exprs[1:]:
 			if not expr:
 				self.meta['raise']('No filter specified')
-			value = self._parse_filter(expr, value)
+			if not tenary_stack:
+				value2 = self._parse_filter(expr, value, tenary_stack)
+				if tenary_stack:
+					# {{ "" | ?bool | :"Yes" | :"No"}}
+					# value == ""
+					# value2 == 'bool("")'
+					tenary_stack.append(value)
+					tenary_stack.append(value2)
+				value = value2
+				continue
+			value = self._parse_filter(expr, tenary_stack[1], tenary_stack)
+			tenary_stack.append(value)
+			if len(tenary_stack) == 5:
+				value = '(({2}) if ({1}) else ({3}))'.format(*tenary_stack[1:])
+				tenary_stack = []
+		if tenary_stack:
+			self.meta['raise']('Missing True/False actions for ternary filter')
 		return value
 
 	def start(self, string, lineno):
