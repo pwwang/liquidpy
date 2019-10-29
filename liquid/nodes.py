@@ -1,14 +1,14 @@
 """
 The nodes supported by liquidpy
 """
+#pylint:disable=too-many-statements
 import logging
 from .stream import Stream
-from .filters import liquid_filters
+from .filters import LIQUID_FILTERS
 from .exceptions import LiquidSyntaxError
 from .defaults import LIQUID_LOGGER_NAME, LIQUID_MODES, \
 	LIQUID_LIQUID_FILTERS, LIQUID_COMPILED_RR_APPEND, LIQUID_COMPILED_RR_EXTEND, \
 	LIQUID_COMPILED_RENDERED
-
 
 def pushstack(func):
 	"""Push the node to the stack"""
@@ -20,7 +20,7 @@ def pushstack(func):
 def popstack(func):
 	"""Pop the node from the stack"""
 	def retfunc(self, *args, **kwargs):
-		last = self.meta['stack'] and self.meta['stack'].pop() or None
+		last = self.meta['stack'].pop() if self.meta['stack'] else None
 		if last != self.name:
 			if last:
 				self.meta['raise'](
@@ -107,7 +107,7 @@ class NodeIf(_Node):
 	Node '{% if ... %} {% endif %}'
 	"""
 	@pushstack
-	def start(self, string, lineno, prefix = 'if ', suffix = ''):
+	def start(self, string, lineno, prefix = 'if ', suffix = ''): # pylint:disable=arguments-differ
 		"""Start to compile the node"""
 		if not string:
 			self.meta['raise']('No expressions for statement "{}"'.format(self.name))
@@ -243,7 +243,7 @@ class NodeExpression(_Node):
 		if len(parts) > 1:
 			return '({})'.format(', '.join(NodeExpression._parse_base(part, single = True)
 				for part in parts))
-		elif minbrkt > 0:
+		if minbrkt > 0:
 			# if we cannot, like (1), (1,2), ((1,2), [3,4]), try to remove the bracket again ->
 			#   "1", "1,2", "(1,2), [3,4]"
 			parts = Stream.from_string(expr[1:-1]).split(',')
@@ -265,26 +265,20 @@ class NodeExpression(_Node):
 		9. {{a | : _ + 1}}
 		10.{{a, b | *min}}
 		"""
-		estream  = Stream.from_string(expr)
-		eparts   = estream.split(':', limit = 1)
-		base     = None
-		is_tuple = args[0] == '(' and args[-1] == ')'
-		star     = liquid  = ''
-		if '*' in expr[:2]:
-			star = True
-		argprefix = '*' if is_tuple and star else ''
-		if '@' in expr[:2]:
-			liquid = True
+		estream   = Stream.from_string(expr)
+		eparts    = estream.split(':', limit = 1)
+		base      = None
+		argprefix = '*' if args[0] == '(' and args[-1] == ')' and '*' in expr[:2] else ''
+		liquid = '@' in expr[:2]
 		eparts[0] = eparts[0].lstrip('*@')
-		if not eparts[0]:
-			eparts[0] = 'lambda _'
+		eparts[0] = eparts[0] or 'lambda _'
 
 		if eparts[0][0] in ('.', '['):
-			if star or liquid:
+			if '*' in expr[:2] or liquid:
 				raise self.meta['raise']('Attribute filter should not have modifiers')
 			base = NodeExpression._parse_base(args + eparts[0], single = True)
 
-		if liquid and eparts[0] not in liquid_filters:
+		if liquid and eparts[0] not in LIQUID_FILTERS:
 			raise self.meta['raise']("Unknown liquid filter: '@{}'".format(eparts[0]))
 		filter_name = '{}[{!r}]'.format(LIQUID_LIQUID_FILTERS, eparts[0]) if liquid else eparts[0]
 
@@ -311,10 +305,8 @@ class NodeExpression(_Node):
 			if not found_args:
 				faparts.insert(0, argprefix + args)
 			return '{}({})'.format(filter_name, ', '.join(faparts))
-		elif base: # 1, 3
-			return base
-		else: # 10
-			return '{}({})'.format(filter_name, argprefix + args)
+		#      1, 3 or 10
+		return base or '{}({})'.format(filter_name, argprefix + args)
 
 	def _parse(self, string):
 		"""Start to parse the node"""

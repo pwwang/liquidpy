@@ -1,3 +1,6 @@
+"""
+Stream helper for liquidpy
+"""
 import io
 
 def words_to_matrix(words):
@@ -129,7 +132,7 @@ class Stream:
 		return self.stream.read()
 
 	def split(self, delimiter, limit = 0, trim = True,
-		wraps = ['{}', '[]', '()'], quotes = '"\'`', escape = '\\'):
+		wraps = None, quotes = '"\'`', escape = '\\'):
 		"""
 		Split the string of the stream
 		@params:
@@ -142,6 +145,7 @@ class Stream:
 		@returns:
 			list: The split strings
 		"""
+		wraps = ['{}', '[]', '()'] if wraps is None else wraps
 		preceding, stop = self.until([delimiter], False, wraps, quotes, escape)
 		ret = [preceding.strip() if trim else preceding]
 		nsplit = 0
@@ -155,7 +159,7 @@ class Stream:
 			ret.append(preceding.strip() if trim else preceding)
 		return ret
 
-	def until(self, words, greedy = True, wraps = ['{}', '[]', '()'], quotes = '"\'`', escape = '\\'):
+	def until(self, words, greedy = True, wraps = None, quotes = '"\'`', escape = '\\'):
 		"""
 		Get the string until certain words
 		For example:
@@ -180,6 +184,8 @@ class Stream:
 			str: The string that has been searched
 			str: The matched word
 		"""
+		# pylint:disable=too-many-locals,too-many-nested-blocks,too-many-branches
+		wraps = ['{}', '[]', '()'] if wraps is None else wraps
 		ret               = ''
 		matrix            = words_to_matrix(words)
 		len_matrix        = len(matrix)
@@ -239,4 +245,3 @@ class Stream:
 				matched_chars = ''
 
 			char = self.next()
-

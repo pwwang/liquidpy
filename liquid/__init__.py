@@ -3,7 +3,11 @@ Liquid template engine for python
 """
 import logging
 import keyword
-
+from .stream import Stream
+from .parser import LiquidLine, LiquidCode, LiquidParser
+from .exceptions import LiquidSyntaxError, LiquidRenderError, LiquidWrongKeyWord, \
+	_show_source_context
+from .filters import LIQUID_FILTERS, PYTHON_FILTERS
 from .defaults import LIQUID_LOGGER_NAME, LIQUID_DEFAULT_ENVS, LIQUID_RENDER_FUNC_NAME, \
 	LIQUID_COMPILED_RENDERED, LIQUID_COMPILED_RR_APPEND, LIQUID_COMPILED_RR_EXTEND, \
 	LIQUID_COMPILED_CONTEXT, LIQUID_SOURCE_NAME, LIQUID_DEBUG_SOURCE_CONTEXT, \
@@ -14,11 +18,6 @@ logging.basicConfig(
 	format = '[%(asctime)-15s %(levelname)5s] %(message)s')
 LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
 
-from .stream import Stream
-from .parser import LiquidLine, LiquidCode, LiquidParser
-from .exceptions import LiquidSyntaxError, LiquidRenderError, LiquidWrongKeyWord, \
-	_show_source_context
-from .filters import liquid_filters, python_filters
 
 def _check_envs(envs, additional = None):
 	"""
@@ -30,20 +29,20 @@ def _check_envs(envs, additional = None):
 		`True` if passed else `False`
 	"""
 	additional = additional or []
-	for kw in envs:
-		if not kw or not kw.strip():
+	for kword in envs:
+		if not kword or not kword.strip():
 			raise LiquidWrongKeyWord('Empty string cannot be used as variable name.')
-		elif kw in LIQUID_DEFAULT_ENVS:
+		if kword in LIQUID_DEFAULT_ENVS:
 			raise LiquidWrongKeyWord('"{}" cannot be used as variable name, as'
-				'it is bound to value {!r}'.format(kw, LIQUID_DEFAULT_ENVS[kw]))
-		elif kw in keyword.kwlist:
+				'it is bound to value {!r}'.format(kword, LIQUID_DEFAULT_ENVS[kword]))
+		if kword in keyword.kwlist:
 			raise LiquidWrongKeyWord('"{}" cannot be used as variable name, as'
-				'it is a python language keyword.'.format(kw))
-		elif kw in (*additional, LIQUID_RENDER_FUNC_NAME,
+				'it is a python language keyword.'.format(kword))
+		if kword in (*additional, LIQUID_RENDER_FUNC_NAME,
 			LIQUID_COMPILED_RENDERED, LIQUID_COMPILED_RR_APPEND, LIQUID_COMPILED_RR_EXTEND,
 			LIQUID_LIQUID_FILTERS):
 			raise LiquidWrongKeyWord('"{}" cannot be used as variable name, as'
-			'it is a liquidpy keyword.'.format(kw))
+			'it is a liquidpy keyword.'.format(kword))
 
 class Liquid:
 
@@ -65,6 +64,7 @@ class Liquid:
 			LOGGER.setLevel(logging.DEBUG)
 		else:
 			LOGGER.setLevel(logging.INFO)
+		return None
 
 	def __init__(self, text = '', **envs):
 		"""
@@ -83,8 +83,8 @@ class Liquid:
 		_check_envs(envs)
 		self.envs   = LIQUID_DEFAULT_ENVS.copy()
 		self.envs.update(envs)
-		self.envs.update(python_filters)
-		self.envs[LIQUID_LIQUID_FILTERS] = liquid_filters
+		self.envs.update(PYTHON_FILTERS)
+		self.envs[LIQUID_LIQUID_FILTERS] = LIQUID_FILTERS
 
 		self.precode  = LiquidCode()
 		self.code     = LiquidCode()
@@ -121,11 +121,11 @@ class Liquid:
 		finalcode.add_code(self.precode)
 		finalcode.add_code(self.code)
 		strcode = str(finalcode)
-		LOGGER.debug("The compiled code:\n" + strcode)
+		LOGGER.debug("The compiled code:\n%s", strcode)
 		try:
 			strcode = compile(strcode, LIQUID_SOURCE_NAME, 'exec')
 			localns = {}
-			exec(strcode, None, localns)
+			exec(strcode, None, localns) # pylint: disable=exec-used
 			return localns[LIQUID_RENDER_FUNC_NAME](final_context)
 		except Exception:
 			import traceback

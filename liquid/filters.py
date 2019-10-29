@@ -2,15 +2,14 @@
 Built-in filters for liquidpy
 """
 
-__all__ = ['liquid_filters', 'python_filters']
+__all__ = ['LIQUID_FILTERS', 'PYTHON_FILTERS']
 
 def _abs(val):
 	"""Return the absolute value of val"""
 	if not isinstance(val, int) and not isinstance(val, float):
 		if val.isdigit() or (val[0] in ['+', '-'] and val[1:].isdigit()):
 			return abs(int(val))
-		else:
-			return abs(float(val))
+		return abs(float(val))
 	return abs(val)
 
 def _date(val, outformat, informat = None):
@@ -22,12 +21,12 @@ def _date(val, outformat, informat = None):
 		return datetime.today().strftime(outformat)
 	return datetime.strptime(val, informat).strftime(outformat)
 
-def _truncatewords(val, l, end = '...'):
+def _truncatewords(val, length, end = '...'):
 	"""Truncate a sentence"""
 	words = val.split()
-	if len(words) <= l:
+	if len(words) <= length:
 		return ' '.join(words)
-	return ' '.join(words[:l]) + end
+	return ' '.join(words[:length]) + end
 
 def _split(val, sep, limit = -1):
 	"""Split a string"""
@@ -63,7 +62,7 @@ def _map(objs, attr):
 	except AttributeError:
 		return [obj[attr] for obj in objs]
 
-liquid_filters = dict(
+LIQUID_FILTERS = dict(
 	abs        = _abs,
 	append     = lambda x, y: str(x) + str(y),
 	capitalize = lambda x: str(x).capitalize(),
@@ -111,7 +110,7 @@ liquid_filters = dict(
 	url_decode = _url_decode
 )
 
-python_filters = dict(
+PYTHON_FILTERS = dict(
 	ifelse = lambda _, condition, yes, no: (yes(_) if callable(yes) else yes) \
 		if (condition(_) if callable(condition) else condition) \
 		else (no(_) if callable(no) else no)

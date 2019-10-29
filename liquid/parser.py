@@ -2,7 +2,6 @@
 The parser for liquidpy
 """
 import logging
-from . import nodes as liquid_nodes
 from .exceptions import LiquidSyntaxError
 from .defaults import LIQUID_DEFAULT_MODE, LIQUID_COMPACT_TAGS, LIQUID_PAIRED_TAGS, \
 	LIQUID_OPEN_TAGS, LIQUID_LOGGER_NAME, LIQUID_EXPR_OPENTAG, LIQUID_EXPR_OPENTAG_COMPACT, \
@@ -10,9 +9,6 @@ from .defaults import LIQUID_DEFAULT_MODE, LIQUID_COMPACT_TAGS, LIQUID_PAIRED_TA
 	LIQUID_STATE_OPENTAG_COMPACT, LIQUID_STATE_CLOSETAG, LIQUID_STATE_CLOSETAG_COMPACT
 
 LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
-
-LIQUID_NODES = {name[4:].lower(): getattr(liquid_nodes, name)
-	for name in dir(liquid_nodes) if name.startswith('Node')}
 
 class LiquidLine:
 	"""
@@ -39,7 +35,7 @@ class LiquidLine:
 		"""Stringify the object"""
 		return "{}{}\n".format(" " * 2 * self.ndent, self.line)
 
-class LiquidCode(object):
+class LiquidCode:
 	"""
 	Build source code conveniently.
 	"""
@@ -98,7 +94,6 @@ class LiquidCode(object):
 		"""
 		self.ndent -= self.INDENT_STEP
 
-
 class LiquidParser:
 	"""
 	The parser class for liquidpy
@@ -112,6 +107,7 @@ class LiquidParser:
 			precode (LiquidCode): The precode object
 			code (LiquidCode): The main code object
 		"""
+		from . import nodes as liquid_nodes
 		self.stream    = stream
 		self.meta      = {
 			'mode'    : LIQUID_DEFAULT_MODE,
@@ -122,7 +118,8 @@ class LiquidParser:
 		}
 		self.lineno = 1
 		self.endtag = None # previous closing tag
-		self.nodes  = {name: node(self.meta) for name, node in LIQUID_NODES.items()}
+		self.nodes  = {name[4:].lower(): getattr(liquid_nodes, name)(self.meta)
+			for name in dir(liquid_nodes) if name.startswith('Node')}
 
 	def raise_ex(self, msg):
 		"""
@@ -132,8 +129,7 @@ class LiquidParser:
 		"""
 		if LOGGER.level < 20:
 			raise LiquidSyntaxError(msg, self.lineno, self.stream) from None
-		else:
-			raise LiquidSyntaxError(msg, self.lineno) from None
+		raise LiquidSyntaxError(msg, self.lineno) from None
 
 	def parse(self):
 		"""
@@ -278,4 +274,3 @@ class LiquidParser:
 			self.nodes[name].end()
 		else:
 			self.nodes[name].start(rest, self.lineno)
-
