@@ -189,7 +189,7 @@ You can also use `liquidpy` expressions (`{{ ... }}`) in the conditions, but you
 {% endif %}
 ```
 
-!!! note:
+!!! note
 
     We support "dot" operation to get the value of a key from dictionaries. For example: `Liquid("{{a.x}}").render(a = {"x": 1})`. However, when you use it in `if/unless/while` conditions, you have to use backticks to quote it.
 
