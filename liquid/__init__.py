@@ -15,11 +15,7 @@ from .defaults import LIQUID_LOGGER_NAME, LIQUID_DEFAULT_ENVS, LIQUID_RENDER_FUN
 	LIQUID_COMPILED_CONTEXT, LIQUID_SOURCE_NAME, LIQUID_DEBUG_SOURCE_CONTEXT, \
 	LIQUID_LIQUID_FILTERS
 
-logging.basicConfig(
-	level  = logging.INFO,
-	format = '[%(asctime)-15s %(levelname)5s] %(message)s')
 LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
-
 
 def _check_envs(envs, additional = None):
 	"""
@@ -63,6 +59,11 @@ class Liquid:
 		if dbg is None:
 			return LOGGER.level <= logging.DEBUG
 		if dbg:
+			if not LOGGER.handlers:
+				handler = logging.StreamHandler()
+				handler.setFormatter(logging.Formatter(
+					'[%(asctime)-15s %(levelname)5s] %(message)s'))
+				LOGGER.addHandler(handler)
 			LOGGER.setLevel(logging.DEBUG)
 		else:
 			LOGGER.setLevel(logging.INFO)
@@ -80,8 +81,9 @@ class Liquid:
 			raise ValueError('Cannot have both "text" and "from_file" specified, '
 				'choose either one.')
 
-		self.stream = Stream.from_string(text) if text else \
-			Stream.from_file(envs.pop('from_file'))
+		self.stream = Stream.from_file(envs.pop('from_file')) if 'from_file' in envs \
+			else Stream.from_string(text)
+
 		_check_envs(envs)
 		self.envs   = LIQUID_DEFAULT_ENVS.copy()
 		self.envs.update(envs)
