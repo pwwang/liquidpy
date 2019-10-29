@@ -1,6 +1,8 @@
 """
 Liquid template engine for python
 """
+__version__ = '0.1.0'
+
 import logging
 import keyword
 from .stream import Stream
