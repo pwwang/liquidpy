@@ -1,4 +1,4 @@
-__all__ = ['filters']
+__all__ = ['liquid_filters', 'python_filters']
 
 def _abs(val):
 	if not isinstance(val, int) and not isinstance(val, float):
@@ -46,7 +46,13 @@ def _url_encode(val):
 		from urllib.parse import urlencode
 	return urlencode({'': val})[1:]
 
-filters = dict(
+def _map(objs, attr):
+	try:
+		return [getattr(obj, attr) for obj in objs]
+	except AttributeError:
+		return [obj[attr] for obj in objs]
+
+liquid_filters = dict(
 	abs        = _abs,
 	append     = lambda x, y: str(x) + str(y),
 	capitalize = lambda x: str(x).capitalize(),
@@ -55,7 +61,7 @@ filters = dict(
 	at_most    = max,
 	ceil       = lambda x: __import__('math').ceil(float(x)),
 	compact    = lambda x: list(filter(None, x)),
-	map        = lambda x, y: [getattr(v, y) for v in x],
+	map        = _map,
 	concat     = lambda x, y: x + y,
 	split      = _split,
 	date       = _date,
@@ -92,4 +98,10 @@ filters = dict(
 	upcase     = lambda x: str(x).upper(),
 	url_encode = _url_encode,
 	url_decode = _url_decode
+)
+
+python_filters = dict(
+	ifelse = lambda _, condition, yes, no: (yes(_) if callable(yes) else yes) \
+		if (condition(_) if callable(condition) else condition) \
+		else (no(_) if callable(no) else no)
 )
