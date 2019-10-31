@@ -73,14 +73,32 @@ def test_stream_init(tmp_path):
 	("abc\"'\"{%-'def", ["{%", "{%-", "{{"], True, ("abc\"'\"", "{%-"), "'"),
 	("abc({%-)def", ["{%", "{%-", "{{"], True, ("abc({%-)def", None), ""),
 	("%}", ["%}", "-%}"], True, ("", "%}"), ""),
-	("a ,b", [","], False, ("a ", ","), "b"),
+	("a ,b", [","], False, ("a ", ","), "b")
 ])
 def test_until(string, words, greedy, expected, nextchar):
 	s = stream.LiquidStream.from_string(string)
 	assert s.until(words, greedy) == expected
 	assert s.next() == nextchar
 
-def test_until_until():
+def test_until_until1():
+	string = stream.LiquidStream.from_string('mark: special job{{job.index}}" > {{job.outdir}}\\/job.report.data.yaml')
+	leading, tag = string.until(['{{', '{{-'], wraps = [], quotes = [])
+	assert leading == 'mark: special job'
+	assert tag == '{{'
+	leading, tag = string.until(['}}', '-}}'])
+	assert leading == 'job.index'
+	assert tag == '}}'
+	leading, tag = string.until(['{{', '{{-'], wraps = [], quotes = [])
+	assert leading == '" > '
+	assert tag == '{{'
+	leading, tag = string.until(['}}', '-}}'])
+	assert leading == 'job.outdir'
+	assert tag == '}}'
+	leading, tag = string.until(['{{', '{{-'], wraps = [], quotes = [])
+	assert leading == '\\/job.report.data.yaml'
+	assert tag == None
+
+def test_until_until2():
 	string = stream.LiquidStream.from_string(
 		'{% mode loose -%}\n{% assign my_variable = "tomato" %}{{ my_variable }}')
 	leading, tag = string.until(['{%', '{%-', '{{'])

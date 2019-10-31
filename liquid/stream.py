@@ -231,10 +231,15 @@ class LiquidStream:
 		quote_flags       = [False for _ in range(len(quotes))]
 		escape_flags      = False
 		char              = self.next()
+		#print('START', '-' * 10, matrix)
 		while True:
+			#print(char, end = ' ')
 			if not char:
 				return ret, matched_candidate
 			if char == escape:
+				if matched_candidate and escape not in matrix[len(matched_candidate)]:
+					self.back()
+					return ret, matched_candidate
 				escape_flags = not escape_flags
 				ret += matched_chars + char
 				matched_chars = ''
@@ -248,11 +253,15 @@ class LiquidStream:
 					# make sure I am not quoted
 					quote_flags[quote_index[char]] = not quote_flags[quote_index[char]]
 				if sum(wrap_flags) > 0 or any(quote_flags):
+					if matched_candidate:
+						self.back()
+						return ret, matched_candidate
 					ret += matched_chars + char
 					matched_chars = ''
 				else:
 					len_matched_chars = len(matched_chars)
 					matching_dict = matrix[len_matched_chars]
+					#print(' ', len_matched_chars, matching_dict)
 					if char in matching_dict:
 						matched_chars += char
 						endings = matching_dict[char]
@@ -260,6 +269,7 @@ class LiquidStream:
 							return ret, matched_chars
 						if endings:
 							matched_candidate = matched_chars
+							#print('mm', matched_candidate)
 							if len_matched_chars + 1 == len_matrix: # we have matched all chars
 								return ret, matched_chars
 
