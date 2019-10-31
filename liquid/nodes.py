@@ -477,10 +477,21 @@ class NodeFor(_Node):
 			self.parser.raise_ex('Statement "for" expects format: "for var1, var2 in expr"')
 		_check_envs({lvar.strip():1 for lvar in parts[0].split(',')})
 
+		# forloop for nesting fors
+		nest_fors = self.parser.stack.count('for') - 1 # I am in stack already
+		if nest_fors > 0:
+			self.parser.code.add_line('forloop{} = forloop'.format(nest_fors))
 		self.parser.code.add_line('for forloop, {} in {}({}):'.format(
 			parts[0].strip(), NodeFor.LIQUID_FORLOOP_CLASS,
 			NodeExpression(self.parser)._parse(parts[1].strip())), self.parser)
 		self.parser.code.indent()
+
+	@pop_stack
+	def end(self):
+		self.parser.code.dedent()
+		nest_fors = self.parser.stack.count('for')
+		if nest_fors > 0:
+			self.parser.code.add_line('forloop = forloop{}'.format(nest_fors))
 
 class NodeCycle(_Node):
 

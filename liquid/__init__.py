@@ -130,9 +130,9 @@ class Liquid:
 		strcode = str(finalcode)
 		LOGGER.debug("The compiled code:\n%s", strcode)
 		try:
-			strcode = compile(strcode, LIQUID_SOURCE_NAME, 'exec')
+			execode = compile(strcode, LIQUID_SOURCE_NAME, 'exec')
 			localns = {}
-			exec(strcode, None, localns) # pylint: disable=exec-used
+			exec(execode, None, localns) # pylint: disable=exec-used
 			return localns[LIQUID_RENDER_FUNC_NAME](final_context)
 		except Exception:
 			import traceback
@@ -157,7 +157,7 @@ class Liquid:
 			msg.append('')
 			msg.append('Compiled source (turn debug off to hide this):')
 			msg.append('----------------------------------------------')
-			msg.extend(LiquidStream.from_string(str(strcode)).get_context(lineno))
+			msg.extend(LiquidStream.from_string(strcode).get_context(lineno))
 
 			msg.append('')
 			msg.append('Context:')

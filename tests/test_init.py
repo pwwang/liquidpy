@@ -453,3 +453,16 @@ def test_cycle(debug):
 """)
 	liquid.render() == 'abcabcabca'
 
+def test_nested_for(debug):
+	liq = Liquid("""{% mode compact %}
+{% for i in "a" %}
+  {% for j in "c", "d" %}
+    {% for k in "e", "f", "g" %}
+    {{i}}-{{j}}-{{k}}-{{forloop.length}}/
+	{% endfor %}
+	{{forloop.length}}/
+  {% endfor %}
+  {{forloop.length}}/
+{% endfor %}
+""")
+	assert liq.render() == 'a-c-e-3/a-c-f-3/a-c-g-3/2/a-d-e-3/a-d-f-3/a-d-g-3/2/1/'
