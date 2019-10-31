@@ -1,8 +1,10 @@
 import sys
-from os import path
+from pathlib import Path
 import pytest
 import liquid
 from liquid import Liquid, LiquidSyntaxError, LiquidRenderError
+
+HERE = Path(__file__).parent.resolve()
 
 Liquid.debug(True)
 @pytest.mark.parametrize('text, data, out', [
@@ -155,6 +157,7 @@ pants
 
 ])
 def test_render_2(text, data, out):
+	Liquid.debug(True)
 	l = Liquid(text)
 	assert l.render(**data) == out
 
@@ -530,7 +533,7 @@ def test_render_9(text, data, out):
 @pytest.mark.parametrize('text, data, out', [
 		# 154
 		# {{ x | .__file__}} => x.__file__
-	("{{path | .__file__}}", {'path': path}, path.__file__),
+	("{{module | .__file__}}", {'module': pytest}, pytest.__file__),
 		# {{ x | .join(["a", "b"]) }} => x.join(["a", "b"])
 	("{{',' | .join(['a', 'b']) }}", {}, 'a,b'),
 		# {{ x | .join: ["a", "b"]}} => x.join(["a", "b"])
@@ -643,40 +646,46 @@ def test_render(text, data, out):
 		{% endcapture %}
 		b
 		a
-		{% if %}{%endif%}''', LiquidSyntaxError, 'No expressions for statement "if" at line 6'),
+		{% if %}{%endif%}''', LiquidSyntaxError, 'No expressions for statement "if"'),
 	('{% for %}', LiquidSyntaxError, 'Statement "for" expects format: "for var1, var2 in expr"'),
-	('{% while %}', LiquidSyntaxError, 'No expressions for statement "while" at line 1'),
-	('{% break %}', LiquidSyntaxError, 'Statement "break" must be in a loop at line 1'),
+	('{% while %}', LiquidSyntaxError, 'No expressions for statement "while"'),
+	('{% break %}', LiquidSyntaxError, 'Statement "break" must be in a loop'),
 	('{% elsif x %}', LiquidSyntaxError, '"elseif/elif/elsif" must be in an "if/unless" statement'),
-	('{% else %}', LiquidSyntaxError, '"else" must be in an if/unless/case statement at line 1'),
-	('{% endif x %}', LiquidSyntaxError, "Additional expression for 'endif' at line 1"),
-	('{% endif %}', LiquidSyntaxError, "Unmatched end tag: 'endif' at line 1"),
-	('{% endx %}', LiquidSyntaxError, "Unknown statement: 'endx' at line 1"),
-	('{% continue %}', LiquidSyntaxError, 'Statement "continue" must be in a loop at line 1'),
+	('{% else %}', LiquidSyntaxError, '"else" must be in an if/unless/case statement'),
+	('{% endif x %}', LiquidSyntaxError, "Additional expression for 'endif'"),
+	('{% endif %}', LiquidSyntaxError, "Unmatched end tag: 'endif'"),
+	('{% endx %}', LiquidSyntaxError, "Unknown statement: 'endx'"),
+	('{% continue %}', LiquidSyntaxError, 'Statement "continue" must be in a loop'),
 	('{% when x %}', LiquidSyntaxError, '"when" must be in a "case" statement'),
-	('{% endcapture %}', LiquidSyntaxError, "Unmatched end tag: 'endcapture' at line 1"),
-	('{% if x %}{% endfor %}', LiquidSyntaxError, "Unmatched end tag: 'endfor', expect 'endif' at line 1"),
-	('{% if x %}', LiquidSyntaxError, "Statement 'if' not closed at line 1"),
-	('{{ x | @nosuch }}', LiquidSyntaxError, "Unknown liquid filter: '@nosuch' at line 1"),
-	('{%while true%}{% break 1 %}{%endwhile%}', LiquidSyntaxError, "Additional expressions for 'break' at line 1"),
-	('{% assign %}', LiquidSyntaxError, 'Statement "assign" should be in format of "assign a, b = x | filter" at line 1'),
-	('{% increment %}', LiquidSyntaxError, "No variable specified for 'increment' at line 1"),
-	('{% decrement %}', LiquidSyntaxError, "No variable specified for 'decrement' at line 1"),
-	('{% assign x %}', LiquidSyntaxError, 'Statement "assign" should be in format of "assign a, b = x | filter" at line 1'),
-	('{% if x %}{% else x %}{% endif %}', LiquidSyntaxError, '"else" should not be followed by any expressions at line 1'),
-	('{% if x %}{% else if %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if" at line 1'),
-	('{% if x %}{% elseif %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if" at line 1'),
-	('{% if x %}{% elsif %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if" at line 1'),
-	('{% if x %}{% elif %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if" at line 1'),
-	('{%  %}', LiquidSyntaxError, 'Empty node at line 1'),
-	('{% raw %}', LiquidSyntaxError, "Expecting closing a tag for 'raw' at line 1"),
+	('{% endcapture %}', LiquidSyntaxError, "Unmatched end tag: 'endcapture'"),
+	('{% if x %}{% endfor %}', LiquidSyntaxError, "Unmatched end tag: 'endfor', expect 'endif'"),
+	('{% if x %}', LiquidSyntaxError, "Statement 'if' not closed"),
+	('{{ x | @nosuch }}', LiquidSyntaxError, "Unknown liquid filter: '@nosuch'"),
+	('{%while true%}{% break 1 %}{%endwhile%}', LiquidSyntaxError, "Additional expressions for 'break'"),
+	('{% assign %}', LiquidSyntaxError, 'Statement "assign" should be in format of "assign a, b = x | filter"'),
+	('{% increment %}', LiquidSyntaxError, "No variable specified for 'increment'"),
+	('{% decrement %}', LiquidSyntaxError, "No variable specified for 'decrement'"),
+	('{% assign x %}', LiquidSyntaxError, 'Statement "assign" should be in format of "assign a, b = x | filter"'),
+	('{% if x %}{% else x %}{% endif %}', LiquidSyntaxError, '"else" should not be followed by any expressions'),
+	('{% if x %}{% else if %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if"'),
+	('{% if x %}{% elseif %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if"'),
+	('{% if x %}{% elsif %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if"'),
+	('{% if x %}{% elif %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if"'),
+	('{%  %}', LiquidSyntaxError, 'Empty node'),
+	('{% raw %}', LiquidSyntaxError, "Expecting an end statement for 'raw'"),
 	('{% mode  %}', LiquidSyntaxError, "Expecting a mode value"),
+	('{% block  %}', LiquidSyntaxError, "Expecting a block name"),
 	('{% mode aa debug cc %}', LiquidSyntaxError, "Mode can only take at most 2 values"),
 	('{% mode aa debug %}', LiquidSyntaxError, "Not a valid mode: 'aa'"),
 	('{% mode loose notaloglevel %}', LiquidSyntaxError, "Not a valid loglevel: 'NOTALOGLEVEL'"),
 	('{% comment # * // %}', LiquidSyntaxError, "Comments can only be wrapped by no more than 2 strings"),
+	('{% assign x = 1 %}{% extends x.liq %}', LiquidSyntaxError, "Statement 'extends' should be place at the top or after 'mode'"),
+	('{{% extends {}/templates/parent1.liq %}}{{{{  1  }}}}'.format(HERE),
+		LiquidSyntaxError, "Only blocks allowed in template extending others"),
+	('{{% extends {}/templates/parent1.liq %}}{{%  assign a = 1  %}}'.format(HERE),
+		LiquidSyntaxError, "Only blocks allowed in template extending others"),
 	('{{ "" | *.join: }}', LiquidSyntaxError, "Attribute filter should not have modifiers"),
-	('{{ "" | @:_ }}', LiquidSyntaxError, "Unknown liquid filter: '@lambda _' at line 1"),
+	('{{ "" | @:_ }}', LiquidSyntaxError, "Unknown liquid filter: '@lambda _'"),
 	('{{ "" | }}', LiquidSyntaxError, "No filter specified"),
 	('{{ }}', LiquidSyntaxError, "Empty node"),
 	('{{ "" | ?bool }}', LiquidSyntaxError, "Missing True/False actions for ternary filter"),
@@ -714,8 +723,8 @@ def test_multiline_support():
 	Liquid.debug(False)
 
 @pytest.mark.parametrize('text, data, exception, exmsg', [
-	('{{a}}', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?\n\nAt source line 1:"),
-	('{% assign a.b = 1 %}', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?\n\nAt source line 1:"),
+	('{{a}}', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?"),
+	('{% assign a.b = 1 %}', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?"),
 	('''{% capture x %}
 		wrer
 		x
@@ -726,13 +735,61 @@ def test_multiline_support():
 		b
 		a
 {% assign a.b = 1 %}
-''', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?\n\nAt source line 10:"),
+''', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?"),
 	('{% mode info %}{% python 1/0 %}', {}, LiquidRenderError, "ZeroDivisionError: "),
 	('''{% mode info loose %}
-{% assign a.b = 1 %}''', {'a': 1}, LiquidRenderError, "AttributeError: 'int' object has no attribute 'b'\n\nAt source line 2"),
+{% assign a.b = 1 %}''', {'a': 1}, LiquidRenderError, "AttributeError: 'int' object has no attribute 'b'"),
 ])
 def test_renderException(text, data, exception, exmsg):
 	liquid = Liquid(text, **data)
 	with pytest.raises(exception) as exc:
 		liquid.render()
 	assert exmsg in str(exc.value)
+
+
+def test_include():
+	dbg = Liquid.debug()
+	Liquid.debug(True)
+	liquid = Liquid("""{{% mode compact %}}
+	{{% assign x = x + 1 %}}
+	{{% include {}/templates/include1.liq %}}
+	{{{{x}}}}
+	""".format(HERE))
+	assert liquid.render(x = 1) == '20'
+
+	with pytest.raises(LiquidSyntaxError):
+		# include self
+		Liquid(from_file = HERE.joinpath('templates', 'include2.liq'))
+
+	with pytest.raises(LiquidSyntaxError): # not exists
+		Liquid('{% include xxx.liquid %}')
+	Liquid.debug(dbg)
+
+def test_extends():
+	liquid = Liquid("""{{% mode compact %}}
+	{{% extends {}/templates/parent1.liq %}}
+	{{% block x %}}
+	{{{{x * 10}}}}
+	{{% endblock %}}
+	""".format(HERE))
+	liquid.render(x = 1) == '10'
+
+	liquid = Liquid("""{{% mode compact %}}
+	{{% extends {}/templates/parent2.liq %}}
+	{{% block y %}}
+	{{{{x * 10}}}}
+	{{% endblock %}}
+	""".format(HERE))
+	liquid.render(x = 1) == '3'
+
+	with pytest.raises(LiquidSyntaxError): # not exists
+		Liquid("{% extends 'xxx' %}")
+
+	# only blocks, ignored
+	liquid = Liquid("""{{% mode compact %}}
+	{{% block x %}}
+	{{{{x * 10}}}}
+	{{% endblock %}}
+	""".format(HERE))
+	liquid.render(x = 1) == '10'
+

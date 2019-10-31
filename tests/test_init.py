@@ -1,6 +1,8 @@
 import pytest
 import logging
+from pathlib import Path
 from liquid import Liquid, _check_envs
+from liquid.stream import LiquidStream
 from liquid.defaults import LIQUID_LOGGER_NAME
 from liquid.exceptions import LiquidWrongKeyWord, LiquidRenderError, LiquidSyntaxError
 
@@ -209,6 +211,7 @@ def test_init():
 	with pytest.raises(ValueError):
 		Liquid("a", from_file="b")
 
+
 def test_render_error():
 	liq = Liquid("""{% for i in a %}{{i}}{%endfor%}
 1
@@ -225,10 +228,220 @@ def test_render_error():
 		liq.render(b=1)
 	Liquid.debug(False)
 
-def test_syntax_error():
+@pytest.fixture
+def debug():
+	dbg = Liquid.debug()
 	Liquid.debug(True)
-	with pytest.raises(LiquidSyntaxError):
-		Liquid("{%")
-	Liquid.debug(False)
-	with pytest.raises(LiquidSyntaxError):
-		Liquid("{%")
+	yield
+	Liquid.debug(dbg)
+
+@pytest.fixture
+def HERE():
+	return Path(__file__).parent.resolve()
+
+def test_syntax_error_single_include(debug, HERE):
+	with pytest.raises(LiquidSyntaxError) as exc:
+		Liquid("""1
+2
+3
+4
+5
+6
+7
+{{% include {}/templates/include3.liq %}}
+9
+10
+11
+12
+13
+14
+""".format(HERE))
+	# liquid.exceptions.LiquidSyntaxError: Statement "for" expects format: "for var1, var2 in expr"
+	#
+	# Template call stacks:
+	# ----------------------------------------------
+	# File <LIQUID TEMPLATE SOURCE>
+	#   > 8. {% include /.../liquidpy/tests/templates/include3.liq %}
+	# File /.../liquidpy/tests/templates/include3.liq
+	#     4.  4. comment
+	#     5.  5. {% endcomment %}
+	#     6.  6. {% for multi
+	#     7.  7.    line, just
+	#     8.  8.    to check if the
+	#   > 9.  9.    line number is correct %}
+	#     10. 10. {{ "I have" +
+	#     11. 11.  "some other lines" }}
+	#     12. 12. {% endfor %}
+	stream = LiquidStream.from_string(str(exc.value))
+	_, tag = stream.until(['Statement "for" expects format: "for var1, var2 in expr"'])
+	assert bool(tag)
+	_, tag = stream.until(['Template call stacks:'])
+	assert bool(tag)
+	_, tag = stream.until(['> 8. {% include'])
+	assert bool(tag)
+	_, tag = stream.until(['liquidpy/tests/templates/include3.liq'])
+	assert bool(tag)
+	_, tag = stream.until(['4.  4. comment'])
+	assert bool(tag)
+	_, tag = stream.until(['5.  5. {% endcomment %}'])
+	assert bool(tag)
+	_, tag = stream.until(['6.  6. {% for multi'])
+	assert bool(tag)
+	_, tag = stream.until(['7.  7.    line, just'])
+	assert bool(tag)
+	_, tag = stream.until(['8.  8.    to check if the'])
+	assert bool(tag)
+	_, tag = stream.until(['> 9.  9.    line number is correct %}'])
+	assert bool(tag)
+	_, tag = stream.until(['10. 10. {{ "I have" +'])
+	assert bool(tag)
+	_, tag = stream.until(['11. 11.  "some other lines" }}'])
+	assert bool(tag)
+	_, tag = stream.until(['12. 12. {% endfor %}'])
+	assert bool(tag)
+
+def test_syntax_error_multi_include(debug, HERE):
+	with pytest.raises(LiquidSyntaxError) as exc:
+		Liquid("{{% include {}/templates/include4.liq %}}".format(HERE))
+
+	stream = LiquidStream.from_string(str(exc.value))
+	_, tag = stream.until(['Statement "for" expects format: "for var1, var2 in expr"'])
+	assert bool(tag)
+	_, tag = stream.until(['Template call stacks:'])
+	assert bool(tag)
+	_, tag = stream.until(['File <LIQUID TEMPLATE SOURCE>'])
+	assert bool(tag)
+	_, tag = stream.until(['> 1. {% include'])
+	assert bool(tag)
+	_, tag = stream.until(['liquidpy/tests/templates/include4.liq'])
+	assert bool(tag)
+	_, tag = stream.until(['> 1. {% include include3.liq %}'])
+	assert bool(tag)
+	_, tag = stream.until(['liquidpy/tests/templates/include3.liq'])
+	assert bool(tag)
+	_, tag = stream.until(['4.  4. comment'])
+	assert bool(tag)
+	_, tag = stream.until(['5.  5. {% endcomment %}'])
+	assert bool(tag)
+	_, tag = stream.until(['6.  6. {% for multi'])
+	assert bool(tag)
+	_, tag = stream.until(['7.  7.    line, just'])
+	assert bool(tag)
+	_, tag = stream.until(['8.  8.    to check if the'])
+	assert bool(tag)
+	_, tag = stream.until(['> 9.  9.    line number is correct %}'])
+	assert bool(tag)
+	_, tag = stream.until(['10. 10. {{ "I have" +'])
+	assert bool(tag)
+	_, tag = stream.until(['11. 11.  "some other lines" }}'])
+	assert bool(tag)
+	_, tag = stream.until(['12. 12. {% endfor %}'])
+	assert bool(tag)
+
+def test_single_extends(debug, HERE):
+	with pytest.raises(LiquidSyntaxError) as exc:
+		Liquid("""1
+2
+3
+4
+5
+6
+7
+{{% extends {}/templates/parent3.liq %}}
+9
+10
+11
+12
+13
+14
+""".format(HERE))
+
+	stream = LiquidStream.from_string(str(exc.value))
+
+	# Unmatched end tag: 'endfor', expect 'endif'
+
+	# Template call stacks:
+	# ----------------------------------------------
+	# File <LIQUID TEMPLATE SOURCE>
+	#   > 8. {% extends /.../liquidpy/tests/templates/parent3.liq %}
+	# File /.../liquidpy/tests/templates/parent3.liq
+	# 	10. {% if true %}
+	# 	11. 1
+	# 	12. {%
+	# 	13.
+	# 	14.
+	#   > 15. endfor %}
+	# 	16. {% endcapture %}
+	_, tag = stream.until(["Expecting a closing tag for '{%'"])
+	assert bool(tag)
+	_, tag = stream.until(["Template call stacks:"])
+	assert bool(tag)
+	_, tag = stream.until(["File <LIQUID TEMPLATE SOURCE>"])
+	assert bool(tag)
+	_, tag = stream.until(["> 8. {% extends"])
+	assert bool(tag)
+	_, tag = stream.until(["liquidpy/tests/templates/parent3.liq"])
+	assert bool(tag)
+	_, tag = stream.until(["9.  {% capture x %}"])
+	assert bool(tag)
+	_, tag = stream.until(["> 12. {%"])
+	assert bool(tag)
+
+def test_multi_extends(debug, HERE):
+	with pytest.raises(LiquidSyntaxError) as exc:
+		Liquid("{{% extends {}/templates/parent4.liq %}}".format(HERE))
+
+	# Statement "for" expects format: "for var1, var2 in expr"
+	#
+	# Template call stacks:
+	# ----------------------------------------------
+	# File <LIQUID TEMPLATE SOURCE>
+	#   > 1. {% extends /.../liquidpy/tests/templates/parent4.liq %}
+	# File /.../liquidpy/tests/templates/parent4.liq
+	#   > 6. {% include include3.liq %}
+	# File /.../liquidpy/tests/templates/include3.liq
+	#     4.  4. comment
+	#     5.  5. {% endcomment %}
+	#     6.  6. {% for multi
+	#     7.  7.    line, just
+	#     8.  8.    to check if the
+	#   > 9.  9.    line number is correct %}
+	#     10. 10. {{ "I have" +
+	#     11. 11.  "some other lines" }}
+	#     12. 12. {% endfor %}
+
+	stream = LiquidStream.from_string(str(exc.value))
+	_, tag = stream.until(['Statement "for" expects format: "for var1, var2 in expr"'])
+	assert bool(tag)
+	_, tag = stream.until(['Template call stacks:'])
+	assert bool(tag)
+	_, tag = stream.until(['File <LIQUID TEMPLATE SOURCE>'])
+	assert bool(tag)
+	_, tag = stream.until(['> 1. {% extends'])
+	assert bool(tag)
+	_, tag = stream.until(['liquidpy/tests/templates/parent4.liq'])
+	assert bool(tag)
+	_, tag = stream.until(['> 6. {% include include3.liq %}'])
+	assert bool(tag)
+	_, tag = stream.until(['liquidpy/tests/templates/include3.liq'])
+	assert bool(tag)
+	_, tag = stream.until(['4.  4. comment'])
+	assert bool(tag)
+	_, tag = stream.until(['> 9.  9.    line number is correct %}'])
+	assert bool(tag)
+	_, tag = stream.until(['12. 12. {% endfor %}'])
+	assert bool(tag)
+
+def test_include_extends(HERE, debug):
+
+	liquid = Liquid("""
+	{{%- mode compact %}}
+	{{% extends {0}/templates/extends.liq %}}
+	{{% block b2 %}}
+	{{% include {0}/templates/include1.liq %}}
+	{{{{x}}}}
+	{{% endblock %}}
+	""".format(HERE))
+
+	assert liquid.render(x = 1) == 'empty blockabc10hij'
+

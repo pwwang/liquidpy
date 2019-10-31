@@ -2,5 +2,4 @@
 source =
 	../liquid/
 omit =
-	../liquid/filters.py
 	test*.py

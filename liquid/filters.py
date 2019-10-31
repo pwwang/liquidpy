@@ -79,7 +79,7 @@ LIQUID_FILTERS = dict(
 	divided_by = lambda x, y: x / y,
 	times      = lambda x, y: x * y,
 	downcase   = lambda x: str(x).lower(),
-	escape     = lambda x, quote = True: __import__('cgi').escape(x, quote),
+	escape     = lambda x, quote = False: __import__('html').escape(x, quote),
 	floor      = lambda x: __import__('math').floor(float(x)),
 	join       = lambda x, y: y.join(x),
 	lstrip     = lambda x: str(x).lstrip(),
