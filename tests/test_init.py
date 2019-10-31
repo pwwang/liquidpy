@@ -387,8 +387,8 @@ def test_single_extends(debug, HERE):
 	assert bool(tag)
 
 def test_multi_extends(debug, HERE):
-	#with pytest.raises(LiquidSyntaxError) as exc:
-	Liquid("{{% extends {}/templates/parent4.liq %}}".format(HERE))
+	with pytest.raises(LiquidSyntaxError) as exc:
+		Liquid("{{% extends {}/templates/parent4.liq %}}".format(HERE))
 
 	# Statement "for" expects format: "for var1, var2 in expr"
 	#
