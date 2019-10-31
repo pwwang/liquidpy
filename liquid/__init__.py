@@ -5,15 +5,14 @@ __version__ = "0.1.0"
 
 import logging
 import keyword
-from .stream import Stream
+from .stream import LiquidStream
 from .parser import LiquidLine, LiquidCode, LiquidParser
-from .exceptions import LiquidSyntaxError, LiquidRenderError, LiquidWrongKeyWord, \
-	_show_source_context
+from .exceptions import LiquidSyntaxError, LiquidRenderError, LiquidWrongKeyWord
 from .filters import LIQUID_FILTERS, PYTHON_FILTERS
 from .defaults import LIQUID_LOGGER_NAME, LIQUID_DEFAULT_ENVS, LIQUID_RENDER_FUNC_NAME, \
 	LIQUID_COMPILED_RENDERED, LIQUID_COMPILED_RR_APPEND, LIQUID_COMPILED_RR_EXTEND, \
 	LIQUID_COMPILED_CONTEXT, LIQUID_SOURCE_NAME, LIQUID_DEBUG_SOURCE_CONTEXT, \
-	LIQUID_LIQUID_FILTERS
+	LIQUID_LIQUID_FILTERS, LIQUID_TEXT_FILENAME
 
 LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
 
@@ -81,8 +80,12 @@ class Liquid:
 			raise ValueError('Cannot have both "text" and "from_file" specified, '
 				'choose either one.')
 
-		self.stream = Stream.from_file(envs.pop('from_file')) if 'from_file' in envs \
-			else Stream.from_string(text)
+		if 'from_file' in envs:
+			self.filename = envs.pop('from_file')
+			self.stream = LiquidStream.from_file(self.filename)
+		else:
+			self.filename = LIQUID_TEXT_FILENAME
+			self.stream = LiquidStream.from_string(text)
 
 		_check_envs(envs)
 		self.envs   = LIQUID_DEFAULT_ENVS.copy()
@@ -101,7 +104,7 @@ class Liquid:
 		self.precode.add_line("{} = {}.extend".format(
 			LIQUID_COMPILED_RR_EXTEND, LIQUID_COMPILED_RENDERED))
 
-		LiquidParser(self.stream, self.precode, self.code).parse()
+		LiquidParser(self.stream, self.precode, self.code, self.filename).parse()
 		self.code.add_line("return ''.join(str(x) for x in {})".format(LIQUID_COMPILED_RENDERED))
 
 	def render(self, **context):
@@ -142,11 +145,10 @@ class Liquid:
 			if 'NameError:' in stacks[0]:
 				msg[0] += ', do you forget to provide the data for the variable?'
 			msg.append('')
-			msg.append('At source line {}:'.format(finalcode.codes[lineno-1].lineno))
+			msg.append('Template call stacks:')
 			msg.append('----------------------------------------------')
-			self.stream.rewind()
-			msg.extend(_show_source_context(
-				self.stream.stream.readlines(), finalcode.codes[lineno-1].lineno, 1))
+			if finalcode.codes[lineno-1].parser:
+				msg.extend(finalcode.codes[lineno-1].parser.get_stacks())
 
 			if not stack_with_file or not Liquid.debug(): # not at debug level
 				raise LiquidRenderError('\n'.join(msg)) from None
@@ -154,8 +156,7 @@ class Liquid:
 			msg.append('')
 			msg.append('Compiled source (turn debug off to hide this):')
 			msg.append('----------------------------------------------')
-			msg.extend(_show_source_context(
-				finalcode.codes, lineno, LIQUID_DEBUG_SOURCE_CONTEXT))
+			msg.extend(LiquidStream.from_string(str(strcode)).get_context(lineno))
 
 			msg.append('')
 			msg.append('Context:')

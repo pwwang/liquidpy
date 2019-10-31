@@ -2,6 +2,7 @@
 Stream helper for liquidpy
 """
 import io
+from .defaults import LIQUID_DEBUG_SOURCE_CONTEXT
 
 def words_to_matrix(words):
 	"""
@@ -27,7 +28,7 @@ def words_to_matrix(words):
 				matrix[i][char] += 1
 	return matrix
 
-class Stream:
+class LiquidStream:
 	"""
 	The stream helper for liquidpy
 	"""
@@ -47,9 +48,9 @@ class Stream:
 		@params:
 			path (str): The path of the file
 		@returns:
-			Stream
+			LiquidStream
 		"""
-		return Stream(io.open(path))
+		return LiquidStream(io.open(path))
 
 	@staticmethod
 	def from_string(string):
@@ -58,9 +59,9 @@ class Stream:
 		@params:
 			string (str): The string
 		@returns:
-			Stream
+			LiquidStream
 		"""
-		return Stream(io.StringIO(string))
+		return LiquidStream(io.StringIO(string))
 
 	@staticmethod
 	def from_stream(stream):
@@ -69,9 +70,9 @@ class Stream:
 		@params:
 			stream (Stream): A stream
 		@returns:
-			Stream
+			LiquidStream
 		"""
-		return Stream(stream)
+		return LiquidStream(stream)
 
 	def __del__(self):
 		"""
@@ -131,6 +132,35 @@ class Stream:
 		"""
 		return self.stream.read()
 
+	def readline(self):
+		"""Read a single line from the stream"""
+		return self.stream.readline()
+
+	def get_context(self, lineno, context = LIQUID_DEBUG_SOURCE_CONTEXT, baselineno = 1):
+		"""
+		Get the line of source code and its context
+		@params:
+			lineno  (int): Line number of current line
+			context (int): How many lines of context to show
+		@returns:
+			list: The formated code with context
+		"""
+		self.rewind()
+		ret     = []
+		maxline = lineno + context
+		nbit    = len(str(maxline)) + 1
+		i       = baselineno
+		line    = self.readline()
+		while line:
+			if i < lineno - context or i > maxline:
+				pass
+			else:
+				ret.append("{} {} {}".format(
+					'>' if i == lineno else  ' ', (str(i) + '.').ljust(nbit), line.rstrip()))
+			i += 1
+			line = self.readline()
+		return ret
+
 	def split(self, delimiter, limit = 0, trim = True,
 		wraps = None, quotes = '"\'`', escape = '\\'):
 		"""
@@ -164,7 +194,7 @@ class Stream:
 		Get the string until certain words
 		For example:
 		```
-		s = Stream.from_string("abcdefgh")
+		s = LiquidStream.from_string("abcdefgh")
 		s.until(["f", "fg"]) == "abcde", "fg"
 		# cursor point to 'h'
 		s.until(["f", "fg"], greedy = False) == "abcde", "f"

@@ -12,15 +12,15 @@ def test_words_to_matrix(words, expected):
 
 def test_stream_init(tmp_path):
 	string = io.StringIO('abc')
-	stm = stream.Stream(string)
+	stm = stream.LiquidStream(string)
 	assert stm.stream is string
 	assert stm.cursor == 0
 
-	stm = stream.Stream.from_stream(string)
+	stm = stream.LiquidStream.from_stream(string)
 	assert stm.stream is string
 	assert stm.cursor == 0
 
-	stm = stream.Stream.from_string('abc')
+	stm = stream.LiquidStream.from_string('abc')
 	assert stm.next() == 'a'
 	assert stm.next() == 'b'
 	assert stm.next() == 'c'
@@ -31,7 +31,7 @@ def test_stream_init(tmp_path):
 
 	sfile = tmp_path.with_suffix('.stream')
 	sfile.write_text('abc')
-	stm = stream.Stream.from_file(sfile)
+	stm = stream.LiquidStream.from_file(sfile)
 	assert stm.next() == 'a'
 	assert stm.next() == 'b'
 	assert stm.next() == 'c'
@@ -76,12 +76,12 @@ def test_stream_init(tmp_path):
 	("a ,b", [","], False, ("a ", ","), "b"),
 ])
 def test_until(string, words, greedy, expected, nextchar):
-	s = stream.Stream.from_string(string)
+	s = stream.LiquidStream.from_string(string)
 	assert s.until(words, greedy) == expected
 	assert s.next() == nextchar
 
 def test_until_until():
-	string = stream.Stream.from_string(
+	string = stream.LiquidStream.from_string(
 		'{% mode loose -%}\n{% assign my_variable = "tomato" %}{{ my_variable }}')
 	leading, tag = string.until(['{%', '{%-', '{{'])
 	assert leading == ''
@@ -115,5 +115,5 @@ def test_until_until():
 	('a, "b, c", d', ',', 2, False, ['a',' "b, c"', ' d']),
 ])
 def test_split(string, delimit, limit, trim, expected):
-	s = stream.Stream.from_string(string)
+	s = stream.LiquidStream.from_string(string)
 	assert s.split(delimit, limit, trim) == expected
