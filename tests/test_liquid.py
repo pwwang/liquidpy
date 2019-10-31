@@ -648,6 +648,7 @@ def test_render(text, data, out):
 		a
 		{% if %}{%endif%}''', LiquidSyntaxError, 'No expressions for statement "if"'),
 	('{% for %}', LiquidSyntaxError, 'Statement "for" expects format: "for var1, var2 in expr"'),
+	('{% cycle 1,2,3 %}', LiquidSyntaxError, "Statement 'cycle' must be in a for loop"),
 	('{% while %}', LiquidSyntaxError, 'No expressions for statement "while"'),
 	('{% break %}', LiquidSyntaxError, 'Statement "break" must be in a loop'),
 	('{% elsif x %}', LiquidSyntaxError, '"elseif/elif/elsif" must be in an "if/unless" statement'),

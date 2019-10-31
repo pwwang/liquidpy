@@ -479,8 +479,18 @@ class NodeFor(_Node):
 
 		self.parser.code.add_line('for forloop, {} in {}({}):'.format(
 			parts[0].strip(), NodeFor.LIQUID_FORLOOP_CLASS,
-			NodeExpression(self.parser)._parse(parts[1].strip())))
+			NodeExpression(self.parser)._parse(parts[1].strip())), self.parser)
 		self.parser.code.indent()
+
+class NodeCycle(_Node):
+
+	@push_history
+	def start(self, string):
+		if not self.parser.stack or 'for' not in self.parser.stack:
+			self.parser.raise_ex("Statement {!r} must be in a for loop".format(self.name))
+		string = '({})'.format(string)
+		self.parser.code.add_line('{0}({1}[forloop.index0 % len({1})])'.format(
+			LIQUID_COMPILED_RR_APPEND, string), self.parser)
 
 class NodeComment(_Node):
 

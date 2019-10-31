@@ -140,7 +140,7 @@ class Liquid:
 			stack_with_file = [stack.strip() for stack in stacks
 				if stack.strip().startswith('File "{}"'.format(LIQUID_SOURCE_NAME))]
 			stack  = stack_with_file[-1]
-			lineno = int(stack.split(', ')[1].split()[-1])
+			lineno = int(stack.split(', ')[1].split()[-1]) # try/except
 			msg    = [stacks[0]]
 			if 'NameError:' in stacks[0]:
 				msg[0] += ', do you forget to provide the data for the variable?'
@@ -148,7 +148,8 @@ class Liquid:
 			msg.append('Template call stacks:')
 			msg.append('----------------------------------------------')
 			if finalcode.codes[lineno-1].parser:
-				msg.extend(finalcode.codes[lineno-1].parser.get_stacks())
+				msg.extend(finalcode.codes[lineno-1].parser.get_stacks(
+					finalcode.codes[lineno-1].lineno))
 
 			if not stack_with_file or not Liquid.debug(): # not at debug level
 				raise LiquidRenderError('\n'.join(msg)) from None
