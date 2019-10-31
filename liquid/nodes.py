@@ -484,6 +484,8 @@ class NodeFor(_Node):
 
 class NodeCycle(_Node):
 
+	"""Statement cycle {% cycle 1,2,3 %}"""
+
 	@push_history
 	def start(self, string):
 		if not self.parser.stack or 'for' not in self.parser.stack:
