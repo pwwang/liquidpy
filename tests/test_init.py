@@ -6,7 +6,16 @@ from liquid.stream import LiquidStream
 from liquid.defaults import LIQUID_LOGGER_NAME
 from liquid.exceptions import LiquidWrongKeyWord, LiquidRenderError, LiquidSyntaxError
 
-Liquid.debug(False)
+@pytest.fixture
+def debug():
+	dbg = Liquid.debug()
+	Liquid.debug(True)
+	yield
+	Liquid.debug(dbg)
+
+@pytest.fixture
+def HERE():
+	return Path(__file__).parent.resolve()
 
 def test_if_single():
 	liq = Liquid("""
@@ -228,16 +237,6 @@ def test_render_error():
 		liq.render(b=1)
 	Liquid.debug(False)
 
-@pytest.fixture
-def debug():
-	dbg = Liquid.debug()
-	Liquid.debug(True)
-	yield
-	Liquid.debug(dbg)
-
-@pytest.fixture
-def HERE():
-	return Path(__file__).parent.resolve()
 
 def test_syntax_error_single_include(debug, HERE):
 	with pytest.raises(LiquidSyntaxError) as exc:
@@ -444,4 +443,13 @@ def test_include_extends(HERE, debug):
 	""".format(HERE))
 
 	assert liquid.render(x = 1) == 'empty blockabc10hij'
+
+def test_cycle(debug):
+
+	liquid = Liquid("""
+{%- for i in range(10): -%}
+{%- cycle 'a','b','c' -%}
+{%- endfor -%}
+""")
+	liquid.render() == 'abcabcabca'
 
