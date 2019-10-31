@@ -370,6 +370,54 @@ Output:
 </div>
 
 ---
+<div markdown="1" class="two-column">
+
+Input (cycle support):
+See: https://help.shopify.com/en/themes/liquid/tags/iteration-tags#cycle
+```liquid
+{% for i in range(10) %}
+  {% cycle "a", "b", "c" %}
+{% endfor %}
+```
+
+</div>
+<div markdown="1" class="two-column">
+
+Output:
+```
+abcabcabca
+```
+
+</div>
+
+---
+<div markdown="1" class="two-column">
+
+Input (You can also use variables):
+```liquid
+{% assign group = ["a", "b", "c"] %}
+{% for i in range(10) %}
+  {% cycle group %}
+{% endfor %}
+```
+
+</div>
+<div markdown="1" class="two-column">
+
+Output:
+```
+abcabcabca
+```
+
+</div>
+
+---
+
+!!! note
+
+    - `cycle` doesn't have group argument as it from `liquid` does.
+    - No `from` or `with` keyword needed for `cycle` to work with variables
+    - Comma `, ` should be used instead of space(` `) for arguments
 
 ## `break/continue`
 Exit the loop or skip current iteration.

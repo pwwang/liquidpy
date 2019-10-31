@@ -1,5 +1,5 @@
 site_name: liquidpy
-theme: 
+theme:
     name: 'material'
     font:
       text: 'Ubuntu'
@@ -19,6 +19,7 @@ nav:
     - 'White space control': 'wscontrol.md'
     - 'Debug': 'debug.md'
     - 'Blocks': 'blocks.md'
+    - 'Inheritance and inclusion': 'extends_include.md'
     - 'Filters': 'filters.md'
     - 'Modifiers': 'modifiers.md'
     - 'Change log': 'changelog.md'

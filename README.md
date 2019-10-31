@@ -1,7 +1,7 @@
 # liquidpy
 A port of [liquid][1] template engine for python
 
-[![Pypi][2]][9] [![Github][3]][10] [![PythonVers][4]][9] [![Travis building][5]][11] [![Codacy][6]][12] [![Codacy coverage][7]][12]
+[![Pypi][2]][9] [![Github][3]][10] [![PythonVers][4]][9] [![ReadTheDocs building][13]][8] [![Travis building][5]][11] [![Codacy][6]][12] [![Codacy coverage][7]][12]
 
 ## Install
 ```shell
@@ -20,7 +20,7 @@ ret = liq.render(a = 1)
 ```
 With environments:
 ```python
-liq = Liquid('{{os.path.basename(a)}}', os = __import__('os'))
+liq = Liquid('{{a | os.path.basename}}', os = __import__('os'))
 ret = liq.render(a = "path/to/file.txt")
 # ret == 'file.txt'
 ```
@@ -37,3 +37,4 @@ ret = liq.render(a = "path/to/file.txt")
 [10]: https://github.com/pwwang/liquidpy
 [11]: https://travis-ci.org/pwwang/liquidpy
 [12]: https://app.codacy.com/manual/pwwang/liquidpy/dashboard
+[13]: https://img.shields.io/readthedocs/liquidpy?style=flat-square

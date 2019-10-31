@@ -1,3 +1,6 @@
+# 0.2.0
+- Add inclusion and inheritance support
+- Add `cycle` for `for` loop
 
 # 0.1.0
 - Rewrite whole engine using a stream parser
