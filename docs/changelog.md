@@ -1,3 +1,7 @@
+# 0.2.1
+- Fix #7: forloop problem with nesting for statements
+- Fix other bugs
+
 # 0.2.0
 - Add inclusion and inheritance support
 - Add `cycle` for `for` loop
