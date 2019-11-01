@@ -1,7 +1,7 @@
 """
 Liquid template engine for python
 """
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 import logging
 import keyword
