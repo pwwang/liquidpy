@@ -6,7 +6,7 @@ __version__ = "0.2.1"
 import logging
 import keyword
 from .stream import LiquidStream
-from .parser import LiquidLine, LiquidCode, LiquidParser
+from .parser import LiquidLine, LiquidCode, LiquidParser, _shorten
 from .exceptions import LiquidSyntaxError, LiquidRenderError, LiquidWrongKeyWord
 from .filters import LIQUID_FILTERS, PYTHON_FILTERS
 from .defaults import LIQUID_LOGGER_NAME, LIQUID_DEFAULT_ENVS, LIQUID_RENDER_FUNC_NAME, \
@@ -162,7 +162,7 @@ class Liquid:
 			msg.append('')
 			msg.append('Context:')
 			msg.append('----------------------------------------------')
-			for key, val in context.items():
-				msg.append('  {}: {!r}'.format(key, val))
+			for key, val in final_context.items():
+				msg.append('  {}: {}'.format(key, _shorten(str(val), 70)))
 
 			raise LiquidRenderError('\n'.join(msg)) from None
