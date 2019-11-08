@@ -50,7 +50,7 @@ class LiquidStream:
 		@returns:
 			LiquidStream
 		"""
-		return LiquidStream(io.open(path))
+		return LiquidStream(io.open(path, mode = 'r', encoding = 'utf-8'))
 
 	@staticmethod
 	def from_string(string):
@@ -94,7 +94,7 @@ class LiquidStream:
 			str: the next character
 		"""
 		ret = self.stream.read(1)
-		self.cursor += 1
+		self.cursor += len(ret.encode('utf-8'))
 		return ret
 
 	def back(self):

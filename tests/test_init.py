@@ -466,3 +466,11 @@ def test_nested_for(debug):
 {% endfor %}
 """)
 	assert liq.render() == 'a-c-e-3/a-c-f-3/a-c-g-3/2/a-d-e-3/a-d-f-3/a-d-g-3/2/1/'
+
+
+def test_issue9(HERE, debug):
+	liq = Liquid('{%% assign foo = "test" %%}{%% include %s/templates/include_issue9.liq %%}' % HERE)
+	assert liq.render() == 'test\nAccented character "ì" for testing\ntest'
+
+def test_unicode(HERE, debug):
+	assert Liquid(from_file = '%s/templates/include_issue9.liq' % HERE).render(foo = 'bar') == 'bar\nAccented character "ì" for testing\nbar'
