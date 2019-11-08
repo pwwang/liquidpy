@@ -1,3 +1,7 @@
+# 0.2.2
+- Show shortened context in debug information
+- Fix #9: stream cursor shifted when unicode in the template.
+
 # 0.2.1
 - Fix #7: forloop problem with nesting for statements
 - Fix other bugs
