@@ -105,7 +105,6 @@ class LiquidStream:
 		@returns:
 			str: the next character
 		"""
-		self._last = self.cursor
 		ret = self.stream.read(1)
 		return ret
 
