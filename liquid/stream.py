@@ -94,7 +94,7 @@ class LiquidStream:
 			str: the next character
 		"""
 		ret = self.stream.read(1)
-		self.cursor += len(ret.encode('utf-8'))
+		self.cursor = self.stream.tell()
 		return ret
 
 	def back(self):
