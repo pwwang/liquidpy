@@ -1,3 +1,6 @@
+# 0.2.3
+- Fix parsing errors when unicode in a template loaded from text #10 (thanks to vermeeca)
+
 # 0.2.2
 - Show shortened context in debug information
 - Fix #9: stream cursor shifted when unicode in the template.
