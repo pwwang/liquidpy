@@ -39,7 +39,13 @@ class LiquidStream:
 			stream (Stream): A python stream
 		"""
 		self.stream = stream
-		self.cursor = stream.tell()
+
+	@property
+	def cursor(self):
+		if self.stream.closed:
+			return 0
+		else:
+			return self.stream.tell()
 
 	@staticmethod
 	def from_file(path):
@@ -94,22 +100,19 @@ class LiquidStream:
 			str: the next character
 		"""
 		ret = self.stream.read(1)
-		self.cursor = self.stream.tell()
 		return ret
 
 	def back(self):
 		"""
 		Put cursor 1-character back
 		"""
-		self.cursor -= 1
-		self.stream.seek(self.cursor)
+		self.stream.seek(self.cursor - 1)
 
 	def rewind(self):
 		"""
 		Rewind the stream
 		"""
 		self.stream.seek(0)
-		self.cursor = 0
 
 	def eos(self):
 		"""
@@ -120,8 +123,7 @@ class LiquidStream:
 		nchar = self.next()
 		if not nchar:
 			return True
-		self.cursor -= 1
-		self.stream.seek(self.cursor)
+		self.stream.seek(self.cursor - 1)
 		return False
 
 	def dump(self):
