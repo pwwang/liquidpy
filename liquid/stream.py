@@ -28,6 +28,7 @@ def words_to_matrix(words):
 				matrix[i][char] += 1
 	return matrix
 
+
 class LiquidStream:
 	"""
 	The stream helper for liquidpy
@@ -42,6 +43,11 @@ class LiquidStream:
 
 	@property
 	def cursor(self):
+		"""
+		The current position in the stream
+
+		:return: An opaque number representing the current position.
+		"""
 		if self.stream.closed:
 			return 0
 		else:
@@ -99,14 +105,9 @@ class LiquidStream:
 		@returns:
 			str: the next character
 		"""
+		self._last = self.cursor
 		ret = self.stream.read(1)
 		return ret
-
-	def back(self):
-		"""
-		Put cursor 1-character back
-		"""
-		self.stream.seek(self.cursor - 1)
 
 	def rewind(self):
 		"""
@@ -114,16 +115,27 @@ class LiquidStream:
 		"""
 		self.stream.seek(0)
 
+	def seek(self, pos):
+		"""
+		Seek to a particular position in the stream
+
+		:param pos: The position in the stream to seek to
+
+		:return: The new position in the stream
+		"""
+		return self.stream.seek(pos)
+
 	def eos(self):
 		"""
 		Tell if the stream is ended
 		@returns:
 			`True` if it is else `False`
 		"""
+		last = self.cursor
 		nchar = self.next()
 		if not nchar:
 			return True
-		self.stream.seek(self.cursor - 1)
+		self.stream.seek(last)
 		return False
 
 	def dump(self):
@@ -232,6 +244,7 @@ class LiquidStream:
 		wrap_flags        = [0 for _ in range(len(wraps))]
 		quote_flags       = [False for _ in range(len(quotes))]
 		escape_flags      = False
+		last              = self.cursor
 		char              = self.next()
 		#print('START', '-' * 10, matrix)
 		while True:
@@ -240,7 +253,7 @@ class LiquidStream:
 				return ret, matched_candidate
 			if char == escape:
 				if matched_candidate and escape not in matrix[len(matched_candidate)]:
-					self.back()
+					self.seek(last)
 					return ret, matched_candidate
 				escape_flags = not escape_flags
 				ret += matched_chars + char
@@ -256,7 +269,7 @@ class LiquidStream:
 					quote_flags[quote_index[char]] = not quote_flags[quote_index[char]]
 				if sum(wrap_flags) > 0 or any(quote_flags):
 					if matched_candidate:
-						self.back()
+						self.seek(last)
 						return ret, matched_candidate
 					ret += matched_chars + char
 					matched_chars = ''
@@ -276,7 +289,7 @@ class LiquidStream:
 								return ret, matched_chars
 
 					elif matched_candidate:
-						self.back()
+						self.seek(last)
 						return ret, matched_candidate
 					else:
 						ret += matched_chars + char
@@ -285,5 +298,5 @@ class LiquidStream:
 				escape_flags = False
 				ret += matched_chars + char
 				matched_chars = ''
-
+			last = self.cursor
 			char = self.next()

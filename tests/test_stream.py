@@ -55,9 +55,6 @@ def test_stream_init(tmp_path):
 	assert stm.next() == 'b'
 	assert not stm.eos()
 	assert stm.next() == 'c'
-	stm.back()
-	assert not stm.eos()
-	assert stm.next() == 'c'
 	assert stm.eos()
 	assert stm.next() == ''
 
