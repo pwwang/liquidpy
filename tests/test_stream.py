@@ -18,6 +18,16 @@ def test_stream_unicode():
 	assert stm.next() == 'ì'
 	assert stm.next() == 'c'
 	assert stm.next() == 'd'
+	assert stm.eos()
+
+	stm = stream.LiquidStream.from_string('ab\ìcd')
+	assert stm.next() == 'a'
+	assert stm.next() == 'b'
+	assert stm.next() == '\\'
+	assert stm.next() == 'ì'
+	assert stm.next() == 'c'
+	assert stm.next() == 'd'
+	assert stm.eos()
 
 
 def test_stream_init(tmp_path):
@@ -149,7 +159,14 @@ def test_until_until2():
 	assert leading == ''
 	assert tag == None
 
-
+def test_until_until2():
+	string = stream.LiquidStream.from_string("spec\ìal{{a}}")
+	leading, tag = string.until(['{{'])
+	assert leading == "spec\ìal"
+	assert tag == '{{'
+	leading, tag = string.until(['}}'])
+	assert leading == "a"
+	assert tag == '}}'
 
 @pytest.mark.parametrize('string,delimit,limit,trim,expected', [
 	('', ',', 0, True, ['']),

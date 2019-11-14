@@ -28,7 +28,6 @@ def words_to_matrix(words):
 				matrix[i][char] += 1
 	return matrix
 
-
 class LiquidStream:
 	"""
 	The stream helper for liquidpy
@@ -45,8 +44,8 @@ class LiquidStream:
 	def cursor(self):
 		"""
 		The current position in the stream
-
-		:return: An opaque number representing the current position.
+		@returns:
+			An opaque number representing the current position.
 		"""
 		if self.stream.closed:
 			return 0
@@ -105,8 +104,7 @@ class LiquidStream:
 		@returns:
 			str: the next character
 		"""
-		ret = self.stream.read(1)
-		return ret
+		return self.stream.read(1)
 
 	def rewind(self):
 		"""
