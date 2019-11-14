@@ -472,5 +472,13 @@ def test_issue9(HERE, debug):
 	liq = Liquid('{%% assign foo = "test" %%}{%% include %s/templates/include_issue9.liq %%}' % HERE)
 	assert liq.render() == 'test\nAccented character "ì" for testing\ntest'
 
+
 def test_unicode(HERE, debug):
 	assert Liquid(from_file = '%s/templates/include_issue9.liq' % HERE).render(foo = 'bar') == 'bar\nAccented character "ì" for testing\nbar'
+
+
+def test_unicode_string(debug):
+	template = """{{foo}}
+Accented character "ì" for testing
+{{foo}}"""
+	assert Liquid(template).render(foo = 'bar') == 'bar\nAccented character "ì" for testing\nbar'

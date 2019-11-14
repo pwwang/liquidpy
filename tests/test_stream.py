@@ -10,6 +10,16 @@ from liquid import stream
 def test_words_to_matrix(words, expected):
 	assert stream.words_to_matrix(words) == expected
 
+
+def test_stream_unicode():
+	stm = stream.LiquidStream.from_string('abìcd')
+	assert stm.next() == 'a'
+	assert stm.next() == 'b'
+	assert stm.next() == 'ì'
+	assert stm.next() == 'c'
+	assert stm.next() == 'd'
+
+
 def test_stream_init(tmp_path):
 	string = io.StringIO('abc')
 	stm = stream.LiquidStream(string)
@@ -84,6 +94,25 @@ def test_until_until1():
 	string = stream.LiquidStream.from_string('mark: special job{{job.index}}" > {{job.outdir}}\\/job.report.data.yaml')
 	leading, tag = string.until(['{{', '{{-'], wraps = [], quotes = [])
 	assert leading == 'mark: special job'
+	assert tag == '{{'
+	leading, tag = string.until(['}}', '-}}'])
+	assert leading == 'job.index'
+	assert tag == '}}'
+	leading, tag = string.until(['{{', '{{-'], wraps = [], quotes = [])
+	assert leading == '" > '
+	assert tag == '{{'
+	leading, tag = string.until(['}}', '-}}'])
+	assert leading == 'job.outdir'
+	assert tag == '}}'
+	leading, tag = string.until(['{{', '{{-'], wraps = [], quotes = [])
+	assert leading == '\\/job.report.data.yaml'
+	assert tag == None
+
+
+def test_until_until_unicode():
+	string = stream.LiquidStream.from_string('mark: specìal job{{job.index}}" > {{job.outdir}}\\/job.report.data.yaml')
+	leading, tag = string.until(['{{', '{{-'], wraps = [], quotes = [])
+	assert leading == 'mark: specìal job'
 	assert tag == '{{'
 	leading, tag = string.until(['}}', '-}}'])
 	assert leading == 'job.index'
