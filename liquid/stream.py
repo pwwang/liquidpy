@@ -50,8 +50,8 @@ class LiquidStream:
 		"""
 		if self.stream.closed:
 			return 0
-		else:
-			return self.stream.tell()
+
+		return self.stream.tell()
 
 	@staticmethod
 	def from_file(path):
