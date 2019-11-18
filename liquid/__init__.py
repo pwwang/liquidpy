@@ -134,14 +134,18 @@ class Liquid:
 			localns = {}
 			exec(execode, None, localns) # pylint: disable=exec-used
 			return localns[LIQUID_RENDER_FUNC_NAME](final_context)
-		except Exception:
+		except Exception as exc:
 			import traceback
 			stacks = list(reversed(traceback.format_exc().splitlines()))
 			stack_with_file = [stack.strip() for stack in stacks
 				if stack.strip().startswith('File "{}"'.format(LIQUID_SOURCE_NAME))]
 			stack  = stack_with_file[-1]
-			lineno = int(stack.split(', ')[1].split()[-1]) # try/except
-			msg    = [stacks[0]]
+			# get the lineno of most detailed information
+			try:
+				lineno = max([int(stack.split(', ')[1].split()[-1]) for stack in stack_with_file])
+			except (TypeError, ValueError): # pragma: no cover # may not happen, but just in case
+				raise exc from None
+			msg = [stacks[0]]
 			if 'NameError:' in stacks[0]:
 				msg[0] += ', do you forget to provide the data for the variable?'
 			msg.append('')
