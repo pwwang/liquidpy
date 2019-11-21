@@ -297,7 +297,7 @@ class NodeExpression(_Node):
 
 		leading = leading.replace(' ', '').replace('\t', '')
 		if leading:
-			self.parser.raise_ex(f'Redundant modifiers found: {leading!r}')
+			self.parser.raise_ex('Redundant modifiers found: {!r}'.format(leading))
 
 		return modifiers, filt_nomodifiers
 
@@ -324,7 +324,7 @@ class NodeExpression(_Node):
 		del ternary_stack[:]
 		return ret
 
-	def _parse_filter(self, expr, args, ternary_stack):
+	def _parse_filter(self, expr, args, ternary_stack): ##pylint:disable=too-many-branches
 		"""Parse the following part of an expression
 		1. {{a | .a.b.c}}
 		2. {{a | .a.b: 1,2}}
@@ -404,8 +404,7 @@ class NodeExpression(_Node):
 			ret = '({}: ({}))({}{})'.format(eparts[0], eparts[1], argprefix, args)
 		else:
 			# 6, 7
-			fastream = LiquidStream.from_string(eparts[1])
-			faparts = fastream.split(',')
+			faparts = LiquidStream.from_string(eparts[1]).split(',')
 			faparts = ['_'] if len(faparts) == 1 and not faparts[0] else faparts
 
 			found_args = False
