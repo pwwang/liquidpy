@@ -215,7 +215,7 @@ class LiquidStream:
 			str: The string that has been searched
 			str: The matched word
 		"""
-		# pylint:disable=too-many-locals,too-many-nested-blocks,too-many-branches
+		# pylint:disable=too-many-locals,too-many-nested-blocks,too-many-branches,too-many-statements
 		wraps = ['{}', '[]', '()'] if wraps is None else wraps
 		ret               = ''
 		matrix            = words_to_matrix(words)

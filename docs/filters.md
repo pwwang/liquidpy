@@ -538,7 +538,7 @@ You may also apply lambda filters:
 {# output: /path/to/file.sorted.txt #}
 ```
 
-With a single element as base value, you can even omit the `lambda` keyword:
+With a single element as base value, you can even omit the `lambda` keyword and `_` will be used as the argument:
 ```
 {% import os %}
 {{ "/path/to/file.txt" | : os.path.join(os.path.dirname(_),
@@ -548,14 +548,79 @@ With a single element as base value, you can even omit the `lambda` keyword:
 {# output: /path/to/file.sorted.txt #}
 ```
 
-## tenary filters
-See example:
+## ternary filters
+- Full format
 
-```liquid
-{{ x | ?isinstance: list
-     | : "A list with length %s" % len(_)
-     | : "Other iterable with length %s" % len(_) }}
+  ```liquid
+  {{ x | ?isinstance: list
+       | =: "A list with length %s" % len(_)
+       | !: "Other iterable with length %s" % len(_) }}
 
-{# liquid.render(x = [1,2,3]): A list with length 3 #}
-{# liquid.render(x = "123"): Other iterable with length 3 #}
-```
+  {# liquid.render(x = [1,2,3]): A list with length 3 #}
+  {# liquid.render(x = "123"): Other iterable with length 3 #}
+  ```
+
+  You can also switch the position of True/False actions:
+  ```liquid
+  {{ x | ?isinstance: list
+       | !: "Other iterable with length %s" % len(_)
+       | =: "A list with length %s" % len(_) }}
+  ```
+
+- Bool shortcut
+
+  ```liquid
+  {{ x | ? | =:'Yes' | !:'No' | @append: ', Sir!' }}
+  {# is equivalent to #}
+  {{ x | ?bool | =:'Yes' | !:'No' | @append: ', Sir!' }}
+
+  {# liquid.render(x = True): Yes, Sir! #}
+  {# liquid.render(x = 1): Yes, Sir! #}
+  {# liquid.render(x = []): No, Sir! #}
+  {# liquid.render(x = 0): No, Sir! #}
+  {# liquid.render(x = ''): No, Sir! #}
+  ```
+
+- Absence of either action
+
+  ```liquid
+  {{ x | ?.endswith: '.gz' | !@append: '.gz' }}
+
+  {# liquid.render(x = 'a'): a.gz #}
+  {# liquid.render(x = 'a.gz'): a.gz #}
+  ```
+  ```liquid
+  {{ x | ?.endswith: '.gz' | = :_[:-3] }}
+
+  {# liquid.render(x = 'a'): a #}
+  {# liquid.render(x = 'a.gz'): a #}
+  ```
+
+- Combined ternary filters `?!` and `?=`
+
+  ```liquid
+  {{ x | ?! :"empty" | @append: ".txt" }}
+
+  {# liquid.render(x = 'a'): a.txt #}
+  {# liquid.render(x = ''): empty.txt #}
+  ```
+
+  ```liquid
+  {{ x | ?= @append: ".txt" | @prepend: "[" @append: "]"}}
+
+  {# liquid.render(x = 'a'): [a.txt] #}
+  {# liquid.render(x = ''):  [] #}
+  ```
+
+- Mixed use
+
+  ```liquid
+  {{ x | ?!:'No' | ? | =:'Yes' | @append: ', Sir' }}
+
+  {# liquid.render(x = True):  Yes, Sir! #}
+  {# liquid.render(x = False): No, Sir! #}
+  ```
+
+
+
+

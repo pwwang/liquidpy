@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "liquidpy"
-version = "0.2.3"
+version = "0.3.0"
 description = "A port of liquid template engine for python"
 authors = [ "pwwang <pwwang@pwwang.com>",]
 license = "MIT"
