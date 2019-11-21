@@ -7,7 +7,7 @@
 	- `?!` combined ternary modifier to modify the value when it is False-equivalent(, otherwise keep it unchanged).
 	- `?=` combined ternary modifier to modify the value when it is True-equivalent(, otherwise keep it unchanged).
 
-In this section, we will be talking about the unpacking and ternary modifiers.
+In this section, we will be talking about the unpacking modifier.
 
 See [filters](https://liquidpy.readthedocs.io/en/latest/filters/) for liquid modifiers, and [ternary filters](https://liquidpy.readthedocs.io/en/latest/filters/#ternary-filters) for ternary-related modifiers.
 
@@ -64,22 +64,3 @@ a|b|c|d
 !!! attention
 	For `getitem` and `attribute` filters, unpacking modifier is not allowed.
 
-# ternary modifer: `?`
-
-The ternary modifier marks a filter as a condition of a ternary operation, and initates it.
-```liquid
-{{ x | ?bool | : "Yes" | : "No" }}
-```
-It has to be followed by two filters, one calculates the value when the condition is True, the other does when the condition is False.
-
-You can also use the base value as the argument for the True/False filters:
-
-```liquid
-{{ x | ?bool | : str(_) +  " is true" | : str(_) + " is false"
-```
-
-You may also chain another filter after the ternary:
-
-```liquid
-{{ x | ?bool | : str(_), "true" | : str(_), "false" | @join: " is "
-```
