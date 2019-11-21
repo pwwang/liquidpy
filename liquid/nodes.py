@@ -309,22 +309,54 @@ class NodeExpression(_Node):
 		if modifier == '?':
 			self.parser.raise_ex('Missing True/False actions for ternary filter')
 		if modifier == '?.!':
-			ret = '({0}) if ({1}) else ({2})'.format(*ternary_stack)
+			ret = '(({0}) if ({1}) else ({2}))'.format(*ternary_stack)
 		elif modifier == '?.=':
-			ret = '({2}) if ({1}) else ({0})'.format(*ternary_stack)
+			ret = '(({2}) if ({1}) else ({0}))'.format(*ternary_stack)
 		elif modifier == '?.!.=':
-			ret = '({3}) if ({1}) else ({2})'.format(*ternary_stack)
+			ret = '(({3}) if ({1}) else ({2}))'.format(*ternary_stack)
 		elif modifier == '?.=.!':
-			ret = '({2}) if ({1}) else ({3})'.format(*ternary_stack)
+			ret = '(({2}) if ({1}) else ({3}))'.format(*ternary_stack)
 		elif modifier == '?!':
-			ret = '({0}) if ({0}) else ({1})'.format(*ternary_stack)
+			ret = '(({0}) if ({0}) else ({1}))'.format(*ternary_stack)
 		else:
-			ret = '({1}) if ({0}) else {0}'.format(*ternary_stack)
+			ret = '(({1}) if ({0}) else {0})'.format(*ternary_stack)
 
 		del ternary_stack[:]
 		return ret
 
-	def _parse_filter(self, expr, args, ternary_stack): ##pylint:disable=too-many-branches
+	@staticmethod
+	def _parse_filter_core(eparts, isget, argprefix, prev):
+		"""Parse core part of the filter
+		eparts: [isinstance, list] for {{ ... | isinstance: list | ...}}
+		isget: True if {{...|.endswith...}} or {{...|[0]...}}
+		argprefix: whether we have * or not
+		prev: previous value
+		"""
+		func, args = eparts
+		if args is None:
+			#      1, 3 or 10
+			return func if isget else '{}({})'.format(func, argprefix + prev)
+		if isget: # 2, 4, 5
+			return '{}({})'.format(func, args)
+		if func.startswith('lambda '): # 8, 9
+			return '({}: ({}))({})'.format(func, args, argprefix + prev)
+		# 6, 7
+		faparts = LiquidStream.from_string(args).split(',')
+		faparts = ['_'] if len(faparts) == 1 and not faparts[0] else faparts
+
+		found_args = False
+		for i, fapart in enumerate(faparts):
+			if fapart == '_':
+				faparts[i] = argprefix + prev
+				found_args = True
+			elif fapart[0] == '_' and fapart[1:].isdigit():
+				faparts[i] = '{}[{}]'.format(prev, int(fapart[1:]) - 1)
+				found_args = True
+		if not found_args:
+			faparts.insert(0, argprefix + prev)
+		return '{}({})'.format(func, ', '.join(faparts))
+
+	def _parse_filter(self, expr, prev, ternary_stack):
 		"""Parse the following part of an expression
 		1. {{a | .a.b.c}}
 		2. {{a | .a.b: 1,2}}
@@ -360,7 +392,7 @@ class NodeExpression(_Node):
 		if ternary_stack:
 			if (ternary_stack[0] in ('?!', '?=', '?.!.=', '?.=.!') or
 				(ternary_stack[0] in ('?.!', '?.=') and not modifiers['='] and not modifiers['!'])):
-				args = self._parse_ternary(ternary_stack)
+				prev = self._parse_ternary(ternary_stack)
 			elif ternary_stack[0] == '?.!' and modifiers['!']:
 				self.parser.raise_ex('False action has already been defined')
 			elif ternary_stack[0] == '?.=' and modifiers['=']:
@@ -370,7 +402,7 @@ class NodeExpression(_Node):
 			elif ternary_stack[0] == '?' and not modifiers['!'] and not modifiers['=']:
 				self.parser.raise_ex('Ternary filter unclosed, expecting True/False action (=/!)')
 			elif modifiers['!'] or modifiers['=']:
-				args = ternary_stack[1]
+				prev = ternary_stack[1]
 		elif modifiers['!'] or modifiers['=']:
 			self.parser.raise_ex('Ternary filter not open yet for True/False action (=/!)')
 
@@ -379,50 +411,32 @@ class NodeExpression(_Node):
 			not any(val for key, val in modifiers.items() if key != '?')):
 			expr = 'bool'
 
-		eparts    = LiquidStream.from_string(expr).split(':', limit = 1)
-		base      = None
-		argprefix = '*' if args[0] == '(' and args[-1] == ')' and modifiers['*'] else ''
+		eparts = LiquidStream.from_string(expr).split(':', limit = 1)
+		if len(eparts) == 1:
+			eparts.append(None)
+
+		isget     = False
+		argprefix = '*' if prev[0] == '(' and prev[-1] == ')' and modifiers['*'] else ''
 		# shortcut ':' for 'lambda _:'
 		eparts[0] = eparts[0] or 'lambda _'
 
 		if eparts[0][0] in ('.', '['):
 			if modifiers['*'] or modifiers['@']:
 				self.parser.raise_ex('Attribute filter should not have modifiers')
-			base = NodeExpression._parse_base(args + eparts[0], single = True)
+			eparts[0] = NodeExpression._parse_base(prev + eparts[0], single = True)
+			isget = True
 
 		if modifiers['@'] and eparts[0] not in LIQUID_FILTERS:
 			self.parser.raise_ex("Unknown liquid filter: '@{}'".format(eparts[0]))
-		filter_name = '{}[{!r}]'.format(
+		eparts[0] = '{}[{!r}]'.format(
 			LIQUID_LIQUID_FILTERS, eparts[0]) if modifiers['@'] else eparts[0]
 
-		if len(eparts) == 1:
-			#      1, 3 or 10
-			ret = base or '{}({})'.format(filter_name, argprefix + args)
-		elif base: # 2, 4, 5
-			ret = '{}({})'.format(base, eparts[1])
-		elif eparts[0].startswith('lambda '): # 8, 9
-			ret = '({}: ({}))({}{})'.format(eparts[0], eparts[1], argprefix, args)
-		else:
-			# 6, 7
-			faparts = LiquidStream.from_string(eparts[1]).split(',')
-			faparts = ['_'] if len(faparts) == 1 and not faparts[0] else faparts
-
-			found_args = False
-			for i, fapart in enumerate(faparts):
-				if fapart == '_':
-					faparts[i] = argprefix + args
-					found_args = True
-				elif fapart[0] == '_' and fapart[1:].isdigit():
-					faparts[i] = '{}[{}]'.format(args, fapart[1:])
-					found_args = True
-			if not found_args:
-				faparts.insert(0, argprefix + args)
-			ret = '{}({})'.format(filter_name, ', '.join(faparts))
+		ret = NodeExpression._parse_filter_core(eparts, isget, argprefix, prev)
 
 		if modifiers['?']: # 12
 			# assert not ternary_stack
 			ternary_stack.append('?')
-			ternary_stack.append(args)
+			ternary_stack.append(prev)
 			ternary_stack.append(ret)
 		elif modifiers['!']: # 13
 			ternary_stack[0] += '.!'
@@ -432,11 +446,11 @@ class NodeExpression(_Node):
 			ternary_stack.append(ret)
 		elif modifiers['?!']: # 11
 			ternary_stack.append('?!')
-			ternary_stack.append(args)
+			ternary_stack.append(prev)
 			ternary_stack.append(ret)
 		elif modifiers['?=']: # 11
 			ternary_stack.append('?=')
-			ternary_stack.append(args)
+			ternary_stack.append(prev)
 			ternary_stack.append(ret)
 		return ret
 
@@ -469,25 +483,8 @@ class NodeExpression(_Node):
 			if not expr:
 				self.parser.raise_ex('No filter specified')
 			value = self._parse_filter(expr, value, ternary_stack)
-			# if not ternary_stack:
-			# 	value2 = self._parse_filter(expr, value, ternary_stack)
-			# 	if ternary_stack:
-			# 		# {{ "" | ?bool | :"Yes" | :"No"}}
-			# 		# value == ""
-			# 		# value2 == 'bool("")'
-			# 		ternary_stack.append(value)
-			# 		ternary_stack.append(value2)
-			# 	value = value2
-			# 	continue
-			# value = self._parse_filter(expr, ternary_stack[1], ternary_stack)
-			# ternary_stack.append(value)
-
-			# if len(ternary_stack) == 5:
-			# 	value = '(({2}) if ({1}) else ({3}))'.format(*ternary_stack[1:])
-			# 	ternary_stack = []
 		if ternary_stack:
 			value = self._parse_ternary(ternary_stack)
-			#self.parser.raise_ex('Missing True/False actions for ternary filter.')
 		return value
 
 	@push_history

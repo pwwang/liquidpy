@@ -631,7 +631,8 @@ def test_render_10(text, data, out):
 	("{{'abcd' | @split: '', 1 | @join: '_'}}", {}, 'a_bcd'),
 	("{{ (('a', 'b')) | *lambda _1, _2: _1 + _2 }}", {}, 'ab'),
 	("{{ (('a', 'b')) | len: }}", {}, '2'),
-	("{{ (('a', 'b')) | len: _1 }}", {}, '1'),
+	("{{ (('a', 'bc')) | len: _1 }}", {}, '1'),
+	("{{ (('a', 'bc')) | len: _2 }}", {}, '2'),
 	("{{ '' | ?bool | =:'Yes' | !:'No' }}", {}, 'No'),
 	("{{ '' | ?bool | !:'No' | =:'Yes' }}", {}, 'No'),
 	("{{ '1' | ? | =:'Yes' | !:'No' }}", {}, 'Yes'),
@@ -659,10 +660,15 @@ def test_render_10(text, data, out):
 	("{{ x | ?=:'Yes' | ?!:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
 	# mixed
 	("{{ x | ?!:'No' | ? | =:'Yes' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
-	("{{ x | ?=:'Yes' | ? | !:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
 	# absence
 	("{{ x | ?.endswith: '.gz' | ! @append: '.gz' }}", {'x': 'a'}, 'a.gz'),
 	("{{ x | ?.endswith: '.gz' | ! @append: '.gz' }}", {'x': 'a.gz'}, 'a.gz'),
+
+	("{{ x | ?=:'Yes' | ? | !:'No' | .startswith: 'Y' }}", {'x': False}, 'False'),
+	("{{ x | ? | =:'Yes' | !:'No' | .startswith: 'Y' }}", {'x': True}, 'True'),
+	("{{ x | ?=:'Yes' | ? | !:'No' | [0] }}", {'x': False}, 'N'),
+	("{{ x | ? | =:'Yes' | !:'No' | [0] }}", {'x': True}, 'Y'),
+
 ])
 def test_render(text, data, out):
 	Liquid.DEBUG = True
