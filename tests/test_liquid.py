@@ -632,8 +632,37 @@ def test_render_10(text, data, out):
 	("{{ (('a', 'b')) | *lambda _1, _2: _1 + _2 }}", {}, 'ab'),
 	("{{ (('a', 'b')) | len: }}", {}, '2'),
 	("{{ (('a', 'b')) | len: _1 }}", {}, '1'),
-	("{{ '' | ?bool | :'Yes' | :'No' }}", {}, 'No'),
-	("{{ '1' | ?bool | :'Yes' | :'No' | @append: 'Sir' }}", {}, 'YesSir'),
+	("{{ '' | ?bool | =:'Yes' | !:'No' }}", {}, 'No'),
+	("{{ '' | ?bool | !:'No' | =:'Yes' }}", {}, 'No'),
+	("{{ '1' | ? | =:'Yes' | !:'No' }}", {}, 'Yes'),
+	("{{ '1' | ? | !:'No' | =:'Yes' }}", {}, 'Yes'),
+	('{{x | ?! :"empty" | @append: ".txt"}}', {'x': ''}, 'empty.txt'),
+	('{{x | ?! :"empty" | @append: ".txt"}}', {'x': 'a'}, 'a.txt'),
+	('{{x | ?= :"assigned" | @append: ".txt"}}', {'x': ''}, '.txt'),
+	('{{x | ?= :"assigned" | @append: ".txt"}}', {'x': 'a'}, 'assigned.txt'),
+	("{{x | ?.endswith('.gz') | !@append: '.gz'}}", {'x': "a"}, 'a.gz'),
+	("{{x | ?.endswith('.gz') | !@append: '.gz'}}", {'x': "a.gz"}, 'a.gz'),
+	("{{x | ?.endswith('.gz') | =:_[:-3]}}", {'x': "a"}, 'a'),
+	("{{x | ?.endswith('.gz') | =:_[:-3]}}", {'x': "a.gz"}, 'a'),
+	("{{ '' | ?bool | !:'No' | =:'Yes' }}", {}, 'No'),
+	# full
+	("{{ x | ?bool | =:'Yes' | !:'No' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
+	("{{ x | ?bool | =:'Yes' | !:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	# bool shortcut
+	("{{ x | ? | !:'No' | =:'Yes' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
+	("{{ x | ? | !:'No' | =:'Yes' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	# nested
+	("{{ x | ? | =:'Yes' | ? | !:'No' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
+	("{{ x | ? | =:'Yes' | ? | !:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	# combined
+	("{{ x | ?!:'No' | ?=:'Yes' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
+	("{{ x | ?=:'Yes' | ?!:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	# mixed
+	("{{ x | ?!:'No' | ? | =:'Yes' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
+	("{{ x | ?=:'Yes' | ? | !:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	# absence
+	("{{ x | ?.endswith: '.gz' | ! @append: '.gz' }}", {'x': 'a'}, 'a.gz'),
+	("{{ x | ?.endswith: '.gz' | ! @append: '.gz' }}", {'x': 'a.gz'}, 'a.gz'),
 ])
 def test_render(text, data, out):
 	Liquid.DEBUG = True
@@ -689,9 +718,23 @@ def test_render(text, data, out):
 	('{{ "" | @:_ }}', LiquidSyntaxError, "Unknown liquid filter: '@lambda _'"),
 	('{{ "" | }}', LiquidSyntaxError, "No filter specified"),
 	('{{ }}', LiquidSyntaxError, "Empty node"),
-	('{{ "" | ?bool }}', LiquidSyntaxError, "Missing True/False actions for ternary filter"),
-	('{{ "" | ??bool }}', LiquidSyntaxError, "Repeated modifier: '?'"),
-	('{{ "" | ?bool | ?:"Yes"}}', LiquidSyntaxError, 'Unnecessary modifier "?", expect filters for True/False conditions'),
+	('{{ "" | ??!bool }}', LiquidSyntaxError, 'Single ternary modifier (?/!/=) cannot be used'
+				'together with ?! or ?='),
+	('{{ "" | ?!?=bool }}', LiquidSyntaxError, 'Positive/negative ternary modifier '
+				'(?=/?!) cannot be used together'),
+	('{{ "" | ?*!bool }}', LiquidSyntaxError, 'Modifier (?) and (=/!) should not be '
+				'used separately in one filter. Do you mean (?!/?=)?'),
+	('{{ "" | ?bool | !="Yes"}}', LiquidSyntaxError, 'Modifier (=) and (!) cannot be used together'),
+	('{{ "" | ??bool}}', LiquidSyntaxError, 'Redundant modifiers found: \'?\''),
+	('{{ "" | ? }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
+	('{{ "" | ? | !:_ | !:_ }}', LiquidSyntaxError, 'False action has already been defined'),
+	('{{ "" | ? | =:_ | =:_ }}', LiquidSyntaxError, 'True action has already been defined'),
+	('{{ "" | ? | ? }}', LiquidSyntaxError, 'Cannot start a ternary filter with unclosed ones'),
+	('{{ "" | ? | ?:_ }}', LiquidSyntaxError, 'Cannot start a ternary filter with unclosed ones'),
+	('{{ "" | ? | ?!:_ }}', LiquidSyntaxError, 'Cannot start a ternary filter with unclosed ones'),
+	('{{ "" | ? | ?=:_ }}', LiquidSyntaxError, 'Cannot start a ternary filter with unclosed ones'),
+	('{{ "" | ? | :_ }}', LiquidSyntaxError, 'Ternary filter unclosed, expecting True/False action (=/!)'),
+	('{{ "" | !:_ }}', LiquidSyntaxError, 'Ternary filter not open yet for True/False action (=/!)'),
 ])
 def test_initException(text, exception, exmsg):
 	with pytest.raises(exception) as exc:

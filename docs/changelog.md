@@ -1,3 +1,9 @@
+# 0.3.0
+- Force explict modifiers (=/!) for True/False action in ternary filters
+- Add combined ternary filters
+- Add shortcut `?` for `?bool`
+- Use the maximum lineno on traceback instead of the last one.
+
 # 0.2.3
 - Fix parsing errors when unicode in a template loaded from text #10 (thanks to vermeeca)
 
