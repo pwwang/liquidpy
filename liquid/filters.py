@@ -81,7 +81,7 @@ LIQUID_FILTERS = dict(
 	downcase   = lambda x: str(x).lower(),
 	escape     = lambda x, quote = False: __import__('html').escape(x, quote),
 	floor      = lambda x: __import__('math').floor(float(x)),
-	join       = lambda x, y: y.join(x),
+	join       = lambda x, y: y.join(str(z) for z in x),
 	lstrip     = lambda x: str(x).lstrip(),
 	minus      = lambda x, y: x - y,
 	modulo     = lambda x, y: x % y,

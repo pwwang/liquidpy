@@ -620,7 +620,3 @@ With a single element as base value, you can even omit the `lambda` keyword and 
   {# liquid.render(x = True):  Yes, Sir! #}
   {# liquid.render(x = False): No, Sir! #}
   ```
-
-
-
-

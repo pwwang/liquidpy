@@ -126,4 +126,3 @@ World
 will be rendered as `\nHello World`. The `\n` is coming from the one in `include1.liquid`
 
 For inheritance, the contents in parent template are using the mode defined in itself, while in the current template, the blocks to replace the ones in the parent are using the one defined in the current template.
-

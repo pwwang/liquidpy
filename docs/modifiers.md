@@ -63,4 +63,3 @@ a|b|c|d
 
 !!! attention
 	For `getitem` and `attribute` filters, unpacking modifier is not allowed.
-
