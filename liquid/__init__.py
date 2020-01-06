@@ -167,6 +167,13 @@ class Liquid:
 			msg.append('Context:')
 			msg.append('----------------------------------------------')
 			for key, val in final_context.items():
-				msg.append('  {}: {}'.format(key, _shorten(str(val), 70)))
+				if key == '_liquid_liquid_filters':
+					continue
+				if isinstance(val, dict):
+					msg.append('  {}:'.format(key))
+					for k, v in val.items():
+						msg.append('    {}: {}'.format(k, _shorten(str(v), 70)))
+				else:
+					msg.append('  {}: {}'.format(key, _shorten(str(val), 70)))
 
 			raise LiquidRenderError('\n'.join(msg)) from None
