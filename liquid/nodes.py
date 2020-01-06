@@ -63,7 +63,6 @@ class _Node:
 	def end(self):
 		"""end node hit"""
 
-
 class NodeMode(_Node):
 	"""
 	Node '{% mode ... %}'
@@ -115,7 +114,6 @@ class NodeMode(_Node):
 				self._set_loglevel(part2)
 
 class NodeIf(_Node):
-
 	"""
 	Node '{% if ... %} {% endif %}'
 	"""
@@ -149,7 +147,6 @@ class NodeIf(_Node):
 		self.parser.code.indent()
 
 class NodeElse(_Node):
-
 	"""
 	Node '{% else/else if... %}'
 	"""
@@ -590,7 +587,6 @@ class NodeFor(_Node):
 			self.parser.code.add_line('forloop = forloop{}'.format(nest_fors))
 
 class NodeCycle(_Node):
-
 	"""Statement cycle {% cycle 1,2,3 %}"""
 
 	@push_history
@@ -602,7 +598,6 @@ class NodeCycle(_Node):
 			LIQUID_COMPILED_RR_APPEND, string), self.parser)
 
 class NodeComment(_Node):
-
 	"""
 	Node '{% comment ... %} {% endcomment %}'
 	"""
