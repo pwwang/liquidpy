@@ -715,7 +715,7 @@ def test_render(text, data, out):
 	('{% mode aa debug %}', LiquidSyntaxError, "Not a valid mode: 'aa'"),
 	('{% mode loose notaloglevel %}', LiquidSyntaxError, "Not a valid loglevel: 'NOTALOGLEVEL'"),
 	('{% comment # * // %}', LiquidSyntaxError, "Comments can only be wrapped by no more than 2 strings"),
-	('{% assign x = 1 %}{% extends x.liq %}', LiquidSyntaxError, "Statement 'extends' should be place at the top or after 'mode'"),
+	('{% assign x = 1 %}{% extends x.liq %}', LiquidSyntaxError, "Statement 'extends' should be placed at the top or after 'mode'"),
 	('{{% extends {}/templates/parent1.liq %}}{{{{  1  }}}}'.format(HERE),
 		LiquidSyntaxError, "Only blocks allowed in template extending others"),
 	('{{% extends {}/templates/parent1.liq %}}{{%  assign a = 1  %}}'.format(HERE),
@@ -745,6 +745,7 @@ def test_render(text, data, out):
 def test_initException(text, exception, exmsg):
 	with pytest.raises(exception) as exc:
 		Liquid(text)
+	print(exc.value)
 	assert exmsg in str(exc.value)
 
 
