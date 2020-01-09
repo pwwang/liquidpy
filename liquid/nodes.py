@@ -58,6 +58,220 @@ def dedent(func):
         self.parser.code.dedent()
     return retfunc
 
+class _FilterModifierException(Exception):
+    """When incompatible modifiers are assigned to a filter"""
+
+class _Filter:
+    """One of the elements in {{x | y | z | ...}}
+    So it could be a base value (x) or a filter (y, z, ...)"""
+
+    @staticmethod
+    def get_modifiers(filt):
+        """Get the modifiers from a filter"""
+        modifiers = {'?': False,
+                     '*': False,
+                     '@': False,
+                     '!': False,
+                     '=': False,
+                     '?!': False,
+                     '?=': False,
+                     '$': False}
+        filt_nomodifiers = filt.lstrip('?*@!$= \t')
+        leading = filt[:(len(filt)-len(filt_nomodifiers))]
+        # ?!, ?= go first
+        for modifier in sorted(modifiers.keys(), key=len, reverse=True):
+            mindex = leading.find(modifier)
+            if mindex == -1:
+                continue
+            modifiers[modifier] = True
+            leading = leading[:mindex] + leading[mindex + len(modifier):]
+
+        # check if modifiers are compatible
+        if ((modifiers['?'] or
+             modifiers['!'] or
+             modifiers['=']) and
+                (modifiers['?!'] or
+                 modifiers['?='])):
+            raise _FilterModifierException(
+                'Single ternary modifier (?/!/=) cannot be used' \
+                'together with ?! or ?='
+            )
+        if modifiers['?!'] and modifiers['?=']:
+            raise _FilterModifierException(
+                'Positive/negative ternary modifier ' \
+                '(?=/?!) cannot be used together'
+            )
+        if modifiers['?'] and (modifiers['='] or modifiers['!']):
+            raise _FilterModifierException(
+                'Modifier (?) and (=/!) should not be ' \
+                'used separately in one filter. Do you mean (?!/?=)?'
+            )
+        if modifiers['='] and modifiers['!']:
+            raise _FilterModifierException(
+                'Modifier (=) and (!) cannot be used together'
+            )
+
+        leading = leading.replace(' ', '').replace('\t', '')
+        if leading:
+            raise _FilterModifierException(
+                'Redundant modifiers found: {!r}'.format(leading)
+            )
+
+        return modifiers, filt_nomodifiers
+
+    @staticmethod
+    def parse_base_single(expr):
+        """
+        Parse the first part of an expression or
+        when filter.isget is True, which makes available of this:
+        {{x | a-b.c}} -> x['a-b'].c
+        """
+        try:
+            # in case we have a float number
+            # 1.2 or 1.3e-10
+            float(expr)
+            return expr
+        except ValueError:
+            pass
+
+        dots = LiquidStream.from_string(expr).split('.')
+        ret = dots.pop(0)
+
+        for dot in dots:
+            dstream = LiquidStream.from_string(dot)
+            dot, dim = dstream.until(['[', '('])
+            if dim:
+                dim = dim + dstream.dump()
+
+            # dodots(a, 'b')[1]
+            ret = '{}({}, {!r}){}'.format(
+                NodeExpression.LIQUID_DOT_FUNC_NAME,
+                ret,
+                dot,
+                dim or ''
+            )
+        return ret
+
+    @staticmethod
+    def parse_base(expr):
+        """Parse the first part of  {{ x | y | z}}"""
+        # what about "(1,2), (3,4)",
+        #            "((1,2), (3,4))",
+        #            "(((1,2), (3,4)))",
+        #            "(((1,2)))"
+        # (((1))) and "((1,2), [3,4])"? ((((1,2), 3), (4,5)))
+        # 1. remove redundant (): ->
+        #   "(1,2), (3,4)", "(1,2), (3,4)", "(1,2), (3,4)", (1,2)
+        #   (1) and "((1,2), [3,4])"? ((1,2), 3), (4,5)
+        lenexpr = len(expr)
+        lbracket = lenexpr - len(expr.lstrip('('))
+        rbracket = lenexpr - len(expr.rstrip(')'))
+        minbrkt = min(lbracket, rbracket)
+        if minbrkt > 0:
+            expr = '(' + expr[minbrkt:-minbrkt] + ')'
+
+        parts = LiquidStream.from_string(expr).split(',')
+        # if we can split, ok, we have removed all redundant ()
+        if len(parts) > 1:
+            return '({})'.format(
+                ', '.join(_Filter.parse_base_single(part)
+                          for part in parts)
+            )
+        if minbrkt > 0:
+            # if we cannot, like (1), (1,2), ((1,2), [3,4]),
+            # try to remove the bracket again ->
+            #   "1", "1,2", "(1,2), [3,4]"
+            parts = LiquidStream.from_string(expr[1:-1]).split(',')
+            if len(parts) > 1:
+                return '({})'.format(
+                    ', '.join(_Filter.parse_base_single(part)
+                              for part in parts)
+                )
+        return _Filter.parse_base_single(parts[0])
+
+    def __init__(self, expr):
+        if not expr:
+            raise _FilterModifierException('No filter specified')
+        self.modifiers, expr = _Filter.get_modifiers(expr)
+        self.func, self.args, self.isget = self._normalize_expr(expr)
+
+    def _normalize_expr(self, expr):
+        if not expr and self.modifiers['?']:
+            return '_', None, False
+
+        expr_parts = LiquidStream.from_string(expr).split(':', limit=1)
+        # shortcut for lambda
+        if len(expr_parts) == 1:
+            expr_parts.append(None)
+
+        isget = False
+        if not expr_parts[0] or expr_parts[0].startswith('lambda'):
+            if self.modifiers['@']:
+                raise _FilterModifierException(
+                    'Liquid modifier should not go with lambda shortcut.'
+                )
+            expr_parts[0] = expr_parts[0] or 'lambda _'
+            expr_parts[0] = '(%s: (%s))' % (expr_parts[0], expr_parts[1])
+            expr_parts[1] = None
+
+        elif expr_parts[0][0] in ('.', '['):
+            if self.modifiers['*'] or self.modifiers['@']:
+                raise _FilterModifierException(
+                    'Attribute filter should not have modifiers'
+                )
+            isget = True
+
+        elif self.modifiers['@']:
+            if expr_parts[0] not in LIQUID_FILTERS:
+                raise _FilterModifierException(
+                    "Unknown liquid filter: '@{}'".format(expr_parts[0])
+                )
+            expr_parts[0] = '{}[{!r}]'.format(LIQUID_LIQUID_FILTERS,
+                                              expr_parts[0])
+
+        args = None \
+            if expr_parts[1] is None \
+            else LiquidStream.from_string(expr_parts[1]).split(',')
+
+        # {{x | _}} => x
+        if args is None and not isget and expr_parts[0] != '_':
+            # {{x | y}} -> y(x)
+            args = ['_']
+
+        elif (args is not None and
+              not isget and
+              not any(arg[:1] == '_' and (not arg[1:] or
+                                          arg[1:].isdigit())
+                      for arg in args)):
+            args.insert(0, '_')
+
+        return expr_parts[0], args, isget
+
+    def parse(self, base):
+        """Parse the filter according to the base value"""
+        if self.isget:
+            base = _Filter.parse_base_single(base + self.func)
+            if self.args is None:
+                return base
+            return '%s(%s)' % (base, ', '.join(self.args))
+
+        if self.func == '_' and self.args is None:
+            # allow _ to return the base
+            # {{x | ? | !_ | = :_+1}}
+            # .render(x = 0) => 0
+            # .render(x = 1) => 2
+            return base
+
+        argprefix = '*' \
+                    if base[0] + base[-1] == '()' and self.modifiers['*'] \
+                    else ''
+        for i, arg in enumerate(self.args):
+            if arg == '_':
+                self.args[i] = argprefix + base
+            elif arg[:1] == '_' and arg[1:].isdigit():
+                self.args[i] = '%s[%d]' % (base, int(arg[1:]) - 1)
+        return '{}({})'.format(self.func, ', '.join(self.args))
+
 class _Node:
     """The base class"""
 
@@ -239,295 +453,87 @@ class NodeExpression(_Node):
     """
     LIQUID_DOT_FUNC_NAME = '_liquid_dodots_function'
 
-    @staticmethod
-    def _parse_base(expr, single=False):
-        """
-        Parse the first part of an expression
-        """
-        if single:
-            dots = LiquidStream.from_string(expr).split('.')
-            # in case we have a float number
-            # 1.2 or 1.3e-10
-            ret = dots.pop(0)
-            if ret.isdigit() and dots and dots[0].isdigit():
-                ret = ret + '.' + dots.pop(0)
+    def _parse_ternary(self, exprs, base):
 
-            for dot in dots:
-                dstream = LiquidStream.from_string(dot)
-                dot, dim = dstream.until(['[', '('])
-                if dim:
-                    dim = dim + dstream.dump()
+        conditions, truthy, falsy = [], [], []
+        first_expr = exprs.pop(0)
+        if first_expr.modifiers['?']:
+            first_expr.modifiers['?'] = False
+            conditions.append(first_expr)
+            container = conditions
+        elif first_expr.modifiers['?!']:
+            first_expr.modifiers['?!'] = False
+            falsy.append(first_expr)
+            container = falsy
+        else: # ?=
+            first_expr.modifiers['?='] = False
+            truthy.append(first_expr)
+            container = truthy
+        # make sure
+        # {{x | ? | !_ | =:_+1 | ? | !_ | =:_+1}}
+        # grouped to:
+        # {{x | conditions | falsy | truthy ...}}
+        sub_ternary = sub_summary_counter = 0
+        summary = None
+        for i, filt in enumerate(exprs):
+            if filt.modifiers['$']:
+                sub_summary_counter += 1
+                if sub_summary_counter > sub_ternary:
+                    summary = exprs[i:]
+                    break
 
-                # dodots(a, 'b')[1]
-                ret = '{}({}, {!r}){}'.format(
-                    NodeExpression.LIQUID_DOT_FUNC_NAME,
-                    ret,
-                    dot,
-                    dim or ''
-                )
-            return ret
-        # what about "(1,2), (3,4)",
-        #            "((1,2), (3,4))",
-        #            "(((1,2), (3,4)))",
-        #            "(((1,2)))"
-        # (((1))) and "((1,2), [3,4])"? ((((1,2), 3), (4,5)))
-        # 1. remove redundant (): ->
-        #   "(1,2), (3,4)", "(1,2), (3,4)", "(1,2), (3,4)", (1,2)
-        #   (1) and "((1,2), [3,4])"? ((1,2), 3), (4,5)
-        lenexpr = len(expr)
-        lbracket = lenexpr - len(expr.lstrip('('))
-        rbracket = lenexpr - len(expr.rstrip(')'))
-        minbrkt = min(lbracket, rbracket)
-        if minbrkt > 0:
-            expr = '(' + expr[minbrkt:-minbrkt] + ')'
+            if (filt.modifiers['?'] or
+                    filt.modifiers['?!'] or
+                    filt.modifiers['?=']):
+                sub_ternary += 1
 
-        parts = LiquidStream.from_string(expr).split(',')
-        # if we can split, ok, we have removed all redundant ()
-        if len(parts) > 1:
-            return '({})'.format(
-                ', '.join(NodeExpression._parse_base(part, single=True)
-                          for part in parts)
-            )
-        if minbrkt > 0:
-            # if we cannot, like (1), (1,2), ((1,2), [3,4]),
-            # try to remove the bracket again ->
-            #   "1", "1,2", "(1,2), [3,4]"
-            parts = LiquidStream.from_string(expr[1:-1]).split(',')
-            if len(parts) > 1:
-                return '({})'.format(
-                    ', '.join(NodeExpression._parse_base(part, single=True)
-                              for part in parts)
-                )
-        return NodeExpression._parse_base(parts[0], single=True)
-
-    def _get_modifiers(self, filt):
-        """Get the modifiers from a filter"""
-        modifiers = {'?': False, '*': False, '@': False, '!': False,
-                     '=': False, '?!': False, '?=': False}
-        filt_nomodifiers = filt.lstrip('?*@!= \t')
-        leading = filt[:(len(filt)-len(filt_nomodifiers))]
-        # ?!, ?= go first
-        for modifier in sorted(modifiers.keys(), key=len, reverse=True):
-            mindex = leading.find(modifier)
-            if mindex == -1:
+            if sub_ternary:
+                container.append(filt)
                 continue
-            modifiers[modifier] = True
-            leading = leading[:mindex] + leading[mindex + len(modifier):]
 
-        # check if modifiers are compatible
-        if ((modifiers['?'] or
-             modifiers['!'] or
-             modifiers['=']) and
-                (modifiers['?!'] or
-                 modifiers['?='])):
-            self.parser.raise_ex(
-                'Single ternary modifier (?/!/=) cannot be used' \
-                'together with ?! or ?='
-            )
-        if modifiers['?!'] and modifiers['?=']:
-            self.parser.raise_ex(
-                'Positive/negative ternary modifier ' \
-                '(?=/?!) cannot be used together'
-            )
-        if modifiers['?'] and (modifiers['='] or modifiers['!']):
-            self.parser.raise_ex(
-                'Modifier (?) and (=/!) should not be ' \
-                'used separately in one filter. Do you mean (?!/?=)?'
-            )
-        if modifiers['='] and modifiers['!']:
-            self.parser.raise_ex(
-                'Modifier (=) and (!) cannot be used together'
-            )
+            if filt.modifiers['!']:
+                if falsy:
+                    self.parser.raise_ex(
+                        'False action has already been defined'
+                    )
+                container = falsy
+            elif filt.modifiers['=']:
+                if truthy:
+                    self.parser.raise_ex(
+                        'True action has already been defined'
+                    )
+                container = truthy
+            container.append(filt)
 
-        leading = leading.replace(' ', '').replace('\t', '')
-        if leading:
-            self.parser.raise_ex(
-                'Redundant modifiers found: {!r}'.format(leading)
-            )
-
-        return modifiers, filt_nomodifiers
-
-    def _parse_ternary(self, ternary_stack):
-        """
-        Parse the ternary stack
-        """
-        modifier = ternary_stack.pop(0)
-        if modifier == '?':
+        if not truthy and not falsy:
             self.parser.raise_ex(
                 'Missing True/False actions for ternary filter'
             )
-        if modifier == '?.!':
-            ret = '(({0}) if ({1}) else ({2}))'.format(*ternary_stack)
-        elif modifier == '?.=':
-            ret = '(({2}) if ({1}) else ({0}))'.format(*ternary_stack)
-        elif modifier == '?.!.=':
-            ret = '(({3}) if ({1}) else ({2}))'.format(*ternary_stack)
-        elif modifier == '?.=.!':
-            ret = '(({2}) if ({1}) else ({3}))'.format(*ternary_stack)
-        elif modifier == '?!':
-            ret = '(({0}) if ({0}) else ({1}))'.format(*ternary_stack)
-        else:
-            ret = '(({1}) if ({0}) else {0})'.format(*ternary_stack)
 
-        del ternary_stack[:]
-        return ret
+        ret = '((%s) if (%s) else (%s))' % (
+            self._parse_exprs(truthy, base) if truthy else base,
+            self._parse_exprs(conditions, base) if conditions else base,
+            self._parse_exprs(falsy, base) if falsy else base,
+        )
+        if not summary:
+            return ret
 
-    @staticmethod
-    def _parse_filter_core(eparts, isget, argprefix, prev):
-        """Parse core part of the filter
-        eparts: [isinstance, list] for {{ ... | isinstance: list | ...}}
-        isget: True if {{...|.endswith...}} or {{...|[0]...}}
-        argprefix: whether we have * or not
-        prev: previous value
-        """
-        func, args = eparts
-        if args is None:
-            #      1, 3 or 10
-            return func if isget else '{}({})'.format(func, argprefix + prev)
-        if isget: # 2, 4, 5
-            return '{}({})'.format(func, args)
-        if func.startswith('lambda '): # 8, 9
-            return '({}: ({}))({})'.format(func, args, argprefix + prev)
-        # 6, 7
-        faparts = LiquidStream.from_string(args).split(',')
-        faparts = ['_'] if len(faparts) == 1 and not faparts[0] else faparts
+        return self._parse_exprs(summary, ret)
 
-        found_args = False
-        for i, fapart in enumerate(faparts):
-            if fapart == '_':
-                faparts[i] = argprefix + prev
-                found_args = True
-            elif fapart[0] == '_' and fapart[1:].isdigit():
-                faparts[i] = '{}[{}]'.format(prev, int(fapart[1:]) - 1)
-                found_args = True
-        if not found_args:
-            faparts.insert(0, argprefix + prev)
-        return '{}({})'.format(func, ', '.join(faparts))
+    def _parse_exprs(self, exprs, base):
+        if (exprs[0].modifiers['?'] or
+                exprs[0].modifiers['?!'] or
+                exprs[0].modifiers['?=']):
+            return self._parse_ternary(exprs, base)
 
-    def _parse_filter(self, expr, prev, ternary_stack):
-        """Parse the following part of an expression
-        1. {{a | .a.b.c}}
-        2. {{a | .a.b: 1,2}}
-        3. {{a | ['a'] }}
-        4. {{a | ['a']: 1,2 }}
-        5. {{a | .a['b']: 1,2}}
-        6. {{a | filter: 1,2}}
-        7. {{a | @liquid_filter: 1, _0, 2}}
-        8. {{a | lambda x: x+1}}
-        9. {{a | : _ + 1}}
-        10.{{a, b | *min}}
-        11.{{a | ?!@append: '.gz'}}
-        12.{{a | ?bool | ...}}
-        13.{{a | ?... | !@append: '.gz'}}
+        for i, filt in enumerate(exprs):
+            if (filt.modifiers['?'] or
+                    filt.modifiers['?!'] or
+                    filt.modifiers['?=']):
+                return self._parse_exprs(exprs[i:], base)
+            base = filt.parse(base)
 
-        # ternary_stack:
-        # 	{{ x | ?bool | =:"Yes" | !:"No" }}
-        #	 	0: The mark for the components,
-        #          could be '?', '?.!', '?.!.=', '?.=' or '?.=.!'
-        # 		1: x The base value
-        # 		2: bool(x) The condition
-        # 		3: True condition
-        #          if 0 is '?.=' else False condition if 0 is '?.!'
-        # 		4: Opposite to 3
-        #	{{ x | ?.endswith('.gz') | !@append: '.gz' }}
-        #		similar as above
-        #	{{ x | ?! : "empty" }}
-        #		0: '?!'
-        #		1: x: the base value
-        #		2: lambda _: "empty"
-        """
-        modifiers, expr = self._get_modifiers(expr)
-
-        # should I parse ternary right now or raise exception?
-        if ternary_stack:
-            if (ternary_stack[0] in ('?!', '?=', '?.!.=', '?.=.!') or
-                    (ternary_stack[0] in ('?.!', '?.=') and
-                     not modifiers['='] and
-                     not modifiers['!'])):
-                prev = self._parse_ternary(ternary_stack)
-            elif ternary_stack[0] == '?.!' and modifiers['!']:
-                self.parser.raise_ex('False action has already been defined')
-            elif ternary_stack[0] == '?.=' and modifiers['=']:
-                self.parser.raise_ex('True action has already been defined')
-            elif (ternary_stack[0] == '?' and
-                  (modifiers['?'] or
-                   modifiers['?!'] or
-                   modifiers['?='])):
-                self.parser.raise_ex(
-                    'Cannot start a ternary filter with unclosed ones'
-                )
-            elif (ternary_stack[0] == '?' and
-                  not modifiers['!'] and
-                  not modifiers['=']):
-                self.parser.raise_ex('Ternary filter unclosed, ' \
-                                     'expecting True/False action (=/!)')
-            elif modifiers['!'] or modifiers['=']:
-                prev = ternary_stack[1]
-        elif modifiers['!'] or modifiers['=']:
-            self.parser.raise_ex(
-                'Ternary filter not open yet for True/False action (=/!)'
-            )
-
-        # {{a | ? | ...}} => {{a | ?bool | ...}}
-        if (not expr and
-                modifiers['?'] and
-                not any(val for key, val in modifiers.items() if key != '?')):
-            expr = 'bool'
-
-        eparts = LiquidStream.from_string(expr).split(':', limit=1)
-        if len(eparts) == 1:
-            eparts.append(None)
-
-        isget = False
-        argprefix = '*' \
-            if prev[0] == '(' and prev[-1] == ')' and modifiers['*'] \
-            else ''
-        # shortcut ':' for 'lambda _:'
-        eparts[0] = eparts[0] or 'lambda _'
-
-        if eparts[0][0] in ('.', '['):
-            if modifiers['*'] or modifiers['@']:
-                self.parser.raise_ex(
-                    'Attribute filter should not have modifiers'
-                )
-            eparts[0] = NodeExpression._parse_base(prev + eparts[0],
-                                                   single=True)
-            isget = True
-
-        if modifiers['@'] and eparts[0] not in LIQUID_FILTERS:
-            self.parser.raise_ex(
-                "Unknown liquid filter: '@{}'".format(eparts[0])
-            )
-
-        eparts[0] = '{}[{!r}]'.format(
-            LIQUID_LIQUID_FILTERS, eparts[0]
-        ) if modifiers['@'] else eparts[0]
-
-        ret = NodeExpression._parse_filter_core(eparts,
-                                                isget,
-                                                argprefix,
-                                                prev)
-
-        if modifiers['?']: # 12
-            # assert not ternary_stack
-            ternary_stack.append('?')
-            ternary_stack.append(prev)
-            ternary_stack.append(ret)
-        elif modifiers['!']: # 13
-            ternary_stack[0] += '.!'
-            ternary_stack.append(ret)
-        elif modifiers['=']: # 13
-            ternary_stack[0] += '.='
-            ternary_stack.append(ret)
-        elif modifiers['?!']: # 11
-            ternary_stack.append('?!')
-            ternary_stack.append(prev)
-            ternary_stack.append(ret)
-        elif modifiers['?=']: # 11
-            ternary_stack.append('?=')
-            ternary_stack.append(prev)
-            ternary_stack.append(ret)
-        return ret
+        return base
 
     def _parse(self, string):
         """Start to parse the node"""
@@ -561,15 +567,16 @@ class NodeExpression(_Node):
 
         sstream = LiquidStream.from_string(string)
         exprs = sstream.split('|')
-        value = NodeExpression._parse_base(exprs[0])
-        ternary_stack = []
-        for expr in exprs[1:]:
-            if not expr:
-                self.parser.raise_ex('No filter specified')
-            value = self._parse_filter(expr, value, ternary_stack)
-        if ternary_stack:
-            value = self._parse_ternary(ternary_stack)
-        return value
+        base = _Filter.parse_base(exprs.pop(0))
+
+        if not exprs:
+            return base
+
+        try:
+            exprs = [_Filter(expr) for expr in exprs]
+        except _FilterModifierException as fmex:
+            self.parser.raise_ex(str(fmex))
+        return self._parse_exprs(exprs, base)
 
     @push_history
     def start(self, string):

@@ -567,12 +567,10 @@ With a single element as base value, you can even omit the `lambda` keyword and 
        | =: "A list with length %s" % len(_) }}
   ```
 
-- Bool shortcut
+- Base value itself as condition
 
   ```liquid
   {{ x | ? | =:'Yes' | !:'No' | @append: ', Sir!' }}
-  {# is equivalent to #}
-  {{ x | ?bool | =:'Yes' | !:'No' | @append: ', Sir!' }}
 
   {# liquid.render(x = True): Yes, Sir! #}
   {# liquid.render(x = 1): Yes, Sir! #}
@@ -596,27 +594,96 @@ With a single element as base value, you can even omit the `lambda` keyword and 
   {# liquid.render(x = 'a.gz'): a #}
   ```
 
+- More filters for conditions and True/False actions
+
+  ```liquid
+  {% from pathlib import Path %}
+  {{ x | Path | ?.suffix | :_ == '.txt' | !_ | .name | =.with_suffix: '.xlsx' | .name }}
+
+  {# liquid.render(x = '/a/b/c.py') -> 'c.py' #}
+  {# liquid.render(x = '/a/b/c.txt') -> 'c.xlsx' #}
+  ```
+
+  Note that in filter `!_`, `_` is a shortcut to return the base value, which \
+  is decided by where the ternary filter opens. That's why we can use `.with_suffix` \
+  later, as `Path(x)` is carried.
+
+- Ternary end modifier
+
+  Filters next to True/False actions are only responsible for that action itself, For example, in the above example, if we do it without the first `.name` filter:
+
+  ```liquid
+  {% from pathlib import Path %}
+  {{ x | Path | ?.suffix | :_ == '.txt' | !_ | =.with_suffix: '.xlsx' | .name }}
+
+  {# liquid.render(x = '/a/b/c.py') -> '/a/b/c.py', still returns the full path #}
+  {# liquid.render(x = '/a/b/c.txt') -> 'c.xlsx' #}
+  ```
+
+  !!! Note
+
+      This acts differently in `v0.3.0`, where extra filters are not allowed for conditions and True/False actions, so the final `.name` filter works for both actions. However, since `v0.4.0`, it works as documented above.
+
+  To get it work with single filter for both actions, you just need a ternary end modifier:
+
+  ```liquid
+  {% from pathlib import Path %}
+  {{ x | Path | ?.suffix | :_ == '.txt' | !_ | =.with_suffix: '.xlsx' | $.name }}
+
+  {# liquid.render(x = '/a/b/c.py') -> 'c.py' #}
+  {# liquid.render(x = '/a/b/c.txt') -> 'c.xlsx' #}
+  ```
+
 - Combined ternary filters `?!` and `?=`
 
   ```liquid
-  {{ x | ?! :"empty" | @append: ".txt" }}
+  {{ x | ?! :"empty" | $@append: ".txt" }}
 
   {# liquid.render(x = 'a'): a.txt #}
   {# liquid.render(x = ''): empty.txt #}
   ```
 
   ```liquid
-  {{ x | ?= @append: ".txt" | @prepend: "[" @append: "]"}}
+  {{ x | ?= @append: ".txt" | $@prepend: "[" | @append: "]"}}
 
   {# liquid.render(x = 'a'): [a.txt] #}
   {# liquid.render(x = ''):  [] #}
   ```
 
-- Mixed use
+- Nest tenary filters
 
   ```liquid
-  {{ x | ?!:'No' | ? | =:'Yes' | @append: ', Sir' }}
+  {{ x | ?!:'No' | ?=:'Yes' | $@append: ', Sir' }}
 
-  {# liquid.render(x = True):  Yes, Sir! #}
-  {# liquid.render(x = False): No, Sir! #}
+  {# liquid.render(x = True) -> True #}
+  {# liquid.render(x = False) -> Yes, Sir #}
+  ```
+
+  !!! Note
+
+      `$` is paired with the most right unparied `?` on its left. In this case, `$@append` \
+      uses the result from `?=:'Yes'`, which is actually a filter for `?!:'No'`, So \
+      `liquid.render(x = True)` will get `"True"`, since no action took for `True`, \
+      and `False` action is not ending till the end.
+
+  To end the first ternary filter:
+
+  ```liquid
+  {{ x | ?!:'No' | ?=:'Yes' | $@append: ', Sir' | $@append: ', Madam' }}
+
+  {# liquid.render(x = True) -> True, Madam (last $ matches first ?!) #}
+  {# liquid.render(x = False) -> Yes, Sir, Madam #}
+  ```
+
+  To get what you want:
+
+  ```liquid
+  {{ x | ?= :'Yes'
+       | $ ?! :'No'
+       | $ @append: ', Sir' | ? .startswith: 'Yes'
+                            | = @append: ' :)'
+                            | ! @append: ' :(' }}
+
+  {# liquid.render(x = True) -> Yes, Sir :) #}
+  {# liquid.render(x = False) -> No, Sir :( #}
   ```

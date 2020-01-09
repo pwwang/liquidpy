@@ -1,4 +1,4 @@
-`liquidpy` has 6 unique modifiers: `*`, `@`, `?`, `!`, `=`, `?!` and `?=`.
+`liquidpy` has 6 unique modifiers: `*`, `@`, `?`, `!`, `$`, `=`, `?!` and `?=`.
 	- `*` unpacking modifier is used to unpack the tuple values in previous expression.
 	- `@` liquid modifier is used to tell that the filter is a `liquid` filter.
 	- `?` ternary modifier to mark that this filter is the condition of a ternary operation.
@@ -6,6 +6,7 @@
 	- `=` ternary modifier to mark that this filter an action when previous condition is False (marked by `?`).
 	- `?!` combined ternary modifier to modify the value when it is False-equivalent(, otherwise keep it unchanged).
 	- `?=` combined ternary modifier to modify the value when it is True-equivalent(, otherwise keep it unchanged).
+	- `$`: End of the cloest ternary filter
 
 In this section, we will be talking about the unpacking modifier.
 

@@ -1,3 +1,7 @@
+# 0.4.0
+- Implement issue #13: Adding ternary end modifier (`$`)
+- Expand list/dict context in debug information
+
 # 0.3.0
 - Force explict modifiers (=/!) for True/False action in ternary filters
 - Add combined ternary filters
