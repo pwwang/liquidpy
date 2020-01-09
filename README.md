@@ -17,6 +17,9 @@ from liquid import Liquid
 liq = Liquid('{{a}}')
 ret = liq.render(a = 1)
 # ret == '1'
+
+# load template from a file
+liq = Liquid('/path/to/template', from_file = True)
 ```
 With environments:
 ```python

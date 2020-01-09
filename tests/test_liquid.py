@@ -6,7 +6,20 @@ from liquid import Liquid, LiquidSyntaxError, LiquidRenderError
 
 HERE = Path(__file__).parent.resolve()
 
-Liquid.debug(True)
+@pytest.fixture(scope = "function")
+def debug_on():
+	dbg = Liquid.debug()
+	Liquid.debug(True)
+	yield
+	Liquid.debug(dbg)
+
+@pytest.fixture(scope = "function")
+def debug_off():
+	dbg = Liquid.debug()
+	Liquid.debug(False)
+	yield
+	Liquid.debug(dbg)
+
 @pytest.mark.parametrize('text, data, out', [
 	('{{ page.title }}', {'page': dict(title = 'Introduction')}, 'Introduction'),
 	('''{% if user %}\nHello {{ user.name }}!{% endif %}''', {'user': dict(name = 'Adam')}, '\nHello Adam!'),
@@ -156,8 +169,7 @@ pants
 {% endfor %}''', {}, '''\n  \n    1\n  \n\n  \n    2\n  \n\n  \n    3\n  \n\n  \n    \n  \n    5\n  \n'''),
 
 ])
-def test_render_2(text, data, out):
-	Liquid.debug(True)
+def test_render_2(text, data, out, debug_on):
 	l = Liquid(text)
 	assert l.render(**data) == out
 
@@ -524,7 +536,17 @@ c
 		# {{ x, y | &@filter: a }} => (x, y, filter((x, y), a))
 	("{{ 1,2 | @concat: (3,4) }}", {}, '(1, 2, 3, 4)'),
 	("{{ 'a/b/c.txt' | Path | .name }}", {'Path': __import__('pathlib').Path}, 'c.txt'),
-	("{{ 'a/b/c.txt' | Path | .is_file: }}", {'Path': __import__('pathlib').Path}, 'False')
+	("{{ 'a/b/c.txt' | Path | .is_file: }}", {'Path': __import__('pathlib').Path}, 'False'),
+	("""{%- from pathlib import Path -%}
+{{- filepath | ? | = Path | .name | str |
+              ! : _ | @append: "empty.file" |
+              $ Path | .suffix  -}}
+""", {"filepath": ""}, ".file"),
+	("""{%- from pathlib import Path -%}
+{{- filepath | ? | = Path | .name | str |
+              ! : _ | @append: "empty.file" |
+              $ Path | .suffix  -}}
+""", {"filepath": "/a/b/c.txt"}, ".txt"),
 ])
 def test_render_9(text, data, out):
 	l = Liquid(text)
@@ -638,8 +660,8 @@ def test_render_10(text, data, out):
 	("{{ '1' | ? | =:'Yes' | !:'No' }}", {}, 'Yes'),
 	("{{ '1' | ? | !:'No' | =:'Yes' }}", {}, 'Yes'),
 	('{{x | ?! :"empty" | @append: ".txt"}}', {'x': ''}, 'empty.txt'),
-	('{{x | ?! :"empty" | @append: ".txt"}}', {'x': 'a'}, 'a.txt'),
-	('{{x | ?= :"assigned" | @append: ".txt"}}', {'x': ''}, '.txt'),
+	('{{x | ?! :"empty" | @append: ".txt"}}', {'x': 'a'}, 'a'),
+	('{{x | ?= :"assigned" | @append: ".txt"}}', {'x': ''}, ''),
 	('{{x | ?= :"assigned" | @append: ".txt"}}', {'x': 'a'}, 'assigned.txt'),
 	("{{x | ?.endswith('.gz') | !@append: '.gz'}}", {'x': "a"}, 'a.gz'),
 	("{{x | ?.endswith('.gz') | !@append: '.gz'}}", {'x': "a.gz"}, 'a.gz'),
@@ -647,31 +669,52 @@ def test_render_10(text, data, out):
 	("{{x | ?.endswith('.gz') | =:_[:-3]}}", {'x': "a.gz"}, 'a'),
 	("{{ '' | ?bool | !:'No' | =:'Yes' }}", {}, 'No'),
 	# full
-	("{{ x | ?bool | =:'Yes' | !:'No' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
+	("{{ x | ?bool | =:'Yes' | !:'No' | @append: 'Sir' }}", {'x': True}, 'Yes'),
 	("{{ x | ?bool | =:'Yes' | !:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	("{{ x | ?bool | =:'Yes' | !:'No' | $@append: 'Sir' }}", {'x': True}, 'YesSir'),
 	# bool shortcut
 	("{{ x | ? | !:'No' | =:'Yes' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
-	("{{ x | ? | !:'No' | =:'Yes' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	("{{ x | ? | !:'No' | =:'Yes' | @append: 'Sir' }}", {'x': False}, 'No'),
+	("{{ x | ? | !:'No' | =:'Yes' | $@append: 'Sir' }}", {'x': False}, 'NoSir'),
 	# nested
-	("{{ x | ? | =:'Yes' | ? | !:'No' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
-	("{{ x | ? | =:'Yes' | ? | !:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	("{{ x | ? | =:'Yes' | ? | !:'No' | @append: 'Sir' }}", {'x': True}, 'Yes'),
+	("{{ x | ? | =:'Yes' | ? | !:'No' | @append: 'Sir' }}", {'x': False}, 'False'),
+	("{{ x | ? | =:'Yes' | $? | !:'No' | @append: 'Sir' }}", {'x': True}, 'Yes'),
+	("{{ x | ? | =:'Yes' | $? | !:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	("{{ x | ? | =:'Yes' | ? | !:'No' | $@append: 'Sir' }}", {'x': True}, 'YesSir'),
+	("{{ x | ? | =:'Yes' | ? | !:'No' | $@append: 'Sir' }}", {'x': False}, 'False'),
 	# combined
-	("{{ x | ?!:'No' | ?=:'Yes' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
-	("{{ x | ?=:'Yes' | ?!:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	("{{ x | ?!:'No' | ?=:'Yes' | @append: 'Sir' }}", {'x': True}, 'True'),
+	("{{ x | ?=:'Yes' | ?!:'No' | @append: 'Sir' }}", {'x': False}, 'False'),
+	("{{ x | ?!:'No' | $?=:'Yes' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
+	("{{ x | ?=:'Yes' | $?!:'No' | @append: 'Sir' }}", {'x': False}, 'NoSir'),
+	("{{ x | ?!:'No' | ?=:'Yes' | $@append: 'Sir' }}", {'x': True}, 'True'),
+	("{{ x | ?=:'Yes' | ?!:'No' | $@append: 'Sir' }}", {'x': False}, 'False'),
+	("{{ x | ?!:'No' | ?=:'Yes' | $@append: 'Sir' | $@append: 'Sir'}}", {'x': True}, 'TrueSir'),
+	("{{ x | ?=:'Yes' | ?!:'No' | $@append: 'Sir' | $@append: 'Sir'}}", {'x': False}, 'FalseSir'),
 	# mixed
-	("{{ x | ?!:'No' | ? | =:'Yes' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
+	("{{ x | ?!:'No' | ? | =:'Yes' | @append: 'Sir' }}", {'x': True}, 'True'),
+	("{{ x | ?!:'No' | ? | =:'Yes' | $@append: 'Sir' }}", {'x': True}, 'True'),
+	("{{ x | ?!:'No' | $? | =:'Yes' | @append: 'Sir' }}", {'x': True}, 'YesSir'),
 	# absence
 	("{{ x | ?.endswith: '.gz' | ! @append: '.gz' }}", {'x': 'a'}, 'a.gz'),
 	("{{ x | ?.endswith: '.gz' | ! @append: '.gz' }}", {'x': 'a.gz'}, 'a.gz'),
 
 	("{{ x | ?=:'Yes' | ? | !:'No' | .startswith: 'Y' }}", {'x': False}, 'False'),
-	("{{ x | ? | =:'Yes' | !:'No' | .startswith: 'Y' }}", {'x': True}, 'True'),
-	("{{ x | ?=:'Yes' | ? | !:'No' | [0] }}", {'x': False}, 'N'),
-	("{{ x | ? | =:'Yes' | !:'No' | [0] }}", {'x': True}, 'Y'),
+	("{{ x | ?=:'Yes' | $? | !:'No' | .startswith: 'Y' }}", {'x': False}, 'False'),
+	("{{ x | ?=:'Yes' | $? | !:'No' | $.startswith: 'Y' }}", {'x': False}, 'False'),
+	("{{ x | ? | =:'Yes' | !:'No' | .startswith: 'Y' }}", {'x': True}, 'Yes'),
+	("{{ x | ? | =:'Yes' | !:'No' | $.startswith: 'Y' }}", {'x': True}, 'True'),
+	("{{ x | ?=:'Yes' | ? | !:'No' | [0] }}", {'x': False}, 'False'),
+	("{{ x | ?=:'Yes' | $? | !:'No' | [0] }}", {'x': False}, 'N'),
+	("{{ x | ? | =:'Yes' | !:'No' | [0] }}", {'x': True}, 'Yes'),
+	("{{ x | ? | =:'Yes' | !:'No' | $[0] }}", {'x': True}, 'Y'),
+	("{{ x | ? | bool | =:'Yes' | !:'No' | $[0] }}", {'x': True}, 'Y'),
+	("{% from pathlib import Path %}{{ x | Path | ?.suffix | :_ == '.txt' | !_ | =.with_suffix: '.xlsx' }}",   {'x': '/a/b/c.py'}, '/a/b/c.py'),
+	("{% from pathlib import Path %}{{ x | Path | ?.suffix | :_ == '.txt' | !_ | =.with_suffix: '.xlsx' }}",   {'x': '/a/b/c.txt'}, '/a/b/c.xlsx'),
 
 ])
-def test_render(text, data, out):
-	Liquid.DEBUG = True
+def test_render(text, data, out, debug_on):
 	l = Liquid(text)
 	assert l.render(**data) == out
 
@@ -721,7 +764,7 @@ def test_render(text, data, out):
 	('{{% extends {}/templates/parent1.liq %}}{{%  assign a = 1  %}}'.format(HERE),
 		LiquidSyntaxError, "Only blocks allowed in template extending others"),
 	('{{ "" | *.join: }}', LiquidSyntaxError, "Attribute filter should not have modifiers"),
-	('{{ "" | @:_ }}', LiquidSyntaxError, "Unknown liquid filter: '@lambda _'"),
+	('{{ "" | @:_ }}', LiquidSyntaxError, "Liquid modifier should not go with lambda shortcut"),
 	('{{ "" | }}', LiquidSyntaxError, "No filter specified"),
 	('{{ }}', LiquidSyntaxError, "Empty node"),
 	('{{ "" | ??!bool }}', LiquidSyntaxError, 'Single ternary modifier (?/!/=) cannot be used'
@@ -735,22 +778,20 @@ def test_render(text, data, out):
 	('{{ "" | ? }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
 	('{{ "" | ? | !:_ | !:_ }}', LiquidSyntaxError, 'False action has already been defined'),
 	('{{ "" | ? | =:_ | =:_ }}', LiquidSyntaxError, 'True action has already been defined'),
-	('{{ "" | ? | ? }}', LiquidSyntaxError, 'Cannot start a ternary filter with unclosed ones'),
-	('{{ "" | ? | ?:_ }}', LiquidSyntaxError, 'Cannot start a ternary filter with unclosed ones'),
-	('{{ "" | ? | ?!:_ }}', LiquidSyntaxError, 'Cannot start a ternary filter with unclosed ones'),
-	('{{ "" | ? | ?=:_ }}', LiquidSyntaxError, 'Cannot start a ternary filter with unclosed ones'),
-	('{{ "" | ? | :_ }}', LiquidSyntaxError, 'Ternary filter unclosed, expecting True/False action (=/!)'),
-	('{{ "" | !:_ }}', LiquidSyntaxError, 'Ternary filter not open yet for True/False action (=/!)'),
+	('{{ "" | ? | ? }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
+	('{{ "" | ? | ?:_ }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
+	('{{ "" | ? | ?!:_ }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
+	('{{ "" | ? | ?=:_ }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
+	('{{ "" | ? | :_ }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
+	#('{{ "" | !:_ }}', LiquidSyntaxError, 'Ternary filter not open yet for True/False action'),
 ])
 def test_initException(text, exception, exmsg):
 	with pytest.raises(exception) as exc:
 		Liquid(text)
-	print(exc.value)
 	assert exmsg in str(exc.value)
 
 
-def test_multiline_support():
-	Liquid.debug(True)
+def test_multiline_support(debug_on):
 	liq = Liquid("""{% mode compact %}
 {{ a | @append: ".html"
 	 | @append: ".txt"
@@ -771,7 +812,6 @@ def test_multiline_support():
 	  a == "text" #}
 """)
 	assert liq.render(a = 'test') == ""
-	Liquid.debug(False)
 
 @pytest.mark.parametrize('text, data, exception, exmsg', [
 	('{{a}}', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?"),
@@ -790,17 +830,17 @@ def test_multiline_support():
 	('{% mode info %}{% python 1/0 %}', {}, LiquidRenderError, "ZeroDivisionError: "),
 	('''{% mode info loose %}
 {% assign a.b = 1 %}''', {'a': 1}, LiquidRenderError, "AttributeError: 'int' object has no attribute 'b'"),
+	('{{a.x}}', {'a': {'b': 1}}, LiquidRenderError, "KeyError: 'x'"),
+	('{{a.x}}', {'a': [1,2,3]}, LiquidRenderError, "TypeError: list indices must be integers or slices, not str"),
 ])
-def test_renderException(text, data, exception, exmsg):
+def test_renderException(text, data, exception, exmsg, debug_on):
 	liquid = Liquid(text, **data)
 	with pytest.raises(exception) as exc:
 		liquid.render()
 	assert exmsg in str(exc.value)
 
 
-def test_include():
-	dbg = Liquid.debug()
-	Liquid.debug(True)
+def test_include(debug_on):
 	liquid = Liquid("""{{% mode compact %}}
 	{{% assign x = x + 1 %}}
 	{{% include {}/templates/include1.liq %}}
@@ -814,7 +854,6 @@ def test_include():
 
 	with pytest.raises(LiquidSyntaxError): # not exists
 		Liquid('{% include xxx.liquid %}')
-	Liquid.debug(dbg)
 
 def test_extends():
 	liquid = Liquid("""{{% mode compact %}}
