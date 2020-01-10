@@ -604,10 +604,10 @@ With a single element as base value, you can even omit the `lambda` keyword and 
   {# liquid.render(x = '/a/b/c.txt') -> 'c.xlsx' #}
   ```
 
-  !!! note
+!!! note
 
-    Note that in filter `!_`, `_` is a shortcut to return the base value, which \
-    is decided by where the ternary filter opens. That's why we can use `.with_suffix` \
+    Note that in filter `!_`, `_` is a shortcut to return the base value, which
+    is decided by where the ternary filter opens. That's why we can use `.with_suffix`
     later, as `Path(x)` is carried.
 
 - Ternary end modifier
@@ -622,7 +622,7 @@ With a single element as base value, you can even omit the `lambda` keyword and 
   {# liquid.render(x = '/a/b/c.txt') -> 'c.xlsx' #}
   ```
 
-  !!! note
+!!! note
 
     This acts differently in `v0.3.0`, where extra filters are not allowed for conditions and True/False actions, so the final `.name` filter works for both actions. However, since `v0.4.0`, it works as documented above.
 
@@ -661,11 +661,11 @@ With a single element as base value, you can even omit the `lambda` keyword and 
   {# liquid.render(x = False) -> Yes, Sir #}
   ```
 
-  !!! note
+!!! note
 
-    `$` is paired with the most right unparied `?` on its left. In this case, `$@append` \
-    uses the result from `?=:'Yes'`, which is actually a filter for `?!:'No'`, So \
-    `liquid.render(x = True)` will get `"True"`, since no action took for `True`, \
+    `$` is paired with the most right unparied `?` on its left. In this case, `$@append`
+    uses the result from `?=:'Yes'`, which is actually a filter for `?!:'No'`, So
+    `liquid.render(x = True)` will get `"True"`, since no action took for `True`,
     and `False` action is not ending till the end.
 
   To end the first ternary filter:
