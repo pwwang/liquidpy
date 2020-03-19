@@ -468,7 +468,7 @@ def someComplicatedLogic(val):
 	# your logic goes here
 	return val
 
-liq = Liquid('{{ "value" | myfilter }}', {'myfilter': someComplicatedLogic})
+liq = Liquid('{{ "value" | myfilter }}', myfilter=someComplicatedLogic)
 liq.render()
 ```
 
