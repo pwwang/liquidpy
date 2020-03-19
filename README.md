@@ -19,12 +19,12 @@ ret = liq.render(a = 1)
 # ret == '1'
 
 # load template from a file
-liq = Liquid('/path/to/template', from_file = True)
+liq = Liquid(from_file='/path/to/template')
 ```
 With environments:
 ```python
-liq = Liquid('{{a | os.path.basename}}', os = __import__('os'))
-ret = liq.render(a = "path/to/file.txt")
+liq = Liquid('{{a | os.path.basename}}', os=__import__('os'))
+ret = liq.render(a="path/to/file.txt")
 # ret == 'file.txt'
 ```
 
