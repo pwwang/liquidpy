@@ -1,5 +1,5 @@
-{% mode compact%}
-{% extends parent3.liq %}
+{% config mode=compact %}
+{% extends parent5.liq %}
 
 {% block b1 %}
 abc

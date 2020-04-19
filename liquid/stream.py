@@ -140,7 +140,7 @@ class LiquidStream:
     def get_context(self,
                     lineno,
                     context=LIQUID_DEBUG_SOURCE_CONTEXT,
-                    baselineno=1):
+                    startno=1):
         """
         Get the line of source code and its context
         @params:
@@ -153,19 +153,13 @@ class LiquidStream:
         ret = []
         maxline = lineno + context
         nbit = len(str(maxline)) + 1
-        i = baselineno
+        i = startno
         line = self.readline()
         while line:
-            if i < lineno - context or i > maxline:
-                pass
-            else:
-                ret.append(
-                    "{} {} {}".format(
-                        '>' \
-                        if i == lineno \
-                        else  ' ', (str(i) + '.').ljust(nbit), line.rstrip()
-                    )
-                )
+            if lineno - context <= i <= maxline:
+                prefix = '>' if i == lineno else ' '
+                num = (str(i) + '.').ljust(nbit)
+                ret.append(f"{prefix} {num} {line.rstrip()}")
             i += 1
             line = self.readline()
         return ret
@@ -329,3 +323,19 @@ class LiquidStream:
                 matched_chars = ''
             last = self.cursor
             char = self.next()
+
+
+def safe_split(string,
+               delimiter,
+               limit=0,
+               trim=True,
+               wraps=None,
+               quotes='"\'`',
+               escape='\\'):
+    """Safely split a string"""
+    return LiquidStream.from_string(string).split(delimiter=delimiter,
+                                                  limit=limit,
+                                                  trim=trim,
+                                                  wraps=wraps,
+                                                  quotes=quotes,
+                                                  escape=escape)

@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 import pytest
+from diot import Diot
 import liquid
 from liquid import Liquid, LiquidSyntaxError, LiquidRenderError
 
@@ -47,7 +48,7 @@ def debug_off():
   <h1>{{ settings.fp_heading }}</h1>{% endif %}''', {'settings': dict(fp_heading = 1)}, '  <h1>1</h1>'),
 ])
 def test_render_0(text, data, out):
-	l = Liquid(text)
+	l = Liquid(text, liquid_loglevel='debug')
 	assert l.render(**data) == out
 
 @pytest.mark.parametrize('text, data, out', [
@@ -83,7 +84,7 @@ tomato'''),
 ''', {}, '  2Wow, John G. Chalmers-Smith, you have a long name!\n'),
 
 		# comments
-	('''Anything you put between {% comment %} and {% endcomment %} tags
+	('''Anything you put between {% comment %}and {% endcomment %} tags
 is turned into a comment.''', {}, '''Anything you put between # and  tags
 is turned into a comment.'''),
 	('''Anything you put between {# and #} tags
@@ -91,7 +92,7 @@ is turned into a comment.''', {}, '''Anything you put between  tags
 is turned into a comment.'''),
 ])
 def test_render_1(text, data, out):
-	l = Liquid(text)
+	l = Liquid(text, liquid_loglevel='debug')
 	assert l.render(**data) == out
 
 @pytest.mark.parametrize('text, data, out', [
@@ -138,7 +139,7 @@ def test_render_1(text, data, out):
      This is not a cake nor a cookie
 {% endcase %}''', {}, '''\n\n  \n     This is a cake\n  '''),
 
-	('''{% for product in collection.products %}
+	('''{% for product in `collection.products` %}
 {{ product.title }}
 {% endfor %}''', {'collection': dict(
 	products = [
@@ -170,7 +171,7 @@ pants
 
 ])
 def test_render_2(text, data, out, debug_on):
-	l = Liquid(text)
+	l = Liquid(text, liquid_loglevel='debug')
 	assert l.render(**data) == out
 
 @pytest.mark.parametrize('text, data, out', [
@@ -232,12 +233,12 @@ I am {%if age == 35%}{{ age }}{%endif%} and my favorite food is {{ favorite_food
 	('{{ "my great title" | @capitalize }}', {}, 'My great title'),
 ])
 def test_render_3(text, data, out):
-	l = Liquid(text)
+	l = Liquid(text, liquid_loglevel='debug')
 	print(repr( l.render(**data)))
 	assert l.render(**data) == out
 
 @pytest.mark.parametrize('text, data, out', [
-	('''{% assign site_categories = site.pages | @map: 'category' %}
+	('''{% assign site_categories = `site.pages | @map: 'category'` %}
 
 {% for category in site_categories %}
   {{ category }}
@@ -250,7 +251,7 @@ def test_render_3(text, data, out):
 	dict(category = ''),
 	dict(category = 'technology')
 ])}, '''\n\n\n  business\n\n  celebrities\n\n  \n\n  lifestyle\n\n  sports\n\n  \n\n  technology\n'''),
-	('''{% assign site_categories = site.pages | @map: 'category' | @compact %}
+	('''{% assign site_categories = `site.pages | @map: 'category' | @compact` %}
 
 {% for category in site_categories %}
   {{ category }}
@@ -263,16 +264,16 @@ def test_render_3(text, data, out):
 	dict(category = ''),
 	dict(category = 'technology')
 ])}, '''\n\n\n  business\n\n  celebrities\n\n  lifestyle\n\n  sports\n\n  technology\n'''),
-	('''{% assign fruits = "apples, oranges, peaches" | @split: ", " %}
-{% assign vegetables = "carrots, turnips, potatoes" | @split: ", " %}
+	('''{% assign fruits = `"apples, oranges, peaches" | @split: ", "` %}
+{% assign vegetables = `"carrots, turnips, potatoes" | @split: ", "` %}
 
-{% assign everything = fruits | @concat: vegetables %}
+{% assign everything = `fruits | @concat: vegetables` %}
 {% for item in everything %}
 - {{ item }}
 {% endfor %}''', {}, '''\n\n\n\n\n- apples\n\n- oranges\n\n- peaches\n\n- carrots\n\n- turnips\n\n- potatoes\n'''),
-	('''{% assign furniture = "chairs, tables, shelves" | @split: ", " %}
+	('''{% assign furniture = `"chairs, tables, shelves" | @split: ", "` %}
 
-{% assign everything = fruits | @concat: vegetables | @concat: furniture %}
+{% assign everything = `fruits | @concat: vegetables | @concat: furniture` %}
 {% for item in everything %}
 - {{ item }}
 {% endfor %}''', {'fruits': "apples, oranges, peaches".split(", "), 'vegetables': "carrots, turnips, potatoes".split(', ')}, '''\n\n\n\n- apples\n\n- oranges\n\n- peaches\n\n- carrots\n\n- turnips\n\n- potatoes\n\n- chairs\n\n- tables\n\n- shelves\n'''),
@@ -309,7 +310,7 @@ def test_render_4(text, data, out):
 	('{{ 183.357 | @floor | int }}', {}, '183'),
 	('{{ "3.5" | @floor | int }}', {}, '3'),
 
-	('''{% assign beatles = "John, Paul, George, Ringo" | @split: ", " %}
+	('''{% assign beatles = `"John, Paul, George, Ringo" | @split: ", "` %}
 
 {{ beatles | @join: " and " }}''', {}, '''\n\nJohn and Paul and George and Ringo'''),
 
@@ -350,7 +351,7 @@ there
 	('{{ "Take my protein pills and put my helmet on" | @replace_first: "my", "your" }}', {}, 'Take your protein pills and put my helmet on'),
 
 	('''
-{% assign my_array = "apples, oranges, peaches, plums" | @split: ", " %}
+{% assign my_array = `"apples, oranges, peaches, plums" | @split: ", "` %}
 
 {{ my_array | @reverse | @join: ", " }}''', {}, '''\n\n\nplums, peaches, oranges, apples'''),
 
@@ -365,7 +366,7 @@ there
 	('{{ "          So much room for activities!          " | @strip }}', {}, 'So much room for activities!'),
 
 	('{{ "Ground control to Major Tom." | @size }}', {}, '28'),
-	('{% assign my_array = "apples, oranges, peaches, plums" | @split: ", " %}{{ my_array | @size }}', {}, '4'),
+	('{% assign my_array = `"apples, oranges, peaches, plums" | @split: ", "` %}{{ my_array | @size }}', {}, '4'),
 
 	('{{ "Liquid" | @slice: 0 }}', {}, 'L'),
 	('{{ "Liquid" | @slice: 2 }}', {}, 'q'),
@@ -373,14 +374,14 @@ there
 	('{{ "Liquid" | @slice: 2, 5 }}', {}, 'quid'),
 	('{{ "Liquid" | @slice: -3, 2 }}', {}, 'ui'),
 
-	('{% assign my_array = "zebra, octopus, giraffe, Sally Snake" | @split: ", " %}{{ my_array | @sort | @join: ", " }}', {}, 'Sally Snake, giraffe, octopus, zebra'),
+	('{% assign my_array = `"zebra, octopus, giraffe, Sally Snake" | @split: ", "` %}{{ my_array | @sort | @join: ", " }}', {}, 'Sally Snake, giraffe, octopus, zebra'),
 ])
 def test_render_6(text, data, out):
 	l = Liquid(text)
 	assert l.render(**data) == out
 
 @pytest.mark.parametrize('text, data, out', [
-	('''{% assign beatles = "John, Paul, George, Ringo" | @split: ", " %}
+	('''{% assign beatles = `"John, Paul, George, Ringo" | @split: ", "` %}
 
 {% for member in beatles %}
   {{ member }}
@@ -412,7 +413,7 @@ there
 	('{{ "Ground control to Major Tom." | @truncatewords: 3, "" }}', {}, 'Ground control to'),
 	('{{ "Gro" | @truncatewords: 3 }}', {}, 'Gro'),
 
-	('''{% assign my_array = "ants, bugs, bees, bugs, ants" | @split: ", " -%}
+	('''{% assign my_array = `"ants, bugs, bees, bugs, ants" | @split: ", "` -%}
 {{ my_array | @uniq | @sort | @join: ", " }}''', {}, 'ants, bees, bugs'),
 
 	('{{ "Parker Moore" | @upcase }}', {}, 'PARKER MOORE'),
@@ -483,7 +484,7 @@ is treated as comments
 	('{{ "/path/to/file.txt" | :len(_) - 4 }}', {}, '13'),
 ])
 def test_render_8(text, data, out):
-	l = Liquid(text)
+	l = Liquid(text, liquid_loglevel='debug')
 	assert l.render(**data) == out
 
 @pytest.mark.parametrize('text, data, out', [
@@ -724,45 +725,45 @@ def test_render(text, data, out, debug_on):
 		{% endcapture %}
 		b
 		a
-		{% if %}{%endif%}''', LiquidSyntaxError, 'No expressions for statement "if"'),
-	('{% for %}', LiquidSyntaxError, 'Statement "for" expects format: "for var1, var2 in expr"'),
-	('{% cycle 1,2,3 %}', LiquidSyntaxError, "Statement 'cycle' must be in a for loop"),
-	('{% while %}', LiquidSyntaxError, 'No expressions for statement "while"'),
-	('{% break %}', LiquidSyntaxError, 'Statement "break" must be in a loop'),
-	('{% elsif x %}', LiquidSyntaxError, '"elseif/elif/elsif" must be in an "if/unless" statement'),
-	('{% else %}', LiquidSyntaxError, '"else" must be in an if/unless/case statement'),
-	('{% endif x %}', LiquidSyntaxError, "Additional expression for 'endif'"),
-	('{% endif %}', LiquidSyntaxError, "Unmatched end tag: 'endif'"),
-	('{% endx %}', LiquidSyntaxError, "Unknown statement: 'endx'"),
-	('{% continue %}', LiquidSyntaxError, 'Statement "continue" must be in a loop'),
-	('{% when x %}', LiquidSyntaxError, '"when" must be in a "case" statement'),
-	('{% endcapture %}', LiquidSyntaxError, "Unmatched end tag: 'endcapture'"),
-	('{% if x %}{% endfor %}', LiquidSyntaxError, "Unmatched end tag: 'endfor', expect 'endif'"),
-	('{% if x %}', LiquidSyntaxError, "Statement 'if' not closed"),
+		{% if %}{%endif%}''', LiquidSyntaxError, "No expressions for 'if' node"),
+	('{% for %}', LiquidSyntaxError, "'for' node expects format: 'for var1, var2 in expr'"),
+	('{% cycle 1,2,3 %}', LiquidSyntaxError, "'cycle' node must be in a 'for/while' loop"),
+	('{% while %}', LiquidSyntaxError, "No expressions for 'while' node"),
+	('{% break %}', LiquidSyntaxError, "'break' node must be in a 'for/while' loop"),
+	('{% elsif x %}', LiquidSyntaxError, "'elsif' must be in an 'if/unless/case' node"),
+	('{% else %}', LiquidSyntaxError, "'else' must be in an 'if/unless/case' node"),
+	('{% endif x %}', LiquidSyntaxError, "End node should take no expressions"),
+	('{% endif %}', LiquidSyntaxError, "Got closing node 'endif', but no node opened"),
+	('{% aendx %}', LiquidSyntaxError, "Unknown node 'aendx'"),
+	('{% continue %}', LiquidSyntaxError, "'continue' node must be in a 'for/while' loop"),
+	('{% when x %}', LiquidSyntaxError, "'when' node must be in a 'case' node"),
+	('{% endcapture %}', LiquidSyntaxError, "Got closing node 'endcapture', but no node opened"),
+	('{% if x %}{% endfor %}', LiquidSyntaxError, "Unmatched closing node 'endfor' for 'if'"),
+	('{% if x %}', LiquidSyntaxError, "Node 'if' not closed"),
 	('{{ x | @nosuch }}', LiquidSyntaxError, "Unknown liquid filter: '@nosuch'"),
-	('{%while true%}{% break 1 %}{%endwhile%}', LiquidSyntaxError, "Additional expressions for 'break'"),
-	('{% assign %}', LiquidSyntaxError, 'Statement "assign" should be in format of "assign a, b = x | filter"'),
+	('{%while true%}{% break 1 %}{%endwhile%}', LiquidSyntaxError, "No expressions allowed for 'break'"),
+	('{% assign %}', LiquidSyntaxError, "Malformat 'assign' node, expect 'assign a, b = 1 + `2 | @plus: 1`'"),
 	('{% increment %}', LiquidSyntaxError, "No variable specified for 'increment'"),
 	('{% decrement %}', LiquidSyntaxError, "No variable specified for 'decrement'"),
-	('{% assign x %}', LiquidSyntaxError, 'Statement "assign" should be in format of "assign a, b = x | filter"'),
-	('{% if x %}{% else x %}{% endif %}', LiquidSyntaxError, '"else" should not be followed by any expressions'),
-	('{% if x %}{% else if %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if"'),
-	('{% if x %}{% elseif %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if"'),
-	('{% if x %}{% elsif %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if"'),
-	('{% if x %}{% elif %}{% endif %}', LiquidSyntaxError, 'No expressions for statement "if"'),
+	('{% assign x %}', LiquidSyntaxError, "Malformat 'assign' node, expect 'assign a, b = 1 + `2 | @plus: 1`'"),
+	('{% if x %}{% else x %}{% endif %}', LiquidSyntaxError, "No expressions allowed for 'else' node"),
+	('{% if x %}{% else if %}{% endif %}', LiquidSyntaxError, "No expressions for 'else if' node"),
+	('{% if x %}{% elseif %}{% endif %}', LiquidSyntaxError, "No expressions for 'elseif' node"),
+	('{% if x %}{% elsif %}{% endif %}', LiquidSyntaxError, "No expressions for 'elsif' node"),
+	('{% if x %}{% elif %}{% endif %}', LiquidSyntaxError, "No expressions for 'elif' node"),
 	('{%  %}', LiquidSyntaxError, 'Empty node'),
-	('{% raw %}', LiquidSyntaxError, "Expecting an end statement for 'raw'"),
-	('{% mode  %}', LiquidSyntaxError, "Expecting a mode value"),
-	('{% block  %}', LiquidSyntaxError, "Expecting a block name"),
-	('{% mode aa debug cc %}', LiquidSyntaxError, "Mode can only take at most 2 values"),
-	('{% mode aa debug %}', LiquidSyntaxError, "Not a valid mode: 'aa'"),
-	('{% mode loose notaloglevel %}', LiquidSyntaxError, "Not a valid loglevel: 'NOTALOGLEVEL'"),
+	('{% raw %}', LiquidSyntaxError, "Expecting an end node for 'raw'"),
+	#('{% mode  %}', LiquidSyntaxError, "Expecting a mode value"),
+	('{% block  %}', LiquidSyntaxError, "A block name is required"),
+	#('{% mode aa debug cc %}', LiquidSyntaxError, "Mode can only take at most 2 values"),
+	#('{% mode aa debug %}', LiquidSyntaxError, "Not a valid mode: 'aa'"),
+	#('{% mode loose notaloglevel %}', LiquidSyntaxError, "Not a valid loglevel: 'NOTALOGLEVEL'"),
 	('{% comment # * // %}', LiquidSyntaxError, "Comments can only be wrapped by no more than 2 strings"),
-	('{% assign x = 1 %}{% extends x.liq %}', LiquidSyntaxError, "Statement 'extends' should be placed at the top or after 'mode'"),
-	('{{% extends {}/templates/parent1.liq %}}{{{{  1  }}}}'.format(HERE),
-		LiquidSyntaxError, "Only blocks allowed in template extending others"),
-	('{{% extends {}/templates/parent1.liq %}}{{%  assign a = 1  %}}'.format(HERE),
-		LiquidSyntaxError, "Only blocks allowed in template extending others"),
+	('{% assign x = 1 %}{% extends x.liq %}', LiquidSyntaxError, "Cannot find file for extension: x.liq"),
+	# ('{{% extends {}/templates/parent1.liq %}}{{{{  1  }}}}'.format(HERE),
+	# 	LiquidSyntaxError, "Only blocks allowed in template extending others"),
+	# ('{{% extends {}/templates/parent1.liq %}}{{%  assign a = 1  %}}'.format(HERE),
+	# 	LiquidSyntaxError, "Only blocks allowed in template extending others"),
 	('{{ "" | *.join: }}', LiquidSyntaxError, "Attribute filter should not have modifiers"),
 	('{{ "" | @:_ }}', LiquidSyntaxError, "Liquid modifier should not go with lambda shortcut"),
 	('{{ "" | }}', LiquidSyntaxError, "No filter specified"),
@@ -783,6 +784,17 @@ def test_render(text, data, out, debug_on):
 	('{{ "" | ? | ?!:_ }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
 	('{{ "" | ? | ?=:_ }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
 	('{{ "" | ? | :_ }}', LiquidSyntaxError, 'Missing True/False actions for ternary filter'),
+	('{%raw x%}{%endraw%}', LiquidSyntaxError, "No expressions allowed for 'raw' node"),
+	('{%capture 12%}{%endcapture%}', LiquidSyntaxError, "Not a valid variable name '12' for 'capture' node"),
+	('{%case%}{%when 1%}{%endcase%}', LiquidSyntaxError, "No values found for 'case' node"),
+	('{%case x%}{%when%}{%endcase%}', LiquidSyntaxError, "No values found for 'when' node"),
+	('{%case 1%}{%endcase%}', LiquidSyntaxError, "No 'when' node found in 'case'"),
+	('{% increment 12%}', LiquidSyntaxError, "Invalid variable name '12' for 'increment' node"),
+	('{% from 12%}', LiquidSyntaxError, "Expect 'from ... import ...' in 'from' node"),
+	('{% unless %}{% endunless %}', LiquidSyntaxError, "No expressions found for 'unless' node"),
+	('{% include %}', LiquidSyntaxError, "No file to include"),
+	('{% include 1 %}', LiquidSyntaxError, "Cannot find file for inclusion: 1"),
+	(f'{{% include {HERE}/templates %}}', LiquidSyntaxError, f"File not exists for inclusion: {HERE}/templates"),
 	#('{{ "" | !:_ }}', LiquidSyntaxError, 'Ternary filter not open yet for True/False action'),
 ])
 def test_initException(text, exception, exmsg):
@@ -827,9 +839,9 @@ def test_multiline_support(debug_on):
 		a
 {% assign a.b = 1 %}
 ''', {}, LiquidRenderError, "NameError: name 'a' is not defined, do you forget to provide the data for the variable?"),
-	('{% mode info %}{% python 1/0 %}', {}, LiquidRenderError, "ZeroDivisionError: "),
-	('''{% mode info loose %}
-{% assign a.b = 1 %}''', {'a': 1}, LiquidRenderError, "AttributeError: 'int' object has no attribute 'b'"),
+	#('{% mode info %}{% python 1/0 %}', {}, LiquidRenderError, "ZeroDivisionError: "),
+# 	('''{% mode info loose %}
+# {% assign a.b = 1 %}''', {'a': 1}, LiquidRenderError, "AttributeError: 'int' object has no attribute 'b'"),
 	('{{a.x}}', {'a': {'b': 1}}, LiquidRenderError, "KeyError: 'x'"),
 	('{{a.x}}', {'a': [1,2,3]}, LiquidRenderError, "TypeError: list indices must be integers or slices, not str"),
 ])
@@ -843,10 +855,10 @@ def test_renderException(text, data, exception, exmsg, debug_on):
 def test_include(debug_on):
 	liquid = Liquid("""{{% mode compact %}}
 	{{% assign x = x + 1 %}}
-	{{% include {}/templates/include1.liq %}}
+	{{% include {}/templates/include1.liq x %}}
 	{{{{x}}}}
-	""".format(HERE))
-	assert liquid.render(x = 1) == '20'
+	""".format(HERE), liquid_loglevel='debug')
+	assert liquid.render(x = 1) == '82'
 
 	with pytest.raises(LiquidSyntaxError):
 		# include self
@@ -883,3 +895,19 @@ def test_extends():
 	""".format(HERE))
 	liquid.render(x = 1) == '10'
 
+def test_raw():
+    liq = Liquid("""
+                 {%- raw -%}                 {%
+                 {%- endraw -%}""", liquid_loglevel='debug')
+    assert liq.render() == '{%'
+
+def test_no_parser_liquid_syntax_error():
+    liq = Liquid(liquid_loglevel='debug')
+    with pytest.raises(LiquidSyntaxError) as exc:
+        raise LiquidSyntaxError('message', Diot(
+			filename='file',
+			lineno=10,
+			startno=5,
+			parser=None,
+		))
+    assert "file:14\nmessage" in str(exc.value)
