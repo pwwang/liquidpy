@@ -107,6 +107,37 @@ def test_get_line():
     assert str(code.get_line(14)) == "code1_line_1\n"
     assert str(code.get_line(15)) == "code1_line_2\n"
 
+def test_get_line2():
+    # code in code
+    code1 = LiquidCode()
+    code2 = LiquidCode()
+    code3 = LiquidCode()
+    code1.add_line("0")
+    code1.add_line("1")
+    code1.add_line("2")
+    code1.add_code(code2)
+    code2.add_line("3")
+    code2.add_line("4")
+    code2.add_line("5")
+    code2.add_code(code3)
+    code3.add_line("6")
+    code3.add_line("7")
+    code2.add_line("8")
+    code2.add_line("9")
+    code1.add_line("10")
+    assert str(code1.get_line(0))   == "0\n"
+    assert str(code1.get_line(1))   == "1\n"
+    assert str(code1.get_line(2))   == "2\n"
+    assert str(code1.get_line(3))   == "3\n"
+    assert str(code1.get_line(4))   == "4\n"
+    assert str(code1.get_line(5))   == "5\n"
+    assert str(code1.get_line(6))   == "6\n"
+    assert str(code1.get_line(7))   == "7\n"
+    assert str(code1.get_line(8))   == "8\n"
+    assert str(code1.get_line(9))   == "9\n"
+    assert str(code1.get_line(10))  == "10\n"
+
+
 # def test_replace():
 #     code = LiquidCode(1)
 #     subcode = LiquidCode(indent = 1)

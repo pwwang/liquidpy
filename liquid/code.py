@@ -9,10 +9,10 @@ class LiquidLine:
     Line of compiled code
     """
     line = attr.ib()
+    context = attr.ib(default=None, eq=False, repr=False)
+    ndent = attr.ib(default=0)
     lineno = attr.ib(init=False)
     filename = attr.ib(init=False)
-    ndent = attr.ib(default=0)
-    context = attr.ib(default=None, eq=False, repr=False)
 
     def __attrs_post_init__(self):
         self.lineno = self.context and self.context.lineno

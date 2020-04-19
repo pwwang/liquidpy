@@ -303,7 +303,6 @@ class NodeLiquidExpression(NodeVoid):
         """Start to parse the node"""
         #if not string: # Empty node
         #	self.parser.raise_ex('Nothing found for expression')
-
         with suppress(LiquidCodeTagExists), self.shared_code.tag(
                 NodeLiquidExpression.LIQUID_DOT_FUNC_NAME
         ) as tagged:

@@ -92,7 +92,7 @@ cde
     assert liq.render(a=2) == 'cde'
 
 def test_expression():
-    liq = Liquid("{{a.a-b}}")
+    liq = Liquid("{{a.a-b}}", liquid_loglevel='debug')
     assert liq.render(a = {'a-b':1}) == '1'
 
     liq = Liquid("{{a.a-b[0].x, b.c[1], b['c[1]']}}")
@@ -433,7 +433,7 @@ def test_include_extends(HERE, debug):
     #assert liquid.render(x = 1) == 'empty blockabc10hij'
 
     # make sure shared code only inserted once
-    assert str(liquid.parser.code).count("# TAGGED CODE: _liquid_dodots_function") == 1
+    assert str(liquid.parser.shared_code).count("# TAGGED CODE: _liquid_dodots_function") == 1
 
     # compiled code:
     """
@@ -479,6 +479,38 @@ def test_include_extends(HERE, debug):
       return ''.join(str(x) for x in _liquid_rendered)
     """
 
+def test_include_extends_render_stacks(HERE):
+
+    liquid = Liquid("""
+    {{%- mode compact %}}
+    {{% extends {0}/templates/extends.liq %}}
+    {{% block b2 %}}
+    {{% include "{0}/templates/include1.liq" x %}}
+    {{{{x}}}}
+    {{% endblock %}}
+    """.format(HERE), liquid_loglevel='debug')
+    # see if I have render stacks correct:
+    with pytest.raises(LiquidRenderError) as exc:
+        liquid.render(x = {}) # can't do {} * 10
+
+    stream = LiquidStream.from_string(str(exc.value))
+    _, tag = stream.until(["unsupported operand type(s) for *: 'dict' and 'int'"], wraps=[], quotes=[])
+    assert bool(tag)
+    _, tag = stream.until(["Template call stacks:"], wraps=[], quotes=[])
+    assert bool(tag)
+    _, tag = stream.until(["File <LIQUID TEMPLATE SOURCE>"])
+    assert bool(tag)
+    _, tag = stream.until(["> 5.     {% include"])
+    assert bool(tag)
+    _, tag = stream.until(["templates/include1.liq"], wraps = [], quotes = [])
+    assert bool(tag)
+    _, tag = stream.until(["> 1. {% assign"], wraps = [], quotes = [])
+    assert bool(tag)
+    _, tag = stream.until(["Compiled source"], wraps=[], quotes = [])
+    assert bool(tag)
+    _, tag = stream.until(["> 33."], wraps=[], quotes = [])
+    assert bool(tag)
+
 def test_include_extends_stacks(HERE):
     with pytest.raises(LiquidSyntaxError) as exc:
         liquid = Liquid("""
@@ -506,6 +538,15 @@ def test_include_extends_stacks(HERE):
     _, tag = stream.until(["> 9."], wraps=[])
     assert bool(tag)
 
+def test_extends_stacks():
+    # if lineno is correct
+    with pytest.raises(LiquidSyntaxError) as exc:
+        liq = Liquid("""
+                    {% extends x %}
+                    {% if 1 %}
+                    {% endif %}
+                    """, liquid_loglevel='debug')
+    assert '> 2.' in str(exc.value)
 
 def test_cycle(debug):
 

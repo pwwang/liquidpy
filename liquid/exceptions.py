@@ -27,8 +27,7 @@ class LiquidSyntaxError(Exception):
             message = "\n".join(message)
         else:
             # we don't have parser, but we may have filename and lineno
-            lineno = context.lineno + context.startno - 1
-            message = f"{context.filename}:{lineno}\n{message}"
+            message = f"{context.filename}:{context.lineno}\n{message}"
 
         super().__init__(message)
 

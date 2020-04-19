@@ -2,6 +2,7 @@
 Liquid template engine for python
 """
 __version__ = "0.5.0"
+import sys
 import traceback
 import logging
 import warnings
@@ -124,50 +125,51 @@ class Liquid:
         self.parser.parse()
 
     def _render_failed(self, exc, finalcode, strcode, final_context):
+        """Format the message with more details when rendering failed"""
+        source_line = None
+        source_lineno = None
+        # we start from the lastest trackback
+        for tback in reversed(traceback.extract_tb(sys.exc_info()[2])):
+            # we expect the exception from our compile source
+            if tback.filename != LIQUID_SOURCE_NAME: # pragma: no cover
+                continue
+            source_lineno = tback.lineno
+            source_line = finalcode.get_line(source_lineno - 1)
+            if source_line.context:
+                break
 
-        stacks = list(reversed(traceback.format_exc().splitlines()))
-        stack_with_file = [
-            stack.strip()
-            for stack in stacks
-            if stack.strip().startswith(
-                'File "{}"'.format(LIQUID_SOURCE_NAME)
-            )
-        ]
-        # ['File "_liquidpy_source", line 56,
-        # in _liquid_render_function_47947849962272']
-        stack = stack_with_file[-1]
-        # get the lineno of most detailed information
-        try:
-            lineno = max([int(stack.split(', ')[1].split()[-1])
-                          for stack in stack_with_file])
-        # may not happen, but just in case
-        except (TypeError, ValueError): # pragma: no cover
-            raise exc from None
-        msg = [stacks[0]]
-        if 'NameError:' in stacks[0]:
-            msg[0] += ', do you forget to provide ' \
-                        'the data for the variable?'
 
-        msg.append('\nTemplate call stacks:')
-        msg.append('----------------------------------------------')
+        msg = [f"[{type(exc).__name__}] {exc!s}"]
+        if not source_line or LOGGER.level > LIQUID_LOGLEVELID_DETAIL:
+            # exception is not from our compile source
+            # or loglevel is higher than DETAIL
+            raise LiquidRenderError(msg[0]) from None
 
-        current_line = finalcode.get_line(lineno-1)
-        if current_line.context:
-            msg.extend(current_line.context.parser.call_stacks(
-                current_line.lineno
+        msg.append('')
+        msg.append("Template call stacks:")
+        msg.append('-' * 50)
+
+        if source_line.context:
+            msg.extend(source_line.context.parser.call_stacks(
+                source_line.lineno
             ))
 
-        if not stack_with_file or LOGGER.level >= 20: # not at debug level
+        # Only show compiled source if we are at debug level
+        if LOGGER.level > 10:
             raise LiquidRenderError('\n'.join(msg)) from None
 
-        msg.append('\nCompiled source (lower loglevel to hide this):')
-        msg.append('----------------------------------------------')
-        msg.extend(LiquidStream.from_string(strcode).get_context(lineno))
+        msg.append('')
+        msg.append("Compiled source (elevate loglevel to hide this)")
+        msg.append('-' * 50)
+        msg.extend(LiquidStream.from_string(strcode).
+                   get_context(source_lineno))
 
-        msg.append('\nContext:')
-        msg.append('----------------------------------------------')
+        # attach context as well
+        msg.append('')
+        msg.append("Context:")
+        msg.append('-' * 50)
         for key, val in final_context.items():
-            if key == '_liquid_liquid_filters':
+            if key == LIQUID_LIQUID_FILTERS:
                 continue
             if isinstance(val, dict):
                 msg.append(f'  {key}:')
@@ -193,11 +195,14 @@ class Liquid:
 
         finalcode, funcname = self.parser.assemble(final_context)
         strcode = str(finalcode)
-        LOGGER.debug("The compiled code:\n%s", strcode)
+        ret = None
         try:
             execode = compile(strcode, LIQUID_SOURCE_NAME, 'exec')
             localns = {}
             exec(execode, None, localns) # pylint: disable=exec-used
-            return localns[funcname](final_context)
+            ret = localns[funcname](final_context)
+            # only show when no exception raised
+            LOGGER.debug("The compiled code:\n%s", strcode)
         except Exception as exc:
             self._render_failed(exc, finalcode, strcode, final_context)
+        return ret

@@ -61,14 +61,14 @@ class LiquidParser:
 
     """Parse a file or a string template"""
     def __init__(self, filename, prev, config,
-                 stream=None, startno=1, shared_code=None, code=None):
+                 stream=None, shared_code=None, code=None):
 
         self.stream = stream or LiquidStream.from_file(filename)
         self.shared_code = shared_code
         self.code = code or LiquidCode()
-        # previous parser, to get call stacks
+        # previous lineno and parser, to get call stacks
         self.prev = prev
-        nstack = prev.context.nstack + 1 if prev else 1
+        nstack = prev[1].context.nstack + 1 if prev else 1
 
         LOGGER.debug("[PARSER%2s] Initialized from %s", nstack, filename)
         # deferred nodes
@@ -76,9 +76,6 @@ class LiquidParser:
         self.config = config
         self.context = Diot(filename=filename,
                             lineno=1,
-                            # base lineno
-                            # this could be from an include node
-                            startno=startno,
                             history=[],
                             # the data passed on during parsing
                             data=Diot(),
@@ -96,22 +93,21 @@ class LiquidParser:
             raise LiquidSyntaxError(f'Max stacks ({nstack}) reached',
                                     self.context)
 
-    def call_stacks(self):
+    def call_stacks(self, lineno=None):
         """Get call stacks for debugging"""
-        stacks = [self]
+        stacks = [(lineno or self.context.lineno, self)]
         prev = self.prev
         while prev:
-            stacks.insert(0, prev)
-            prev = prev.prev
+            stacks.append(prev)
+            prev = prev[1].prev
 
         ret = []
-        for parser in stacks:
+        for lnno, parser in reversed(stacks):
             ret.append(f"File {parser.context.filename}")
             ret.extend(f"  {line}"
                        for line in parser.stream.get_context(
-                           parser.context.startno + parser.context.lineno - 1,
-                           LIQUID_DEBUG_SOURCE_CONTEXT if parser is self else 0,
-                           parser.context.startno
+                           lnno,
+                           LIQUID_DEBUG_SOURCE_CONTEXT if parser is self else 0
                        ))
         return ret
 
@@ -198,7 +194,6 @@ class LiquidParser:
         while True:
             string, tag = self.stream.until(LIQUID_OPEN_TAGS,
                                             wraps=[], quotes=[])
-            print(repr([string, tag]))
             if not tag:
                 raise LiquidSyntaxError(f"Expecting an end node for {name!r}",
                                         self.context)
@@ -347,23 +342,9 @@ class LiquidParser:
             node.parse_content()
 
     def assemble(self, context):
-        """Assemble it to executable codes, only when final is True"""
-        # assemble the function body
-        self.shared_code.add_line("")
-        self.shared_code.add_line("# Rendered content")
-        self.shared_code.add_line(f"{LIQUID_COMPILED_RENDERED} = []")
-        self.shared_code.add_line(f"{LIQUID_COMPILED_RR_APPEND} = "
-                                  f"{LIQUID_COMPILED_RENDERED}.append")
-        self.shared_code.add_line(f"{LIQUID_COMPILED_RR_EXTEND} = "
-                                  f"{LIQUID_COMPILED_RENDERED}.extend")
-        self.shared_code.add_line("")
-        self.shared_code.add_line("# Environment and variables")
-        for key in context:
-            self.shared_code.add_line(f"{key} = {LIQUID_COMPILED_CONTEXT}"
-                                      f"[{key!r}]")
-        self.shared_code.add_line("")
-
-        self.code.codes.insert(0, self.shared_code)
+        """Assemble it to executable codes, only when final is True
+        This may be re-assembled with different context
+        So we should not do anything with self.code and self.shared_code"""
 
         funcname = f"{LIQUID_RENDER_FUNC_PREFIX}_{id(self)}"
         finalcode = LiquidCode()
@@ -371,6 +352,18 @@ class LiquidParser:
         finalcode.indent()
         finalcode.add_line("'''Main entrance function to render the "
                            "template'''")
+        finalcode.add_line('')
+        finalcode.add_line("# Rendered content")
+        finalcode.add_line(f"{LIQUID_COMPILED_RENDERED} = []")
+        finalcode.add_line(f"{LIQUID_COMPILED_RR_APPEND} = "
+                                  f"{LIQUID_COMPILED_RENDERED}.append")
+        finalcode.add_line(f"{LIQUID_COMPILED_RR_EXTEND} = "
+                                  f"{LIQUID_COMPILED_RENDERED}.extend")
+        finalcode.add_line("")
+        finalcode.add_line("# Environment and variables")
+        for key in context:
+            finalcode.add_line(f"{key} = {LIQUID_COMPILED_CONTEXT}[{key!r}]")
+        finalcode.add_code(self.shared_code)
         finalcode.add_code(self.code)
         finalcode.add_line("")
         finalcode.add_line("return ''.join(str(x) for x in "

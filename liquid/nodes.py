@@ -110,10 +110,9 @@ class NodeVoid:
 
     def __attrs_post_init__(self):
         if self.context:
-            lineno = self.context.lineno + self.context.startno - 1
             LOGGER.debug("[PARSER%2s] - Found node %r at %s:%s",
                          self.context.nstack, self.name,
-                         self.context.filename, lineno)
+                         self.context.filename, self.context.lineno)
 
     def start(self):
         """Validate attrs"""
@@ -128,10 +127,9 @@ class NodeVoid:
     def parse_node(self):
         """Parse the node into python code"""
         if self.context:
-            lineno = self.context.lineno + self.context.startno - 1
             LOGGER.debug("[PARSER%2s]   Parsing node %r at %s:%s",
                          self.context.nstack, self.name,
-                         self.context.filename, lineno)
+                         self.context.filename, self.context.lineno)
             self.context.history.append(self)
 
 @attr.s(kw_only=True)
@@ -177,7 +175,7 @@ class NodeIntact(Node):
                          (f"deferred({self.defer}) "
                           if hasattr(self, "defer") else ""),
                          self.name, self.context.filename,
-                         self.context.lineno + self.context.startno - 1)
+                         self.context.lineno)
 
 @attr.s(kw_only=True)
 class NodeLiquidLiteral(NodeVoid):
@@ -836,7 +834,8 @@ class NodeInclude(NodeVoid):
                                                code=inccode,
                                                shared_code=self.shared_code,
                                                filename=self.incfile,
-                                               prev=self.context.parser,
+                                               prev=(self.context.lineno,
+                                                     self.context.parser),
                                                config=self.config)
         parser.parse()
 
@@ -887,7 +886,7 @@ class NodeExtends(NodeVoid):
     lineno = attr.ib(default=0, init=False)
 
     def start(self):
-        self.lineno = self.context.lineno + self.context.startno - 1
+        self.lineno = self.context.lineno
 
         if not self.attrs:
             raise LiquidSyntaxError("No file to extend", self.context)
@@ -932,7 +931,7 @@ class NodeExtends(NodeVoid):
             code=LiquidCode(indent=self.code.ndent),
             config=self.config,
             filename=self.extfile,
-            prev=self.context.parser
+            prev=(self.context.lineno, self.context.parser)
         )
         parser.parse()
 
