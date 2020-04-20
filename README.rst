@@ -57,12 +57,12 @@ Baisic usage
    # ret == '1'
 
    # load template from a file
-   liq = Liquid('/path/to/template', from_file = True)
+   liq = Liquid('/path/to/template', liquid_from_file=True)
 
 With environments:
 
 .. code-block:: python
 
-   liq = Liquid('{{a | os.path.basename}}', os = __import__('os'))
-   ret = liq.render(a = "path/to/file.txt")
+   liq = Liquid('{{a | os.path.basename}}', os=__import__('os'))
+   ret = liq.render(a="path/to/file.txt")
    # ret == 'file.txt'

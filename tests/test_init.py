@@ -1,7 +1,7 @@
 import pytest
 import logging
 from pathlib import Path
-from liquid import Liquid, _shorten, _check_vars
+from liquid import Liquid, _shorten, _check_vars, LOGGER
 from liquid.stream import LiquidStream
 from liquid.code import LiquidCode
 from liquid.defaults import LIQUID_LOGGER_NAME
@@ -604,3 +604,36 @@ def test_check_vars(vars, expected):
             _check_vars(vars)
     else:
         assert _check_vars(vars) is None
+
+def test_include_config_switching(HERE):
+    # test config switches in different parsers/files
+    master = f"""
+    {{% config mode=loose, loglevel=debug %}}
+    {{{{1}}}}
+    {{% include {HERE}/templates/parent5.liq %}}{{# in compact mode, loglevel=info #}}
+    {{{{2}}}}"""
+    liq = Liquid(master)
+    assert LOGGER.level == 10
+    #                                                     we should go back
+    #                                                     to loose mode
+    assert liq.render() == '\n    \n    1\n    empty block\n    2'
+    # loglevel should not be changed
+    assert LOGGER.level == 10
+
+def test_extends_config_switching(HERE):
+    # test config switches in different parsers/files
+    master = f"""
+    {{% config mode=loose, loglevel=debug %}}
+    {{{{1}}}}
+    {{% extends {HERE}/templates/parent5.liq %}}{{# in compact mode, loglevel=info #}}
+    {{% block b1 %}}
+    {{{{2}}}}
+    {{% endblock %}}"""
+    liq = Liquid(master)
+    assert LOGGER.level == 10
+    #                                                     we should go back
+    #                                                     to loose mode
+    assert liq.render() == 'empty block\n    2\n    '
+    # loglevel should not be changed
+    assert LOGGER.level == 10
+

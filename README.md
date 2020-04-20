@@ -19,7 +19,7 @@ ret = liq.render(a = 1)
 # ret == '1'
 
 # load template from a file
-liq = Liquid(from_file='/path/to/template')
+liq = Liquid('/path/to/template', liquid_from_file=True)
 ```
 With environments:
 ```python

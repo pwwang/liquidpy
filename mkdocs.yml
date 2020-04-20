@@ -14,12 +14,13 @@ markdown_extensions:
 extra_css:
     - 'extra.css'
 nav:
-    - 'Introduction': 'index.md'
-    - 'Tags/Operators': 'tags.md'
+    - 'Home': 'index.md'
+    - 'Introduction': 'intro.md'
     - 'White space control': 'wscontrol.md'
     - 'Debug': 'debug.md'
-    - 'Blocks': 'blocks.md'
+    - 'Nodes': 'nodes.md'
     - 'Inheritance and inclusion': 'extends_include.md'
     - 'Filters': 'filters.md'
     - 'Modifiers': 'modifiers.md'
     - 'Change log': 'changelog.md'
+    - 'API': 'api.md'

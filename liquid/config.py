@@ -61,12 +61,25 @@ def extends_setter(this, value):
     raw.extend(ret)
     return raw
 
+# pylint: disable=too-few-public-methods
 @attr_property_class
 @attr.s(slots=True)
 class LiquidConfig:
 
-    """Configurations for a Liquid object
+    """@API
+    Configurations for a Liquid object
+
+    @params:
+        mode (str): The mode for `liquidpy` to handle the spaces
+            arround open tags
+        loglevel (int|str): The loglevel. Could be int identified
+            by `logging` module or `detail/15` defined in `liquidpy`
+        include (str): Paths to scan the included files
+            - multiple paths separated by `;`
+        extends (str): Paths to scan mother templates to extend.
+            - multiple paths separated by `;`
     """
+    # pylint: disable=no-self-use
     # the mode to parse the {%, {%- and alike
     # compact, loose
     mode = attr_property(validator_runtime=True,
@@ -86,11 +99,17 @@ class LiquidConfig:
 
     @contextmanager
     def tear(self):
+        """@API
+        Leave a copy of config, when return,
+        get the loglevel of LOGGER back
+        @yields:
+            (LiquidConfig): The new config object
+        """
         config = LiquidConfig(
             mode=self.mode,
             loglevel=self.loglevel,
-            include=self.include[:],
-            extends=self.extends[:]
+            include=self.include[:], # pylint: disable=unsubscriptable-object
+            extends=self.extends[:] # pylint: disable=unsubscriptable-object
         )
         yield config
 

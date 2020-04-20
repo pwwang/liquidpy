@@ -217,7 +217,7 @@ class NodeLiquidExpression(NodeVoid):
     LIQUID_DOT_FUNC_NAME = '_liquid_dodots_function'
 
     def _parse_ternary(self, exprs, base):
-
+        # pylint: disable=too-many-branches
         conditions, truthy, falsy = [], [], []
         first_expr = exprs.pop(0)
         if first_expr.modifiers['?']:
@@ -336,7 +336,9 @@ class NodeLiquidExpression(NodeVoid):
         return self._parse_exprs(exprs, base)
 
     def parse_node(self):
-        """Start to compile the node"""
+        """@API
+        Start parsing the node
+        """
         super().parse_node()
         parsed = self._parse()
         self.code.add_line(f"{LIQUID_COMPILED_RR_APPEND}({parsed})",

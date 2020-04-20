@@ -1,4 +1,4 @@
-{% mode compact %}
+{% config mode=compact, loglevel=info %}
 
 {% block b0 %}
 empty block

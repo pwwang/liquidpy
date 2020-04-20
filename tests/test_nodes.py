@@ -25,7 +25,7 @@ def test_mixed_error():
 
     node = NodeVoid(name='void', attrs='', code=None, shared_code=LiquidCode())
     with pytest.raises(LiquidSyntaxError):
-        node._try_mixed('`')
+        node.try_mixed('`')
 
 def test_empty_literal():
     code = LiquidCode()

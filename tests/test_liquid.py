@@ -22,6 +22,7 @@ def debug_off():
     Liquid.debug(dbg)
 
 @pytest.mark.parametrize('text, data, out', [
+    ('{% if 1%}{%endif%}', {}, ''),
     ('{{ page.title }}', {'page': dict(title = 'Introduction')}, 'Introduction'),
     ('''{% if user %}\nHello {{ user.name }}!{% endif %}''', {'user': dict(name = 'Adam')}, '\nHello Adam!'),
     ('''{% if `product.title` == "Awesome Shoes" %}
@@ -137,7 +138,7 @@ def test_render_1(text, data, out):
      This is a cookie
   {% else %}
      This is not a cake nor a cookie
-{% endcase %}''', {}, '''\n\n  \n     This is a cake\n  '''),
+{% endcase %}{%if 1%}1{%endif%}''', {}, '''\n\n  \n     This is a cake\n  1'''),
 
     ('''{% for product in `collection.products` %}
 {{ product.title }}

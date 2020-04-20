@@ -35,7 +35,6 @@ from .defaults import (
 
 LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
 
-
 def _multi_line_support(string):
     """
     Support multi-line statements, comments (tag) and expressions
@@ -57,12 +56,26 @@ def _multi_line_support(string):
              for i, line in enumerate(lines))
     return ' '.join(lines)
 
-class LiquidParser:
-
-    """Parse a file or a string template"""
-    def __init__(self, filename, prev, config,
-                 stream=None, shared_code=None, code=None):
-
+class LiquidParser: # pylint: disable=too-many-instance-attributes
+    """@API
+    Parse a file or a string template"""
+    def __init__(self, # pylint: disable=too-many-arguments
+                 filename,
+                 prev,
+                 config,
+                 stream=None,
+                 shared_code=None,
+                 code=None):
+        """@API
+        Constructor for LiquidParser
+        @params:
+            filename (str): The filename of the template
+            prev (LiquidParse): The previous parser
+            config (LiquidConfig): The configuration
+            stream (stream): The stream to parse instead of the file of filename
+            shared_code (LiquidCode): The shared code
+            code (LiquidCode): The code object
+        """
         self.stream = stream or LiquidStream.from_file(filename)
         self.shared_code = shared_code
         self.code = code or LiquidCode()
@@ -94,7 +107,13 @@ class LiquidParser:
                                     self.context)
 
     def call_stacks(self, lineno=None):
-        """Get call stacks for debugging"""
+        """@API
+        Get call stacks for debugging
+        @params:
+            lineno (int): Current line number
+        @returns:
+            (list): The assembled call stacks
+        """
         stacks = [(lineno or self.context.lineno, self)]
         prev = self.prev
         while prev:
@@ -112,7 +131,8 @@ class LiquidParser:
         return ret
 
     def parse(self):
-        """Start parsing the template"""
+        """@API
+        Start parsing the template"""
         # Let's scan for the next open tag {%, {{, {#
         # Even it's quoted or wrapped by brackets
         string, tag = self.stream.until(LIQUID_OPEN_TAGS, wraps=[], quotes=[])
@@ -153,8 +173,8 @@ class LiquidParser:
         @params:
             tag (str): The open tag
         @returns:
-            The content of the node.
-            For example: `abc` of `{% abc %}`. `%}` \
+            (str): The content of the node.
+            For example: `abc` of `{% abc %}`. `%}`
             will be saved in `self.endtag`
         """
         paired_tags = None
@@ -236,7 +256,7 @@ class LiquidParser:
 
 
     def parse_literal(self, string, tag):
-        """
+        """@API
         Parse the literal texts
         @params:
             string (str): The literal text
@@ -262,7 +282,7 @@ class LiquidParser:
         self.context.lineno += lineno_inc
 
     def parse_expression(self, tag):
-        """
+        """@API
         Parse the expressions like `{{ 1 }}`
         @params:
             tag (str): The open tag
@@ -276,7 +296,7 @@ class LiquidParser:
                              context=self.context).parse_node()
 
     def parse_comment(self, tag):
-        """
+        """@API
         Parse the comment tag `{##}` or `{#--#}`
         @params:
             tag (str): The open tag.
@@ -288,8 +308,8 @@ class LiquidParser:
         comment_node.parse_node()
 
     def parse_statement(self, tag):
-        """
-        Parse the statement node
+        """@API
+        Parse the statement node `{% ... %}`
         @params:
             tag (str): The open tag
         """
@@ -342,9 +362,13 @@ class LiquidParser:
             node.parse_content()
 
     def assemble(self, context):
-        """Assemble it to executable codes, only when final is True
+        """@API
+        Assemble it to executable codes, only when final is True
         This may be re-assembled with different context
-        So we should not do anything with self.code and self.shared_code"""
+        So we should not do anything with self.code and self.shared_code
+        @params:
+            context (diot): The context to render the template
+        """
 
         funcname = f"{LIQUID_RENDER_FUNC_PREFIX}_{id(self)}"
         finalcode = LiquidCode()
@@ -356,9 +380,9 @@ class LiquidParser:
         finalcode.add_line("# Rendered content")
         finalcode.add_line(f"{LIQUID_COMPILED_RENDERED} = []")
         finalcode.add_line(f"{LIQUID_COMPILED_RR_APPEND} = "
-                                  f"{LIQUID_COMPILED_RENDERED}.append")
+                           f"{LIQUID_COMPILED_RENDERED}.append")
         finalcode.add_line(f"{LIQUID_COMPILED_RR_EXTEND} = "
-                                  f"{LIQUID_COMPILED_RENDERED}.extend")
+                           f"{LIQUID_COMPILED_RENDERED}.extend")
         finalcode.add_line("")
         finalcode.add_line("# Environment and variables")
         for key in context:

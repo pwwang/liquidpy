@@ -1,4 +1,4 @@
-{% mode compact %}
+{% config mode=compact %}
 
 {% block b0 %}
 empty block

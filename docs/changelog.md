@@ -1,3 +1,13 @@
+# 0.5.0
+- Extract major model of node to allow `register_node` (#18)
+- Introduce `config` node and deprecate `mode`
+- Allow specification of directories to scan for `include` and `extends` (#19)
+- Add loglevel `detail` to enable verbosity between `info` and `debug`
+- Allow passing variables to included templates (#8)
+- Disallow variables in parent templates to be modified in included templates
+- Require backtick ``( ` )`` for liquidpy expression to be used in statement nodes
+- Add API documentations
+
 # 0.4.0
 - Implement issue #13: Adding ternary end modifier (`$`)
 - Expand list/dict context in debug information

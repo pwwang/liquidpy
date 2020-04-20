@@ -1,5 +1,6 @@
 """
-Default values for liquidpy
+Default settings for liquidpy
+See source of `liquid/defaults.py`
 """
 import logging
 # The logger name for liquidpy
@@ -59,7 +60,7 @@ LIQUID_COMPACT_TAGS = (LIQUID_STATE_OPENTAG_COMPACT,
 # The main function name in compiled source
 LIQUID_RENDER_FUNC_PREFIX = '_liquid_render_function'
 # The name of the compiled source, will be shown in tracebacks
-LIQUID_SOURCE_NAME = '<LIQUID_SOURCE>'
+LIQUID_COMPILED_SOURCE_NAME = '<LIQUID_COMPILED_SOURCE>'
 # The name of the context lines to show in debug
 LIQUID_DEBUG_SOURCE_CONTEXT = 5
 # Max call stacks allow in template,

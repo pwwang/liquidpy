@@ -5,8 +5,16 @@ from .exceptions import LiquidCodeTagExists
 
 @attr.s(slots=True, str=False, repr=False)
 class LiquidLine:
-    """
+    """@API
     Line of compiled code
+
+    @params:
+        line (str): The line in string format
+        context (diot.Diot): The context object
+            - filename: The filename
+            - lineno: The line number in template source
+            - <other context> may not be used in this object
+        ndent (int): The indentation level of this line
     """
     line = attr.ib()
     context = attr.ib(default=None, eq=False, repr=False)
@@ -31,14 +39,14 @@ class LiquidLine:
         return f"{dent}{self.line}\n"
 
 class LiquidCode:
-    """
+    """@API
     Build source code conveniently.
     """
 
     INDENT_STEP = 1
 
     def __init__(self, indent=0):
-        """
+        """@API
         Constructor of code builder
         @params:
             indent (int): The initial indent level
@@ -49,7 +57,11 @@ class LiquidCode:
 
     @contextmanager
     def tag(self, codetag):
-        """Make sure the code with the given tag only added once"""
+        """@API
+        Make sure the code with the given tag only added once
+        @params:
+            codetag (str): The tag of the codes to be added
+        """
         if codetag in self.tags:
             raise LiquidCodeTagExists()
         # add_code indentation takes no effect on added code,
@@ -64,7 +76,7 @@ class LiquidCode:
         self.add_code(tagged)
 
     def __str__(self):
-        """
+        """@API
         Concatnate of the codes
         @returns:
             The concatnated string
@@ -72,7 +84,7 @@ class LiquidCode:
         return "".join(str(c) for c in self.codes)
 
     def add_line(self, line, context=None):
-        """
+        """@API
         Add a line of source to the code.
         Indentation and newline will be added for you, don't provide them.
         @params:
@@ -84,7 +96,7 @@ class LiquidCode:
         self.codes.append(line)
 
     def add_code(self, code):
-        """
+        """@API
         Add a LiquidCode object to the code.
         Indentation and newline will be added for you, don't provide them.
         @params:
@@ -95,21 +107,24 @@ class LiquidCode:
         self.codes.append(code)
 
     def indent(self):
-        """
+        """@API
         Increase the current indent for following lines.
         """
         self.ndent += LiquidCode.INDENT_STEP
 
     def dedent(self):
-        """
+        """@API
         Decrease the current indent for following lines.
         """
         self.ndent -= LiquidCode.INDENT_STEP
 
     def get_line(self, lineno):
-        """
+        """@API
         Get the line with lineno (0-based)
-        Returns a LiquidLine object
+        @params:
+            lineno: The line number
+        @returns:
+            (LiquidLine): The line at `lineno`
         """
         index = 0
         for line in self.codes:

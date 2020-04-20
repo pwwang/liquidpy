@@ -1,4 +1,4 @@
-{% mode compact %}
+{% config mode=compact %}
 
 {% extends parent3.liq %}
 

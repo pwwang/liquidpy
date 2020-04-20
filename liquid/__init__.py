@@ -26,7 +26,7 @@ from .defaults import (
     LIQUID_COMPILED_RR_APPEND,
     LIQUID_COMPILED_RR_EXTEND,
     LIQUID_COMPILED_CONTEXT,
-    LIQUID_SOURCE_NAME,
+    LIQUID_COMPILED_SOURCE_NAME,
     LIQUID_DEBUG_SOURCE_CONTEXT,
     LIQUID_LIQUID_FILTERS,
     LIQUID_TEXT_FILENAME,
@@ -45,13 +45,85 @@ def _shorten(string, length=15):
     return f"{string[:remain]} ... {string[-remain:]}"
 
 def _check_vars(envs):
+    """Check if variable names are valid"""
     for varname in envs:
-        if not varname.isidentifier():
+        if not varname.isidentifier() or varname in keyword.kwlist:
             raise LiquidNameError(f"Invalid variable name: {varname!r}")
+
+def _render_failed(exc, finalcode, final_context):
+    """Format the message with more details when rendering failed"""
+    source_line = None
+    source_lineno = None
+    # we start from the lastest trackback
+    for tback in reversed(traceback.extract_tb(sys.exc_info()[2])):
+        # we expect the exception from our compile source
+        if tback.filename != LIQUID_COMPILED_SOURCE_NAME: # pragma: no cover
+            continue
+        source_lineno = tback.lineno
+        source_line = finalcode.get_line(source_lineno - 1)
+        if source_line.context:
+            break
+
+    msg = [f"[{type(exc).__name__}] {exc!s}"]
+    if LOGGER.level > LIQUID_LOGLEVELID_DETAIL:
+        # exception is not from our compile source
+        # or loglevel is higher than DETAIL
+        raise LiquidRenderError(msg[0]) from None
+
+    if source_line and source_line.context:
+        msg.append('')
+        msg.append("Template call stacks:")
+        msg.append('-' * 50)
+        msg.extend(source_line.context.parser.call_stacks(
+            source_line.lineno
+        ))
+
+    # Only show compiled source if we are at debug level
+    if LOGGER.level > 10:
+        raise LiquidRenderError('\n'.join(msg)) from None
+
+    # it could be IndentationError, which filename and lineno will not be
+    # revealed in trackbacks, we need to parse it from exception message
+    if (source_lineno is None and
+            f"({LIQUID_COMPILED_SOURCE_NAME}, line " in msg[0]):
+        # try to get line number from '(<LIQUID_COMPILED_SOURCE>, line 40)'
+        maybe_lineno = (msg[0]
+                        .split(f"({LIQUID_COMPILED_SOURCE_NAME}, line ")[1]
+                        .split(')')[0])
+        if maybe_lineno.isdigit():
+            source_lineno = int(maybe_lineno)
+
+    if source_lineno is not None:
+        msg.append('')
+        msg.append("Compiled source (elevate loglevel to hide this)")
+        msg.append('-' * 50)
+        msg.extend(LiquidStream.from_string(str(finalcode)).
+                   get_context(source_lineno))
+
+    # attach context as well
+    msg.append('')
+    msg.append("Context:")
+    msg.append('-' * 50)
+    for key, val in final_context.items():
+        if key == LIQUID_LIQUID_FILTERS:
+            continue
+        if isinstance(val, dict):
+            msg.append(f'  {key}:')
+            msg.extend(f'     {k}: {_shorten(str(v), 80)}'
+                       for k, v in val.items())
+        elif isinstance(val, (list, tuple, set)):
+            msg.append(f'  {key}:')
+            msg.extend(f'   - {_shorten(str(v), 80)}' for v in val)
+        else:
+            msg.append(f'  {key}: {_shorten(str(val), 80)}')
+
+    raise LiquidRenderError('\n'.join(msg)) from None
 
 class Liquid:
 
-    """The main class"""
+    """@API
+    The main entrance class for `liquidpy` to initiate a template
+    """
 
     @staticmethod
     def debug(dbg=None): # pylint: disable=unused-argument
@@ -64,11 +136,11 @@ class Liquid:
             Return the current debug mode when `dbg` is `None`
         """
         warnings.warn("Liquid.debug is deprecated and takes no effect "
-                      "any more, use argument liquid_loglevel of "
+                      "anymore, use argument liquid_loglevel of "
                       "Liquid constructor instead.",
                       DeprecationWarning)
 
-    def __init__(self,
+    def __init__(self, # pylint: disable=too-many-arguments
                  liquid_template='',
                  from_file=None,
                  liquid_loglevel=LIQUID_LOGLEVELID_DETAIL,
@@ -78,12 +150,25 @@ class Liquid:
                  liquid_from_file=False,
                  liquid_from_stream=False,
                  **envs):
-        """
+        """API
         Initialize a liquid object
         @params:
-            text (str): The template string
-            **envs (kwargs): The environment.
-                - If `from_file` provided, use it as the template
+            liquid_template (str|stream): The template string/file/stream
+            from_file (str): `Deprecated!` Use `liquid_template` and
+                `liquid_from_file=True` instead.
+            liquid_loglevel (int|str): The loglevel. Could be int identified
+                by `logging` module or `detail/15` defined in `liquidpy`
+            liquid_include (str): Paths to scan the included files
+                - multiple paths separated by `;`
+            liquid_extends (str): Paths to scan mother templates to extend.
+                - multiple paths separated by `;`
+            liquid_mode (str): The mode for `liquidpy` to handle spaces
+                arround open tags
+            liquid_from_file (bool): Indicating whether `liquid_template` is
+                a file path
+            liquid_from_stream (bool): Indicating whether `liquid_template` is
+                a stream
+            **envs: The environment.
         """
         _check_vars(envs)
 
@@ -124,70 +209,13 @@ class Liquid:
 
         self.parser.parse()
 
-    def _render_failed(self, exc, finalcode, strcode, final_context):
-        """Format the message with more details when rendering failed"""
-        source_line = None
-        source_lineno = None
-        # we start from the lastest trackback
-        for tback in reversed(traceback.extract_tb(sys.exc_info()[2])):
-            # we expect the exception from our compile source
-            if tback.filename != LIQUID_SOURCE_NAME: # pragma: no cover
-                continue
-            source_lineno = tback.lineno
-            source_line = finalcode.get_line(source_lineno - 1)
-            if source_line.context:
-                break
-
-
-        msg = [f"[{type(exc).__name__}] {exc!s}"]
-        if not source_line or LOGGER.level > LIQUID_LOGLEVELID_DETAIL:
-            # exception is not from our compile source
-            # or loglevel is higher than DETAIL
-            raise LiquidRenderError(msg[0]) from None
-
-        msg.append('')
-        msg.append("Template call stacks:")
-        msg.append('-' * 50)
-
-        if source_line.context:
-            msg.extend(source_line.context.parser.call_stacks(
-                source_line.lineno
-            ))
-
-        # Only show compiled source if we are at debug level
-        if LOGGER.level > 10:
-            raise LiquidRenderError('\n'.join(msg)) from None
-
-        msg.append('')
-        msg.append("Compiled source (elevate loglevel to hide this)")
-        msg.append('-' * 50)
-        msg.extend(LiquidStream.from_string(strcode).
-                   get_context(source_lineno))
-
-        # attach context as well
-        msg.append('')
-        msg.append("Context:")
-        msg.append('-' * 50)
-        for key, val in final_context.items():
-            if key == LIQUID_LIQUID_FILTERS:
-                continue
-            if isinstance(val, dict):
-                msg.append(f'  {key}:')
-                msg.extend(f'     {k}: {_shorten(str(v), 80)}'
-                           for k, v in val.items())
-            elif isinstance(val, (list, tuple, set)):
-                msg.append(f'  {key}:')
-                msg.extend(f'   - {_shorten(str(v), 80)}' for v in val)
-            else:
-                msg.append(f'  {key}: {_shorten(str(val), 80)}')
-
-        raise LiquidRenderError('\n'.join(msg)) from exc
-
     def render(self, **context):
-        """
+        """@API
         Render the template
         @params:
             **context: The context for rendering.
+        @returns:
+            (str): The rendered string
         """
         _check_vars(context)
         final_context = self.envs.copy()
@@ -197,12 +225,12 @@ class Liquid:
         strcode = str(finalcode)
         ret = None
         try:
-            execode = compile(strcode, LIQUID_SOURCE_NAME, 'exec')
+            execode = compile(strcode, LIQUID_COMPILED_SOURCE_NAME, 'exec')
             localns = {}
             exec(execode, None, localns) # pylint: disable=exec-used
             ret = localns[funcname](final_context)
             # only show when no exception raised
             LOGGER.debug("The compiled code:\n%s", strcode)
-        except Exception as exc:
-            self._render_failed(exc, finalcode, strcode, final_context)
+        except BaseException as exc: # pylint: disable=broad-except
+            _render_failed(exc, finalcode, final_context)
         return ret

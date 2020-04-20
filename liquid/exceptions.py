@@ -6,14 +6,16 @@ from .defaults import LIQUID_LOGGER_NAME, LIQUID_LOGLEVELID_DETAIL
 LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
 
 class LiquidSyntaxError(Exception):
-    """Raises when there is a syntax error in the template"""
+    """@API
+    Raises when there is a syntax error in the template
+    """
 
     def __init__(self, message, context=None):
         """
         Initialize the exception
         @params:
             message (str): The error message
-            parser (LiquidParser): The parser
+            context (diot.Diot): The context
         """
         if not context or LOGGER.level >= LIQUID_LOGLEVELID_DETAIL:
             # just pop the message
@@ -32,16 +34,26 @@ class LiquidSyntaxError(Exception):
         super().__init__(message)
 
 class LiquidRenderError(Exception):
-    """Raises when the template fails to render"""
+    """@API
+    Raises when the template fails to render
+    """
 
 class LiquidCodeTagExists(Exception):
-    """Raises when codes with tag has already been added"""
+    """@API
+    Raises when codes with tag has already been added
+    """
 
 class LiquidExpressionFilterModifierException(Exception):
-    """When incompatible modifiers are assigned to a filter"""
+    """@API
+    When incompatible modifiers are assigned to a filter
+    """
 
 class LiquidNodeAlreadyRegistered(Exception):
-    """When a node is already registered"""
+    """@API
+    When a node is already registered
+    """
 
 class LiquidNameError(Exception):
-    """When an invalid variable name used"""
+    """@API
+    When an invalid variable name used
+    """

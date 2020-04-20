@@ -4,8 +4,9 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
 
 **Where you can use filters**
 
-- In expression tags: `{{`, `}}` and `{{-`, `-}}`
+- In expression nodes: `{{`, `}}` and `{{-`, `-}}`
 - Anywhere else an expression applys, such as in `for/unless/while` conditions, `assign`, `case` block, etc.
+- Since `v0.5.0`, if you are using filters other than expression nodes, you have to quote them using backticks ``( ` )``
 
 # `liquid` filters
 
