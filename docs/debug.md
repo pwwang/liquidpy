@@ -18,7 +18,7 @@ Information shown at each level:
 
 Here is an example for information shown at each level:
 
-```python console
+```python
 >>> from liquid import Liquid
 >>> Liquid("{% python 1/0 %}", liquid_loglevel="debug").render()
 Traceback (most recent call last):
@@ -52,7 +52,7 @@ Context:
   nil: None
 ```
 
-```python console
+```python
 >>> Liquid("{% python 1/0 %}", liquid_loglevel="detail").render()
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -68,7 +68,7 @@ File <LIQUID TEMPLATE SOURCE>
   > 1. {% python 1/0 %}
 ```
 
-```python console
+```python
 >>> Liquid("{% python 1/0 %}", liquid_loglevel="info").render()
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -81,7 +81,7 @@ liquid.exceptions.LiquidRenderError: [ZeroDivisionError] division by zero
 
 # Template call stacks with include and extends
 
-```python console
+```python
 >>> Liquid("{% extends tests/templates/parent4.liq %}", liquid_loglevel='debug').render()
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -113,7 +113,7 @@ File /path/to/liquidpy/tests/templates/include3.liq
 
 At `debug` level, we are able to see the parseing process, as well as the compiled source code. However, by default, there is no handler added to the logger. To see that, we need to add a handler:
 
-```python console
+```python
 >>> import logging
 >>> from liquid import Liquid, LOGGER
 >>> LOGGER.addHandler(logging.StreamHandler())
@@ -158,7 +158,7 @@ def _liquid_render_function_47410234337432(_liquid_context):
 
 You can change the logger level in different files to hide some parsing processes in different files:
 
-```python console
+```python
 >>> Liquid("{% extends tests/templates/parent5.liq %}{{1}}", liquid_loglevel='debug').render()
 [PARSER 1] Initialized from <LIQUID TEMPLATE SOURCE>
 [PARSER 1] - Found node 'extends' at <LIQUID TEMPLATE SOURCE>:1

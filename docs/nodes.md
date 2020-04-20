@@ -750,7 +750,7 @@ register_node("cmd", NodeCommand)
 ```
 
 See how it works:
-```python console
+```python
 >>> from liquid import Liquid
 >>> # import your NodeCommand definitions
 >>> print(Liquid("{% command ls %}").render())
@@ -847,7 +847,7 @@ register_node("foreach", NodeForeach)
 ```
 
 See how it works:
-```python console
+```python
 >>> liq = Liquid("""{% foreach lang_to_ext as lang, ext %}
 ... {{lang}} -> {{ext}}
 ... {% endforeach %}""")
