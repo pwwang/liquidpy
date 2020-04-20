@@ -1,28 +1,59 @@
 """
 Exceptions used in liquidpy
 """
-class LiquidSyntaxError(Exception):
-    """Raises when there is a syntax error in the template"""
+import logging
+from .defaults import LIQUID_LOGGER_NAME, LIQUID_LOGLEVELID_DETAIL
+LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
 
-    def __init__(self, msg, parser=0):
+class LiquidSyntaxError(Exception):
+    """@API
+    Raises when there is a syntax error in the template
+    """
+
+    def __init__(self, message, context=None):
         """
         Initialize the exception
         @params:
-            msg (str): The error message
-            parser (LiquidParser): The parser
+            message (str): The error message
+            context (diot.Diot): The context
         """
-        if isinstance(parser, int):
-            msg = "{} at line {}".format(msg, parser)
-        elif parser:
-            msg = [msg, '']
-            msg.append('Template call stacks:')
-            msg.append('----------------------------------------------')
-            msg.extend(parser.get_stacks())
-            msg = "\n".join(msg)
-        super().__init__(msg)
+        if not context or LOGGER.level >= LIQUID_LOGLEVELID_DETAIL:
+            # just pop the message
+            pass
+        elif context and context.parser:
+            # if we have the context and we are at a higher log level
+            message = [message, '']
+            message.append('Template call stacks:')
+            message.append('----------------------------------------------')
+            message.extend(context.parser.call_stacks())
+            message = "\n".join(message)
+        else:
+            # we don't have parser, but we may have filename and lineno
+            message = f"{context.filename}:{context.lineno}\n{message}"
+
+        super().__init__(message)
 
 class LiquidRenderError(Exception):
-    """Raises when the template fails to render"""
+    """@API
+    Raises when the template fails to render
+    """
 
-class LiquidWrongKeyWord(Exception):
-    """Raises when the key of the environment or context is invalid"""
+class LiquidCodeTagExists(Exception):
+    """@API
+    Raises when codes with tag has already been added
+    """
+
+class LiquidExpressionFilterModifierException(Exception):
+    """@API
+    When incompatible modifiers are assigned to a filter
+    """
+
+class LiquidNodeAlreadyRegistered(Exception):
+    """@API
+    When a node is already registered
+    """
+
+class LiquidNameError(Exception):
+    """@API
+    When an invalid variable name used
+    """

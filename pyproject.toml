@@ -16,6 +16,9 @@ include = "liquid/*.py"
 
 [tool.poetry.dependencies]
 python = "^3.6"
+diot = "*"
+attrs = "^19.3"
+attr_property = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

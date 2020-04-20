@@ -4,8 +4,10 @@ Stream helper for liquidpy
 import io
 from .defaults import LIQUID_DEBUG_SOURCE_CONTEXT
 
+# pylint: disable=too-many-arguments
+
 def words_to_matrix(words):
-    """
+    """@API
     Convert words to matrix for searching.
     For example:
     ```
@@ -18,7 +20,7 @@ def words_to_matrix(words):
     @params:
         words: The words to be converted
     @returns:
-        The converted matrix
+        (list): The converted matrix
     """
     matrix = [{} for _ in range(max(len(word) for word in words))]
     for word in words:
@@ -29,11 +31,11 @@ def words_to_matrix(words):
     return matrix
 
 class LiquidStream:
-    """
+    """@API
     The stream helper for liquidpy
     """
     def __init__(self, stream):
-        """
+        """@API
         Initialize the stream
         @params:
             stream (Stream): A python stream
@@ -42,10 +44,10 @@ class LiquidStream:
 
     @property
     def cursor(self):
-        """
+        """@API
         The current position in the stream
         @returns:
-            An opaque number representing the current position.
+            (int): An opaque number representing the current position.
         """
         if self.stream.closed:
             return 0
@@ -54,69 +56,69 @@ class LiquidStream:
 
     @staticmethod
     def from_file(path):
-        """
+        """@API
         Get stream of a file
         @params:
             path (str): The path of the file
         @returns:
-            LiquidStream
+            (LiquidStream): A LiquidStream object
         """
         return LiquidStream(io.open(path, mode='r', encoding='utf-8'))
 
     @staticmethod
     def from_string(string):
-        """
+        """@API
         Get stream of a string
         @params:
             string (str): The string
         @returns:
-            LiquidStream
+            (LiquidStream): A LiquidStream object
         """
         return LiquidStream(io.StringIO(string))
 
     @staticmethod
     def from_stream(stream):
-        """
+        """@API
         Get stream of a stream
         @params:
             stream (Stream): A stream
         @returns:
-            LiquidStream
+            (LiquidStream): A LiquidStream object
         """
         return LiquidStream(stream)
 
     def __del__(self):
-        """
+        """@API
         Close the stream when GC
         """
         self.close()
 
     def close(self):
-        """
+        """@API
         Close the stream
         """
         if self.stream and not self.stream.closed:
             self.stream.close()
 
     def next(self):
-        """
+        """@API
         Read next character from the stream
         @returns:
-            str: the next character
+            (str): the next character
         """
         return self.stream.read(1)
 
     def rewind(self):
-        """
+        """@API
         Rewind the stream
         """
         self.stream.seek(0)
 
     def eos(self):
-        """
+        """@API
         Tell if the stream is ended
         @returns:
-            `True` if it is else `False`
+            (bool): `True` if it is else `False`
         """
         last = self.cursor
         nchar = self.next()
@@ -126,46 +128,43 @@ class LiquidStream:
         return False
 
     def dump(self):
-        """
+        """@API
         Dump the rest of the stream
         @returns:
-            str: The rest of the stream
+            (str): The rest of the stream
         """
         return self.stream.read()
 
     def readline(self):
-        """Read a single line from the stream"""
+        """@API
+        Read a single line from the stream
+        @returns:
+            (str): the next line"""
         return self.stream.readline()
 
     def get_context(self,
                     lineno,
                     context=LIQUID_DEBUG_SOURCE_CONTEXT,
-                    baselineno=1):
-        """
+                    startno=1):
+        """@API
         Get the line of source code and its context
         @params:
             lineno  (int): Line number of current line
             context (int): How many lines of context to show
         @returns:
-            list: The formated code with context
+            (list): The formated code with context
         """
         self.rewind()
         ret = []
         maxline = lineno + context
         nbit = len(str(maxline)) + 1
-        i = baselineno
+        i = startno
         line = self.readline()
         while line:
-            if i < lineno - context or i > maxline:
-                pass
-            else:
-                ret.append(
-                    "{} {} {}".format(
-                        '>' \
-                        if i == lineno \
-                        else  ' ', (str(i) + '.').ljust(nbit), line.rstrip()
-                    )
-                )
+            if lineno - context <= i <= maxline:
+                prefix = '>' if i == lineno else ' '
+                num = (str(i) + '.').ljust(nbit)
+                ret.append(f"{prefix} {num} {line.rstrip()}")
             i += 1
             line = self.readline()
         return ret
@@ -177,7 +176,7 @@ class LiquidStream:
               wraps=None,
               quotes='"\'`',
               escape='\\'):
-        """
+        """@API
         Split the string of the stream
         @params:
             delimiter (str): The delimiter
@@ -190,7 +189,7 @@ class LiquidStream:
             escape (str): The escape character to see \
                 if any character is escaped
         @returns:
-            list: The split strings
+            (list): The split strings
         """
         wraps = ['{}', '[]', '()'] if wraps is None else wraps
         preceding, stop = self.until([delimiter],
@@ -220,7 +219,7 @@ class LiquidStream:
               wraps=None,
               quotes='"\'`',
               escape='\\'):
-        """
+        """@API
         Get the string until certain words
         For example:
         ```
@@ -245,8 +244,7 @@ class LiquidStream:
             escape (str): The escape character to see \
                 if any character is escaped
         @returns:
-            str: The string that has been searched
-            str: The matched word
+            (str, str): The string that has been searched and the matched word
         """
         # pylint:disable=too-many-locals,too-many-nested-blocks,too-many-branches,too-many-statements
         wraps = ['{}', '[]', '()'] if wraps is None else wraps
@@ -329,3 +327,33 @@ class LiquidStream:
                 matched_chars = ''
             last = self.cursor
             char = self.next()
+
+
+def safe_split(string,
+               delimiter,
+               limit=0,
+               trim=True,
+               wraps=None,
+               quotes='"\'`',
+               escape='\\'):
+    """@API
+    Safely split a string
+    @params:
+        string (str): The string to be split
+        delimit (str): The delimiter
+        limit (int): The limit of split
+        wraps (list): A list of paired wraps to skip of the delimiter \
+            is wrapped by them
+        quotes (str): A series of quotes to skip of the delimiter is \
+            wrapped by them
+        escape (str): The escape character to see \
+            if any character is escaped
+    @returns:
+        (list): The split strings
+    """
+    return LiquidStream.from_string(string).split(delimiter=delimiter,
+                                                  limit=limit,
+                                                  trim=trim,
+                                                  wraps=wraps,
+                                                  quotes=quotes,
+                                                  escape=escape)

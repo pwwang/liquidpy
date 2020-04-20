@@ -1,4 +1,4 @@
-{% config mode=compact %}
+{% config mode=compact, loglevel=info %}
 
 {% block b0 %}
 empty block
@@ -9,5 +9,6 @@ empty block
 {% capture x %}
 {% if true %}
 1
-{%
+{% endif %}
+{% endcapture %}
 {% endblock %}

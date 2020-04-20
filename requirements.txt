@@ -1,2 +1,5 @@
+attr-property
+attrs==19.*,>=19.3.0
+diot
 pytest
 pytest-cov

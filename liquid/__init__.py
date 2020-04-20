@@ -1,77 +1,126 @@
 """
 Liquid template engine for python
 """
-__version__ = "0.4.0"
-
+__version__ = "0.5.0"
+import sys
+import traceback
 import logging
+import warnings
 import keyword
 from .stream import LiquidStream
-from .parser import LiquidLine, LiquidCode, LiquidParser, _shorten
+from .parser import LiquidParser
 from .exceptions import (
     LiquidSyntaxError,
     LiquidRenderError,
-    LiquidWrongKeyWord,
+    LiquidNameError,
 )
 from .filters import LIQUID_FILTERS, PYTHON_FILTERS
+from .code import LiquidCode
+from .config import LiquidConfig
 from .defaults import (
     LIQUID_LOGGER_NAME,
+    LIQUID_DEFAULT_MODE,
     LIQUID_DEFAULT_ENVS,
-    LIQUID_RENDER_FUNC_NAME,
-    LIQUID_COMPILED_RENDERED,
-    LIQUID_COMPILED_RR_APPEND,
-    LIQUID_COMPILED_RR_EXTEND,
-    LIQUID_COMPILED_CONTEXT,
-    LIQUID_SOURCE_NAME,
-    LIQUID_DEBUG_SOURCE_CONTEXT,
+    LIQUID_COMPILED_SOURCE_NAME,
     LIQUID_LIQUID_FILTERS,
     LIQUID_TEXT_FILENAME,
+    LIQUID_STREAM_FILENAME,
+    LIQUID_LOGLEVELID_DETAIL,
 )
 
 LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
 
-def _check_envs(envs, additional=None):
-    """
-    Check the keys of environment. Because we are using the keys as
-    variable name in the template, so we have to make sure they are valid.
-    @params:
-        additional (list): A list of additional keys to check.
-    @returns:
-        `True` if passed else `False`
-    """
-    additional = additional or []
-    for kword in envs:
-        if not kword or not kword.strip():
-            raise LiquidWrongKeyWord(
-                'Empty string cannot be used as variable name.'
-            )
-        if kword in LIQUID_DEFAULT_ENVS:
-            raise LiquidWrongKeyWord(
-                '"{}" cannot be used as variable name, as '
-                'it is bound to value {!r}'.format(
-                    kword, LIQUID_DEFAULT_ENVS[kword]
-                )
-            )
-        if kword in keyword.kwlist:
-            raise LiquidWrongKeyWord(
-                '"{}" cannot be used as variable name, as'
-                'it is a python language keyword.'.format(kword)
-            )
-        if kword in (*additional,
-                     LIQUID_RENDER_FUNC_NAME,
-                     LIQUID_COMPILED_RENDERED,
-                     LIQUID_COMPILED_RR_APPEND,
-                     LIQUID_COMPILED_RR_EXTEND,
-                     LIQUID_LIQUID_FILTERS):
-            raise LiquidWrongKeyWord(
-                '"{}" cannot be used as variable name, as '
-                'it is a liquidpy keyword.'.format(kword))
+def _shorten(string, length=15):
+    """Shorten a string used in debug information"""
+    string = repr(string)[1:-1]
+    if len(string) < length:
+        return string
+    remain = int(len(string) / 2 - 5)
+    return f"{string[:remain]} ... {string[-remain:]}"
+
+def _check_vars(envs):
+    """Check if variable names are valid"""
+    for varname in envs:
+        if not varname.isidentifier() or varname in keyword.kwlist:
+            raise LiquidNameError(f"Invalid variable name: {varname!r}")
+
+def _render_failed(exc, finalcode, final_context):
+    """Format the message with more details when rendering failed"""
+    source_line = None
+    source_lineno = None
+    # we start from the lastest trackback
+    for tback in reversed(traceback.extract_tb(sys.exc_info()[2])):
+        # we expect the exception from our compile source
+        if tback.filename != LIQUID_COMPILED_SOURCE_NAME: # pragma: no cover
+            continue
+        source_lineno = tback.lineno
+        source_line = finalcode.get_line(source_lineno - 1)
+        if source_line.context:
+            break
+
+    msg = [f"[{type(exc).__name__}] {exc!s}"]
+    if LOGGER.level > LIQUID_LOGLEVELID_DETAIL:
+        # exception is not from our compile source
+        # or loglevel is higher than DETAIL
+        raise LiquidRenderError(msg[0]) from None
+
+    if source_line and source_line.context:
+        msg.append('')
+        msg.append("Template call stacks:")
+        msg.append('-' * 50)
+        msg.extend(source_line.context.parser.call_stacks(
+            source_line.lineno
+        ))
+
+    # Only show compiled source if we are at debug level
+    if LOGGER.level > 10:
+        raise LiquidRenderError('\n'.join(msg)) from None
+
+    # it could be IndentationError, which filename and lineno will not be
+    # revealed in trackbacks, we need to parse it from exception message
+    if (source_lineno is None and
+            f"({LIQUID_COMPILED_SOURCE_NAME}, line " in msg[0]):
+        # try to get line number from '(<LIQUID_COMPILED_SOURCE>, line 40)'
+        maybe_lineno = (msg[0]
+                        .split(f"({LIQUID_COMPILED_SOURCE_NAME}, line ")[1]
+                        .split(')')[0])
+        if maybe_lineno.isdigit():
+            source_lineno = int(maybe_lineno)
+
+    if source_lineno is not None:
+        msg.append('')
+        msg.append("Compiled source (elevate loglevel to hide this)")
+        msg.append('-' * 50)
+        msg.extend(LiquidStream.from_string(str(finalcode)).
+                   get_context(source_lineno))
+
+    # attach context as well
+    msg.append('')
+    msg.append("Context:")
+    msg.append('-' * 50)
+    for key, val in final_context.items():
+        if key == LIQUID_LIQUID_FILTERS:
+            continue
+        if isinstance(val, dict):
+            msg.append(f'  {key}:')
+            msg.extend(f'     {k}: {_shorten(str(v), 80)}'
+                       for k, v in val.items())
+        elif isinstance(val, (list, tuple, set)):
+            msg.append(f'  {key}:')
+            msg.extend(f'   - {_shorten(str(v), 80)}' for v in val)
+        else:
+            msg.append(f'  {key}: {_shorten(str(val), 80)}')
+
+    raise LiquidRenderError('\n'.join(msg)) from None
 
 class Liquid:
 
-    """The main class"""
+    """@API
+    The main entrance class for `liquidpy` to initiate a template
+    """
 
     @staticmethod
-    def debug(dbg=None):
+    def debug(dbg=None): # pylint: disable=unused-argument
         """
         Set or get the debug mode
         @params:
@@ -80,149 +129,102 @@ class Liquid:
         @returns:
             Return the current debug mode when `dbg` is `None`
         """
-        if dbg is None:
-            return LOGGER.level <= logging.DEBUG
-        if dbg:
-            if not LOGGER.handlers:
-                handler = logging.StreamHandler()
-                handler.setFormatter(logging.Formatter(
-                    '[%(asctime)-15s %(levelname)5s] %(message)s'))
-                LOGGER.addHandler(handler)
-            LOGGER.setLevel(logging.DEBUG)
-        else:
-            LOGGER.setLevel(logging.INFO)
-        return None
+        warnings.warn("Liquid.debug is deprecated and takes no effect "
+                      "anymore, use argument liquid_loglevel of "
+                      "Liquid constructor instead.",
+                      DeprecationWarning)
 
-    def __init__(self, text='', **envs):
-        """
+    def __init__(self, # pylint: disable=too-many-arguments
+                 liquid_template='',
+                 from_file=None,
+                 liquid_loglevel=LIQUID_LOGLEVELID_DETAIL,
+                 liquid_include="./",
+                 liquid_extends=None,
+                 liquid_mode=LIQUID_DEFAULT_MODE,
+                 liquid_from_file=False,
+                 liquid_from_stream=False,
+                 **envs):
+        """API
         Initialize a liquid object
         @params:
-            text (str): The template string
-            **envs (kwargs): The environment.
-                - If `from_file` provided, use it as the template
+            liquid_template (str|stream): The template string/file/stream
+            from_file (str): `Deprecated!` Use `liquid_template` and
+                `liquid_from_file=True` instead.
+            liquid_loglevel (int|str): The loglevel. Could be int identified
+                by `logging` module or `detail/15` defined in `liquidpy`
+            liquid_include (str): Paths to scan the included files
+                - multiple paths separated by `;`
+            liquid_extends (str): Paths to scan mother templates to extend.
+                - multiple paths separated by `;`
+            liquid_mode (str): The mode for `liquidpy` to handle spaces
+                arround open tags
+            liquid_from_file (bool): Indicating whether `liquid_template` is
+                a file path
+            liquid_from_stream (bool): Indicating whether `liquid_template` is
+                a stream
+            **envs: The environment.
         """
-        if 'from_file' in envs and text:
-            raise ValueError(
-                'Cannot have both "text" and "from_file" specified, '
-                'choose either one.'
-            )
+        _check_vars(envs)
 
-        if 'from_file' in envs:
-            self.filename = envs.pop('from_file')
-            self.stream = LiquidStream.from_file(self.filename)
+        if from_file:
+            warnings.warn("Argument 'from_file' is deprecated, use "
+                          "'liquid_template=<file>, liquid_from_file=True' "
+                          "instead.", DeprecationWarning)
+            liquid_template = from_file
+            liquid_from_file = True
+
+        if liquid_from_stream:
+            self.filename = LIQUID_STREAM_FILENAME
+            self.stream = LiquidStream.from_stream(liquid_template)
+        elif liquid_from_file:
+            self.filename = liquid_template
+            self.stream = LiquidStream.from_file(liquid_template)
         else:
             self.filename = LIQUID_TEXT_FILENAME
-            self.stream = LiquidStream.from_string(text)
+            self.stream = LiquidStream.from_string(liquid_template)
 
-        _check_envs(envs)
         self.envs = LIQUID_DEFAULT_ENVS.copy()
         self.envs.update(envs)
         self.envs.update(PYTHON_FILTERS)
         self.envs[LIQUID_LIQUID_FILTERS] = LIQUID_FILTERS
 
-        self.precode = LiquidCode()
-        self.code = LiquidCode()
-        self.code.indent()
-        self.precode.indent()
+        config = LiquidConfig(mode=liquid_mode,
+                              include=(liquid_include, './'),
+                              extends=liquid_extends and (liquid_extends, './'),
+                              loglevel=liquid_loglevel)
+        self.parser = LiquidParser(filename=self.filename,
+                                   # this is gonna be added to
+                                   # the render function
+                                   shared_code=LiquidCode(indent=1),
+                                   code=LiquidCode(indent=1),
+                                   prev=None,
+                                   config=config,
+                                   stream=self.stream)
 
-        self.precode.add_line("{} = []".format(LIQUID_COMPILED_RENDERED))
-        self.precode.add_line("{} = {}.append".format(
-            LIQUID_COMPILED_RR_APPEND, LIQUID_COMPILED_RENDERED))
-        self.precode.add_line("{} = {}.extend".format(
-            LIQUID_COMPILED_RR_EXTEND, LIQUID_COMPILED_RENDERED))
-
-        LiquidParser(
-            self.stream,
-            self.precode,
-            self.code,
-            self.filename
-        ).parse()
-
-        self.code.add_line(
-            "return ''.join(str(x) for x in {})".format(
-                LIQUID_COMPILED_RENDERED
-            )
-        )
+        self.parser.parse()
 
     def render(self, **context):
-        """
+        """@API
         Render the template
         @params:
             **context: The context for rendering.
+        @returns:
+            (str): The rendered string
         """
-        _check_envs(context)
+        _check_vars(context)
         final_context = self.envs.copy()
         final_context.update(context)
 
-        finalcode = LiquidCode()
-        finalcode.add_line("def {}({}):".format(
-            LIQUID_RENDER_FUNC_NAME, LIQUID_COMPILED_CONTEXT))
-        finalcode.indent()
-        # expand the variables from context
-        for key in final_context:
-            finalcode.add_line(
-                '{key} = {context}[{key!r}]'.format(
-                    key=key, context=LIQUID_COMPILED_CONTEXT
-                )
-            )
-        finalcode.add_code(self.precode)
-        finalcode.add_code(self.code)
+        finalcode, funcname = self.parser.assemble(final_context)
         strcode = str(finalcode)
-        LOGGER.debug("The compiled code:\n%s", strcode)
+        ret = None
         try:
-            execode = compile(strcode, LIQUID_SOURCE_NAME, 'exec')
+            execode = compile(strcode, LIQUID_COMPILED_SOURCE_NAME, 'exec')
             localns = {}
             exec(execode, None, localns) # pylint: disable=exec-used
-            return localns[LIQUID_RENDER_FUNC_NAME](final_context)
-        except Exception as exc:
-            import traceback
-            stacks = list(reversed(traceback.format_exc().splitlines()))
-            stack_with_file = [
-                stack.strip()
-                for stack in stacks
-                if stack.strip().startswith(
-                    'File "{}"'.format(LIQUID_SOURCE_NAME)
-                )
-            ]
-            stack = stack_with_file[-1]
-            # get the lineno of most detailed information
-            try:
-                lineno = max([int(stack.split(', ')[1].split()[-1])
-                              for stack in stack_with_file])
-            # may not happen, but just in case
-            except (TypeError, ValueError): # pragma: no cover
-                raise exc from None
-            msg = [stacks[0]]
-            if 'NameError:' in stacks[0]:
-                msg[0] += ', do you forget to provide ' \
-                          'the data for the variable?'
-            msg.append('\nTemplate call stacks:')
-            msg.append('----------------------------------------------')
-            if finalcode.codes[lineno-1].parser:
-                msg.extend(finalcode.codes[lineno-1].parser.get_stacks(
-                    finalcode.codes[lineno-1].lineno))
-
-            if not stack_with_file or not Liquid.debug(): # not at debug level
-                raise LiquidRenderError('\n'.join(msg)) from None
-
-            msg.append('\nCompiled source (turn debug off to hide this):')
-            msg.append('----------------------------------------------')
-            msg.extend(LiquidStream.from_string(strcode).get_context(lineno))
-
-            msg.append('\nContext:')
-            msg.append('----------------------------------------------')
-            for key, val in final_context.items():
-                if key == '_liquid_liquid_filters':
-                    continue
-                if isinstance(val, dict):
-                    msg.append('  {}:'.format(key))
-                    msg.extend('     {}: {}'.format(k, _shorten(str(v), 80))
-                               for k, v in val.items())
-                elif isinstance(val, (list, tuple, set)):
-                    msg.append('  {}:'.format(key))
-                    msg.extend('   - {}'.format(_shorten(str(v), 80))
-                               for v in val)
-                else:
-                    msg.append('  {}: {}'.format(key, _shorten(str(val), 80)))
-
-            raise LiquidRenderError('\n'.join(msg)) from None
+            ret = localns[funcname](final_context)
+            # only show when no exception raised
+            LOGGER.debug("The compiled code:\n%s", strcode)
+        except BaseException as exc: # pylint: disable=broad-except
+            _render_failed(exc, finalcode, final_context)
+        return ret

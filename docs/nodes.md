@@ -110,7 +110,7 @@ __You may also insert python source code to the template, one line each time__
 
 Input:
 ```liquid
-{% mode compact %}
+{% config mode=compact %}
 {% python from os import path %}
 {% python from glob import glob %}
 {% python d = './date' %}
@@ -136,7 +136,7 @@ Output:
 
 Input:
 ```liquid
-{% mode compact %}
+{% config mode=compact %}
 {% import os %}
 {% from glob import glob %}
 {% python d = './date' %}
@@ -158,6 +158,40 @@ Output:
 </div>
 
 ---
+
+We can also add a block of python code:
+
+<div markdown="1" class="two-column">
+
+Input:
+```liquid
+{% config mode=compact %}
+{% python %}
+import os
+from glob import glob
+d = './date'
+{% endpython %}
+{% for filepath in glob(os.path.join(d, '*.txt')) %}
+  {{os.path.basename(filepath)}}
+{% endfor %}
+```
+
+</div>
+<div markdown="1" class="two-column">
+
+Output:
+```
+  a.txt
+  b.txt
+```
+
+</div>
+
+---
+
+!!! note
+
+    For python block, you must start your code without any indentations
 
 # Control flow
 ## `if`
@@ -225,6 +259,10 @@ This would be the equivalent of doing the following:
   These shoes are not awesome.
 {% endif %}
 ```
+
+!!! note
+
+    If `product` is an object with attributes `title` then the above codes are Okay. However, if `product` is a dictionary, and `title` can only be accessed by `product['title']`, then you can do `{% unless product['title'] == 'Awesome Shoes' %}` or simply `{% unless `product.title` == 'Awesome Shoes' %}`
 
 ## `elsif(elif, elseif, else if) / else`
 Adds more conditions within an if or unless block. `liquidpy` recoglizes not only `elsif` keyword as `liquid` does, it also treats `else if` and `elif` as `elsif` in `liquid`, or `elif` in `python`
@@ -659,3 +697,172 @@ Output:
 </div>
 
 ---
+
+# Write you only statement node
+
+Since `v0.5.0`, `liquidpy` support definition of your own statement node.
+
+There are two types of statement nodes (nodes for short) in `liquidpy`. Void nodes (nodes that do need and end node to close, i.e. `{% config ... %}`) and non-void nodes (nodes that need end node to close, i.e. `{% if ... %}...{% endif %}`)
+
+## Void node
+To write a void node, you just need to subclass the `NodeVoid` class. For example, here we create a new node called `cmd` or `command` to capture the output of command:
+
+```python
+from contextlib import suppress
+from liquid.nodes import NodeVoid, register_node
+from liquid.defaults import LIQUID_RENDERED_APPEND
+from liquid.exceptions import LiquidSyntaxError, LiquidCodeTagExists
+
+class NodeCommand(NodeVoid):
+
+    def start(self):
+        """Check if the node is in right format,
+        and do some preparation for parsing"""
+
+        # attrs is the rest string of the node other than name
+        if not self.attrs:
+            # the context has the filename, lineno, etc
+            raise LiquidSyntaxError("Empty command", self.context)
+
+    def parse_node(self):
+        # log the parsing process
+        super().parse_node()
+
+        # let us just do a simple version, using subprocess.check_output
+        # import the module, since this module will be import just once,
+        # so we put it in the shared_code
+        with suppress(LiquidCodeTagExists), \
+                self.shared_code.tag('import_subprocess') as tagged:
+            tagged.add_line("import subprocess")
+
+        # use it to parse the command
+        # save the result to a variable first
+        # add id here to avoid conflicts
+        self.code.add_line(f"command_{id(self)} = subprocess.check_output("
+                           f"['bash', '-c', {self.attrs!r}], encoding='utf-8')")
+        # put the results in rendered content
+        self.code.add_line(f"{LIQUID_RENDERED_APPEND}(command_{id(self)})")
+
+# register the node
+register_node("command", NodeCommand)
+# add an alias
+register_node("cmd", NodeCommand)
+```
+
+See how it works:
+```python
+>>> from liquid import Liquid
+>>> # import your NodeCommand definitions
+>>> print(Liquid("{% command ls %}").render())
+LICENSE
+README.md
+README.rst
+api.py
+docs
+liquid
+mkdocs.yml
+poetry.lock
+pyproject.toml
+pyproject.toml.bak
+requirements.txt
+setup.py
+tests
+tox.ini
+
+```
+
+## Non-void node
+
+Let's define a simple `foreach` node to implement following (mimic the `foreach` in `php`):
+```
+{% foreach <list> as <element> %}
+{% endforeach %}
+
+{% foreach <list> as <index>, <element> %}
+{% endforeach %}
+
+{% foreach <dict> as <key>, <value> %}
+{% endforeach %}
+```
+
+```python
+import attr
+from liquid.nodes import Node, register_node
+from liquid.exceptions import LiquidSyntaxError
+
+# if we have extra attributes, we need
+@attr.s(kw_only=True)
+class NodeForeach(Node):
+
+    parts = attr.ib(init=False, default=attr.Factory(list))
+
+    def start(self):
+        """Check if the node is in right format,
+        and do some preparation for parsing"""
+
+        # attrs is the rest string of the node other than name
+        if not self.attrs:
+            # the context has the filename, lineno, etc
+            raise LiquidSyntaxError("Empty foreach node", self.context)
+
+        self.parts = [attr.strip() for attr in self.attrs.split(' as ')]
+        if len(self.parts) != 2:
+            raise LiquidSyntaxError("Exactly one 'as' required in foreach node",
+                                    self.context)
+        # allow python and liquid expressions
+        self.parts[0] = self.try_mixed(self.parts[0])
+        variables = [part.strip() for part in self.parts[1].split(',')]
+        if len(variables) > 2:
+            raise LiquidSyntaxError("At most 2 variables to extract in foreach",
+                                    self.context)
+        # TODO: check if variables are valid identifiers
+        self.parts[1:] = variables
+
+    def parse_node(self):
+        # log the parsing process
+        super().parse_node()
+
+        # we need to convert it to python's for loop
+        # we need to know if the first part is a list or a dictionary
+        varname = f"liquid_foreach_{id(self)}"
+        self.code.add_line(f"{varname} = {self.parts[0]}")
+        # get the right part in python for loop
+        self.code.add_line(f"{varname} = enumerate({varname}) "
+                           f"if isinstance({varname}, list) "
+                           f"else ({varname}).items()")
+        # add the for loop
+        variables = ','.join(self.parts[1:])
+        self.code.add_line(f"for {variables} in {varname}:")
+        # indent for future codes
+        self.code.indent()
+
+    def end(self, name):
+        # we need to match the name
+        super().end(name)
+        # we need to dedent, since codes inside foreach has been added
+        self.code.dedent()
+
+# register the node
+register_node("foreach", NodeForeach)
+```
+
+See how it works:
+```python
+>>> liq = Liquid("""{% foreach lang_to_ext as lang, ext %}
+... {{lang}} -> {{ext}}
+... {% endforeach %}""")
+>>> print(liq.render(lang_to_ext=dict(php=".php", python=".py", javascript=".js")))
+
+php -> .php
+
+python -> .py
+
+javascript -> .js
+
+```
+
+### Intact node
+
+Sometimes we don't want to content between `{% raw %}` and `{% endraw %}` to be parsed as liquid template, then we just need to subclass `NodeIntact` and use `parse_content` to parse it.
+
+See how `raw` node was defined in `liquid/nodes.py`

@@ -3,12 +3,42 @@
 ## Inclusion
 You can put {% include ... %} somewhere in your template to include the content of another template.
 
-It can be even put in a statement block. For example:
-```liquid
-The calculated X value is:
-{% include calculate_x.liquid %}
-{{x}}
+~~It can be even put in a statement block. For example:~~
+```diff
+- The calculated X value is:
+- {% include calculate_x.liquid %}
+- {{x}}
 ```
+
+~~`calculate_x.liquid`~~
+```diff
+- {% assign x = x * 10 %}
+```
+
+```diff
+- # without the include statement
+- # liquid.render(x = 1) == '1'
+- # but with it:
+- liquid.render(x = 1) == '10'
+```
+
+!!! warning
+
+	Since `v0.5.0`, variables can no longer be modified in a included template.
+	And you can't refer to any variables inside the included template in later part of the parent template.
+
+!!! hint
+
+	- You can also use `{% include ... %}` inside a template to be included
+	- You can, but don't have to use quote for the included file path
+
+Since `v0.5.0`, you can pass variables to included templates, while, it still has access to the variables in parent template, but is not able to modify them.
+
+!!! hint
+
+	To use variables with the same name, you can just pass the variable name. You can modify them, however, it taks no effect on the variables in parent template.
+
+For example:
 
 `calculate_x.liquid`
 ```liquid
@@ -16,20 +46,43 @@ The calculated X value is:
 ```
 
 ```python
-# without the include statement
-# liquid.render(x = 1) == '1'
-# but with it:
-liquid.render(x = 1) == '10'
+Liquid("""
+{% assign x = 1 %}
+{% include calculate_x.liquid %}
+{{x}}
+""").render()
+# Error: Variable referenced before assignment
+# x is a global variable in include without global statement
+
+Liquid("""
+{% assign x = 1 %}
+{% include calculate_x.liquid x %}
+{{x}}
+""").render()
+# OK, but prints 1
 ```
 
-!!! hint
+### Directories to scan
 
-	- You can also use `{% include ... %}` inside a template to be included
-	- You can, but don't have to use quote for the included file path
+- The directory where the parent template is has always the highest priority
+- You can specify directories to scan in parent template by
+  ```liquid
+  {% config include="/absolute/path; relative/path1; ../rel/path2" %}
+  ```
+  The absolute paths will be used directly, whereas the relative paths will be parsed based on where the parent template is.
+- If the parent template is from a string or stream, current working directory will be used.
+- You can also specify some common directories when initializing the `Liquid` object
+  ```
+  Liquid("...", liquid_include="path1; path2...")
+  ```
+- Later added paths will be scanned first
+- Current working directory is also available for scanning with the lowest priority unless re-added later.
 
 ## Inheritance
 
-A template can be inherited from a parent template. You just need to put `{% extends ... %}` at the top of the template or at the second place while the first is `{% mode ... %}`
+~~A template can be inherited from a parent template. You just need to put `{% extends ... %}` at the top of the template or at the second place while the first is `{% mode ... %}`~~
+
+Since `v0.5.0`, `extends` node can be put anywhere in the template
 
 The parent template should have fixed and flexible parts, which are defined by `blocks`, For example:
 `parent.liquid`
@@ -46,7 +99,7 @@ The parent template should have fixed and flexible parts, which are defined by `
 </html>
 ```
 
-With `{% extends ... %}` statement, all your template allowed to have are just `blocks`: `{% block blockname %}...{% endblock %}`. Those blocks are used to replace the ones in the parent template.
+With `{% extends ... %}` statement, template will have `blocks`: `{% block blockname %}...{% endblock %}`, which will be used to replace the blocks in mother template.
 
 If there are blocks in the parent template without one to replace with in current template, it will be used directly. For example:
 ```liquid
@@ -91,38 +144,16 @@ This way you can replace the whole head or just the title with the blocks define
 
 	Blocks will be ignored in current template if they are not defined parent.
 
-## File path of the template to be included/extended
+### Directories to scan
 
-You can use absolute and relative paths in `{% include ... %}` and `{% extends ... %}`. For relative paths, we will try to find the file relative to the current one. For example:
-```
-|- template.liquid
-|- parents/
-    |- mother.liquid
-```
-In `template.liquid` you can refer to `mother.liquid` by `{% extends parents/mother.liquid %}`
+Basically the same as `include`, only that `./` is not always available for scanning unless you add them by yourself.
 
-If current template is from a text, the current working directory will be used for the relative paths.
+## Changing configurations in different templates
 
-## Mode inheritance
+In included templates or mother templates to extend, you can change all the items for configurations: `mode`, `loglevel`, `include` and `extends`.
 
-You can define separate modes in each inclusion and they can be different from the current template. If not defined, it will inherited from the current template. For example:
-`include1.liquid`
-```liquid
-{% mode loose %}
-Hello {# comment to keep trailing spaces#}
-```
+Note that if loglevel is defined in current template, when the parser returns, the loglevel will be resumed if it has been changed somewhere else.
 
-`include1.liquid`
-```liquid
-World
-```
+!!! note
 
-```liquid
-{% mode compact %}
-{% include include1.liquid %}
-{% include include2.liquid %}
-```
-
-will be rendered as `\nHello World`. The `\n` is coming from the one in `include1.liquid`
-
-For inheritance, the contents in parent template are using the mode defined in itself, while in the current template, the blocks to replace the ones in the parent are using the one defined in the current template.
+	`{% config include=... extends=... %}` will be accumulated during the parsing path. But later-added paths have the priority. So if you have ambigous paths already added, make the add the one you desire very close to where you have your `include` or `extends` nodes
