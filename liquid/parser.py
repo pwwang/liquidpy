@@ -26,11 +26,11 @@ from .defaults import (
     LIQUID_MAX_STACKS,
     LIQUID_DEBUG_SOURCE_CONTEXT,
     LIQUID_NODES,
-    LIQUID_COMPILED_RENDERED,
-    LIQUID_COMPILED_CONTEXT,
+    LIQUID_RENDERED,
+    LIQUID_CONTEXT,
     LIQUID_RENDER_FUNC_PREFIX,
-    LIQUID_COMPILED_RR_APPEND,
-    LIQUID_COMPILED_RR_EXTEND
+    LIQUID_RENDERED_APPEND,
+    LIQUID_RENDERED_EXTEND
 )
 
 LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
@@ -372,24 +372,24 @@ class LiquidParser: # pylint: disable=too-many-instance-attributes
 
         funcname = f"{LIQUID_RENDER_FUNC_PREFIX}_{id(self)}"
         finalcode = LiquidCode()
-        finalcode.add_line(f"def {funcname}({LIQUID_COMPILED_CONTEXT}):")
+        finalcode.add_line(f"def {funcname}({LIQUID_CONTEXT}):")
         finalcode.indent()
         finalcode.add_line("'''Main entrance function to render the "
                            "template'''")
         finalcode.add_line('')
         finalcode.add_line("# Rendered content")
-        finalcode.add_line(f"{LIQUID_COMPILED_RENDERED} = []")
-        finalcode.add_line(f"{LIQUID_COMPILED_RR_APPEND} = "
-                           f"{LIQUID_COMPILED_RENDERED}.append")
-        finalcode.add_line(f"{LIQUID_COMPILED_RR_EXTEND} = "
-                           f"{LIQUID_COMPILED_RENDERED}.extend")
+        finalcode.add_line(f"{LIQUID_RENDERED} = []")
+        finalcode.add_line(f"{LIQUID_RENDERED_APPEND} = "
+                           f"{LIQUID_RENDERED}.append")
+        finalcode.add_line(f"{LIQUID_RENDERED_EXTEND} = "
+                           f"{LIQUID_RENDERED}.extend")
         finalcode.add_line("")
         finalcode.add_line("# Environment and variables")
         for key in context:
-            finalcode.add_line(f"{key} = {LIQUID_COMPILED_CONTEXT}[{key!r}]")
+            finalcode.add_line(f"{key} = {LIQUID_CONTEXT}[{key!r}]")
         finalcode.add_code(self.shared_code)
         finalcode.add_code(self.code)
         finalcode.add_line("")
         finalcode.add_line("return ''.join(str(x) for x in "
-                           f"{LIQUID_COMPILED_RENDERED})")
+                           f"{LIQUID_RENDERED})")
         return finalcode, funcname

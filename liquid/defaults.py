@@ -77,14 +77,14 @@ LIQUID_LOGLEVEL_DETAIL = "DETAIL"
 LIQUID_LOGLEVELID_DETAIL = 15
 
 # The variable name of list of compiled string
-LIQUID_COMPILED_RENDERED = '_liquid_rendered'
+LIQUID_RENDERED = '_liquid_rendered'
 # The append function of above list
-LIQUID_COMPILED_RR_APPEND = '_liquid_ret_append'
+LIQUID_RENDERED_APPEND = '_liquid_ret_append'
 # The extend function of above list
-LIQUID_COMPILED_RR_EXTEND = '_liquid_ret_extend'
+LIQUID_RENDERED_EXTEND = '_liquid_ret_extend'
 
 # The argument name of the main function
-LIQUID_COMPILED_CONTEXT = '_liquid_context'
+LIQUID_CONTEXT = '_liquid_context'
 # The name of the dictionary of all liquid filters
 LIQUID_LIQUID_FILTERS = '_liquid_liquid_filters'
 # The default environment

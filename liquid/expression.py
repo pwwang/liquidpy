@@ -3,7 +3,7 @@ Expression nodes could be complicated, we put this in a separate model
 """
 from contextlib import suppress
 import attr
-from .defaults import LIQUID_LIQUID_FILTERS, LIQUID_COMPILED_RR_APPEND
+from .defaults import LIQUID_LIQUID_FILTERS, LIQUID_RENDERED_APPEND
 from .filters import LIQUID_FILTERS
 from .stream import LiquidStream, safe_split
 from .exceptions import (LiquidCodeTagExists,
@@ -341,5 +341,5 @@ class NodeLiquidExpression(NodeVoid):
         """
         super().parse_node()
         parsed = self._parse()
-        self.code.add_line(f"{LIQUID_COMPILED_RR_APPEND}({parsed})",
+        self.code.add_line(f"{LIQUID_RENDERED_APPEND}({parsed})",
                            self.context)

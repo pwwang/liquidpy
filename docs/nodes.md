@@ -710,7 +710,7 @@ To write a void node, you just need to subclass the `NodeVoid` class. For exampl
 ```python
 from contextlib import suppress
 from liquid.nodes import NodeVoid, register_node
-from liquid.defaults import LIQUID_COMPILED_RR_APPEND
+from liquid.defaults import LIQUID_RENDERED_APPEND
 from liquid.exceptions import LiquidSyntaxError, LiquidCodeTagExists
 
 class NodeCommand(NodeVoid):
@@ -741,7 +741,7 @@ class NodeCommand(NodeVoid):
         self.code.add_line(f"command_{id(self)} = subprocess.check_output("
                            f"['bash', '-c', {self.attrs!r}], encoding='utf-8')")
         # put the results in rendered content
-        self.code.add_line(f"{LIQUID_COMPILED_RR_APPEND}(command_{id(self)})")
+        self.code.add_line(f"{LIQUID_RENDERED_APPEND}(command_{id(self)})")
 
 # register the node
 register_node("command", NodeCommand)

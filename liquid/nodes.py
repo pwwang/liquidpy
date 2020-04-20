@@ -5,8 +5,8 @@ from functools import partial
 from contextlib import suppress
 from pathlib import Path
 import attr
-from .defaults import (LIQUID_COMPILED_RR_EXTEND, LIQUID_COMPILED_RR_APPEND,
-                       LIQUID_NODES, LIQUID_COMPILED_RENDERED,
+from .defaults import (LIQUID_RENDERED_EXTEND, LIQUID_RENDERED_APPEND,
+                       LIQUID_NODES, LIQUID_RENDERED,
                        LIQUID_LOGLEVELID_DETAIL, LIQUID_LOGGER_NAME)
 from .code import LiquidCode
 from .stream import safe_split
@@ -242,14 +242,14 @@ class NodeLiquidLiteral(NodeVoid):
             return
         lines = self.attrs.splitlines(keepends=True)
         if len(lines) > 1:
-            self.code.add_line(f"{LIQUID_COMPILED_RR_EXTEND}([")
+            self.code.add_line(f"{LIQUID_RENDERED_EXTEND}([")
             self.code.indent()
             for line in lines:
                 self.code.add_line(repr(line) + ',', self.context)
             self.code.dedent()
             self.code.add_line("])")
         else:
-            self.code.add_line(f"{LIQUID_COMPILED_RR_APPEND}({lines[0]!r})",
+            self.code.add_line(f"{LIQUID_RENDERED_APPEND}({lines[0]!r})",
                                self.context)
 
 @attr.s(kw_only=True)
@@ -498,7 +498,7 @@ class NodeCycle(NodeVoid):
         super().parse_node()
         varname = f"_for_cycle_{id(self)}"
         self.code.add_line(f"{varname} = ({self.attrs})")
-        self.code.add_line(f"{LIQUID_COMPILED_RR_APPEND}"
+        self.code.add_line(f"{LIQUID_RENDERED_APPEND}"
                            f"({varname}[forloop.index0 % len({varname})])",
                            self.context)
 
@@ -541,9 +541,9 @@ class NodeComment(Node):
         comcode.add_line(f"# NODE COMMENT: {id(self)}")
         comcode.add_line(f"{com_listname} = []")
 
-        comcode.add_line(f"{LIQUID_COMPILED_RR_APPEND} = "
+        comcode.add_line(f"{LIQUID_RENDERED_APPEND} = "
                          f"{com_listname}.append")
-        comcode.add_line(f"{LIQUID_COMPILED_RR_EXTEND} = "
+        comcode.add_line(f"{LIQUID_RENDERED_EXTEND} = "
                          f"{com_listname}.extend")
         self.context.parser.code = comcode
 
@@ -552,12 +552,12 @@ class NodeComment(Node):
         com_listname = f"{NodeComment.LIQUID_COMMENT_PREFIX}_{id(self)}"
         comcode = self.context.parser.code
         # resume append and extend
-        comcode.add_line(f"{LIQUID_COMPILED_RR_APPEND} = "
-                         f"{LIQUID_COMPILED_RENDERED}.append")
-        comcode.add_line(f"{LIQUID_COMPILED_RR_EXTEND} = "
-                         f"{LIQUID_COMPILED_RENDERED}.extend")
+        comcode.add_line(f"{LIQUID_RENDERED_APPEND} = "
+                         f"{LIQUID_RENDERED}.append")
+        comcode.add_line(f"{LIQUID_RENDERED_EXTEND} = "
+                         f"{LIQUID_RENDERED}.extend")
         # add the comment
-        comcode.add_line(f"{LIQUID_COMPILED_RR_EXTEND}(")
+        comcode.add_line(f"{LIQUID_RENDERED_EXTEND}(")
         comcode.indent()
         comcode.add_line(f"{NodeComment.LIQUID_COMMENT_LINE_FORMATTER}(_, "
                          f"{self.attrs[0]!r}, {self.attrs[1]!r})")
@@ -626,9 +626,9 @@ class NodeCapture(Node):
         capcode.add_line(f"{capture_listname} = []")
         # replace append and extend function to make node inside add
         # content to the capture list
-        capcode.add_line(f"{LIQUID_COMPILED_RR_APPEND} = "
+        capcode.add_line(f"{LIQUID_RENDERED_APPEND} = "
                          f"{capture_listname}.append")
-        capcode.add_line(f"{LIQUID_COMPILED_RR_EXTEND} = "
+        capcode.add_line(f"{LIQUID_RENDERED_EXTEND} = "
                          f"{capture_listname}.extend")
         # use the capcode for inside nodes
         self.context.parser.code = capcode
@@ -640,10 +640,10 @@ class NodeCapture(Node):
                                           f"for _ in {capture_listname})")
         self.context.parser.code.add_line(f"del {capture_listname}")
         # resume append and extend
-        self.context.parser.code.add_line(f"{LIQUID_COMPILED_RR_APPEND} = "
-                                          f"{LIQUID_COMPILED_RENDERED}.append")
-        self.context.parser.code.add_line(f"{LIQUID_COMPILED_RR_EXTEND} = "
-                                          f"{LIQUID_COMPILED_RENDERED}.extend")
+        self.context.parser.code.add_line(f"{LIQUID_RENDERED_APPEND} = "
+                                          f"{LIQUID_RENDERED}.append")
+        self.context.parser.code.add_line(f"{LIQUID_RENDERED_EXTEND} = "
+                                          f"{LIQUID_RENDERED}.extend")
         self.context.parser.code.add_line("# NODE CAPTURE END")
         self.context.parser.code.add_line("")
         # resume the parser's code
@@ -829,8 +829,8 @@ class NodeInclude(NodeVoid):
                 raise LiquidSyntaxError("A variable or a kwarg needed "
                                         "for variables passed to "
                                         f"{self.name!r} node", self.context)
-        self.vars[LIQUID_COMPILED_RR_APPEND] = LIQUID_COMPILED_RR_APPEND
-        self.vars[LIQUID_COMPILED_RR_EXTEND] = LIQUID_COMPILED_RR_EXTEND
+        self.vars[LIQUID_RENDERED_APPEND] = LIQUID_RENDERED_APPEND
+        self.vars[LIQUID_RENDERED_EXTEND] = LIQUID_RENDERED_EXTEND
 
     def parse_node(self):
         super().parse_node()
