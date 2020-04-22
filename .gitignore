@@ -109,3 +109,5 @@ poetry.lock
 
 # tagit backup files
 *.bak
+
+.vscode
