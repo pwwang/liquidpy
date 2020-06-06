@@ -166,8 +166,8 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```
 - `join`: Combines the items in an array into a single string using the argument as a separator.
   ```liquid
-  {% assign beatles = "John, Paul, George, Ringo" | @split: ", " %}
-  {{ beatles | join: " and " }}
+  {% assign beatles = `"John, Paul, George, Ringo" | @split: ", "` %}
+  {{ beatles | @join: " and " }}
   {# output: John and Paul and George and Ringo #}
   ```
 - `lstrip`: Removes all whitespaces (tabs, spaces, and newlines) from the beginning of a string. The filter does not affect spaces between words.
@@ -233,7 +233,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```
 - `split`: Divides an input string into an array using the argument as a separator.
   ```liquid
-  {% assign beatles = "John, Paul, George, Ringo" | @split: ", " %}
+  {% assign beatles = `"John, Paul, George, Ringo" | @split: ", "` %}
   {% for member in beatles %}
     {{- member -}},
   {% endfor %}
@@ -303,7 +303,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
 ## List/Array filters
 - `compact`: Removes any empty values from an array.
   ```liquid
-  {% assign site_categories = site.pages | @map: 'category' %}
+  {% assign site_categories = `site.pages | @map: 'category'` %}
   {% for category in site_categories %}
     {{ category }}
   {% endfor %}
@@ -318,7 +318,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
     technology
   {% endcomment %}
 
-  {% assign site_categories = site.pages | @map: 'category' | @compact %}
+  {% assign site_categories = `site.pages | @map: 'category' | @compact` %}
   {% for category in site_categories %}
     {{ category }}
   {% endfor %}
@@ -333,9 +333,9 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```
 - `concat`: Concatenates (joins together) multiple arrays. The resulting array contains all the items from the input arrays.
   ```liquid
-  {% assign fruits = "apples, oranges, peaches" | @split: ", " %}
-  {% assign vegetables = "carrots, turnips, potatoes" | @split: ", " %}
-  {% assign everything = fruits | @concat: vegetables %}
+  {% assign fruits = `"apples, oranges, peaches" | @split: ", "` %}
+  {% assign vegetables = `"carrots, turnips, potatoes" | @split: ", "` %}
+  {% assign everything = `fruits | @concat: vegetables` %}
   {% for item in everything %}
   - {{ item }}
   {% endfor %}
@@ -351,7 +351,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```
 - `map`: Creates an array of values by extracting the values of a named property from another object.
   ```liquid
-  {% assign all_categories = site.pages | @map: "category" %}
+  {% assign all_categories = `site.pages | @map: "category"` %}
   {% for item in all_categories %}
   {{ item }}
   {% endfor %}
@@ -366,19 +366,19 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   ```
 - `reverse`: Reverses the order of the items in an array. reverse cannot reverse a string.
   ```liquid
-  {% assign my_array = "apples, oranges, peaches, plums" | @split: ", " %}
+  {% assign my_array = `"apples, oranges, peaches, plums" | @split: ", "` %}
   {{ my_array | @reverse | @join: ", " }}
   {# output: plums, peaches, oranges, apples #}
   ```
 - `sort`: Sorts items in an array by a property of an item in the array. The order of the sorted array is case-sensitive.
   ```liquid
-  {% assign my_array = "zebra, octopus, giraffe, Sally Snake" | @split: ", " %}
+  {% assign my_array = `"zebra, octopus, giraffe, Sally Snake" | @split: ", "` %}
   {{ my_array | @sort | @join: ", " }}
   {# output: Sally Snake, giraffe, octopus, zebra #}
   ```
 - `uniq`: Removes any duplicate elements in an array (order not preserved).
   ```liquid
-  {% assign my_array = "ants, bugs, bees, bugs, ants" | split: ", " %}
+  {% assign my_array = `"ants, bugs, bees, bugs, ants" | split: ", "` %}
   {{ my_array | @uniq | @join: ", " | @sort }}
   {# output: ants, bugs, bees #}
   ```
@@ -419,7 +419,7 @@ __`escapse_once`, `sort_natural`, `first` and `last` filters are abandoned.__
   {{ "Ground control to Major Tom." | @size }}
   {# output: 28 #}
 
-  {% assign my_array = "apples, oranges, peaches, plums" | @split: ", " %}
+  {% assign my_array = `"apples, oranges, peaches, plums" | @split: ", "` %}
   {{ my_array | @size }}
   {# output: 4 #}
   ```
