@@ -1,0 +1,49 @@
+// we have to use earley to make this priority work
+?expr_with_filters: expr_with_filters "|" expr_filter
+    | expr
+
+?expr_filter: filter ":" filter_args
+    | filter
+
+filter: VAR
+filter_args: expr ("," expr)*
+
+?expr: "(" (number|var) ".." (number|var) ")" -> range
+    | "(" expr ")"
+    | logical_or
+    | logical_and
+    | op_comparison
+    | contains
+    | expr "[" expr "]"    -> getitem
+    | expr "." ATTRNAME    -> getattr
+    | atom
+
+!logical_or: expr "or" expr
+!logical_and: expr "and" expr
+op_comparison: expr OP expr
+!contains: expr "contains" expr
+
+?atom: number | string
+    | "nil"   -> nil
+    | "true"  -> true
+    | "false" -> false
+    | var
+
+var: VAR
+
+number: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER
+string: STRING
+
+// note the order here
+OP: "<>"|"=="|">="|"<="|"!="|"<"|">"
+STRING: (ESCAPED_STRING | "'" _STRING_ESC_INNER "'")
+// earley does support terminal priorities
+ATTRNAME: /[A-Za-z_][\w_\-]*/
+DEC_NUMBER: /0|[1-9]\d*/i
+HEX_NUMBER: /0x[\da-f]*/i
+OCT_NUMBER: /0o[0-7]*/i
+BIN_NUMBER : /0b[0-1]*/i
+FLOAT_NUMBER: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+
+%import common.CNAME -> VAR
+%import common (ESCAPED_STRING, _STRING_ESC_INNER, WS_INLINE)
