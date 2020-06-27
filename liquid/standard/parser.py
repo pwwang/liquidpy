@@ -27,6 +27,7 @@ class StandardParser(Parser):
         | literal_tag_left_compact
         | literal_tag_right_compact
         | literal_tag_non_compact
+        | literal_tag_first_right_compact
         | literal_tag_first
 
     literal_tag_both_compact: LITERAL_TAG_BOTH_COMPACT
@@ -36,12 +37,12 @@ class StandardParser(Parser):
     literal_tag_first: LITERAL_TAG_FIRST
     literal_tag_first_right_compact: LITERAL_TAG_FIRST_RIGHT_COMPACT
 
-    LITERAL_TAG_BOTH_COMPACT: /(?<=-[\}%]\}).+?(?=\{[\{%]-)/s
-    LITERAL_TAG_LEFT_COMPACT: /(?<=-[\}%]\}).+?(?=\{[\{%][^\-]|$)/s
-    LITERAL_TAG_RIGHT_COMPACT: /(?<=[^\-][\}%]\}).+?(?=\{[\{%]-)/s
-    LITERAL_TAG_NON_COMPACT: /(?<=[^\-][\}%]\}).+?(?=\{[\{%][^\-]|$)/s
-    LITERAL_TAG_FIRST: /^.+?(?=\{[\{%]|$)/s
-    LITERAL_TAG_FIRST_RIGHT_COMPACT: /^.+?(?=\{[\{%][^\-]|$)/s
+    LITERAL_TAG_BOTH_COMPACT.2: /(?<=-[\}%]\})((?![\}%]\}).)+(?=\{[\{%]-)/s
+    LITERAL_TAG_LEFT_COMPACT: /(?<=-[\}%]\})((?![\}%]\}).)+(?=\{[\{%][^\-]|$)/s
+    LITERAL_TAG_RIGHT_COMPACT.2: /(?<=[^\-][\}%]\})((?![\}%]\}).)+(?=\{[\{%]-)/s
+    LITERAL_TAG_NON_COMPACT: /(?<=[^\-][\}%]\})((?![\}%]\}).)+(?=\{[\{%][^\-]|$)/s
+    LITERAL_TAG_FIRST: /^((?![\}%]\}).)+(?=\{[\{%][^\-]|$)/s
+    LITERAL_TAG_FIRST_RIGHT_COMPACT.2: /^((?![\}%]\}).)+(?=\{[\{%]-|$)/s
     OUTPUT_TAG.3: /\{\{-?('.*?(?<!\\)(\\\\)*?'|".*?(?<!\\)(\\\\)*?"|.*?)*?-?\}\}/s
     CLOSE_TAG.4: /\{%-?\s*end.*?-?%\}/s
     OPEN_TAG.3: /\{%-?('.*?(?<!\\)(\\\\)*?'|".*?(?<!\\)(\\\\)*?"|.*?)*?-?%\}/s

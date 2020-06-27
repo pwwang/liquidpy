@@ -99,9 +99,9 @@ class TagTransformer(LarkTransformer):
     def tags__filter_args(self, *exprs):
         return exprs
 
-    def tags__expr_filter(self, filtername, filter_args):
+    def tags__expr_filter(self, filtername, filter_args=None):
         # TagFragFilter, (arg1, arg2, ...)
-        return (filtername, filter_args)
+        return (filtername, filter_args or ())
 
     def tags__output(self, expr, *expr_filters):
         return TagFragOutput(expr, expr_filters)

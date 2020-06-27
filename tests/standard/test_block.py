@@ -99,7 +99,6 @@ def test_variable_many_embedded_fragments(parse):
         '__LITERAL__', '__OUTPUT__', '__LITERAL__'
     ]
     parsed = parse("  {{funk}} {{-so}} {{brother}} ")
-    print(parsed.children)
     assert len(parsed.children) == 7
     assert [child.name for child in parsed.children] == [
         '__LITERAL__', '__OUTPUT__', '__LITERAL__', '__OUTPUT__',

@@ -102,22 +102,25 @@ class Transformer(LarkTransformer):
         Returns:
             TagLiteral: The literal tag
         """
-        tag = get_tag('__LITERAL__', tree, self._tag_context(tree))
+        tag = get_tag('__LITERAL__', tree.value, self._tag_context(tree))
         self.config.logger.info('  Hit literal tag: %s', tag)
         self._opening_tag(tag)
         return tag
 
     def literal_tag_both_compact(self, tagstr):
         """Literal with both end compact"""
-        return tagstr.update(tagstr.strip())
+        tagstr.value = tagstr.strip()
+        return tagstr
 
     def literal_tag_left_compact(self, tagstr):
         """Literal with left end compact"""
-        return tagstr.update(tagstr.lstrip())
+        tagstr.value = tagstr.lstrip()
+        return tagstr
 
     def literal_tag_right_compact(self, tagstr):
         """Literal with right end compact"""
-        return tagstr.update(tagstr.rstrip())
+        tagstr.value = tagstr.rstrip()
+        return tagstr
 
     def literal_tag_non_compact(self, tagstr):
         """Literal with no compact"""
