@@ -14,20 +14,11 @@ def get_tag(tagname, tagdata, tagcontext):
         Tag: The Tag object
     """
     if tagname not in TAGS:
-        raise TagRegistryException(tagname)
+        raise TagRegistryException(f'No such tag: {tagname}')
     return TAGS[tagname](tagname, tagdata, tagcontext)
 
-def register_tag(tagname, tag):
-    """Register a tag to the registry
-
-    Args:
-        tagname (str): The tag name
-        tag (class): A subclass of `Tag` (Not the instance!)
-    """
-    TAGS[tagname] = tag
-
-def register(*tagnames):
-    """Decorator version of register_tag
+def register_tag(*tagnames):
+    """Decorator to register a tag
     If not tagnames given, it will be inferred from the class name
     """
     if len(tagnames) == 1 and callable(tagnames[0]):
@@ -55,7 +46,6 @@ def enable_tag(tagname):
         raise TagRegistryException(
             f"Tag is unregisted or already enabled: {tagname}"
         )
-    tag = TAGS[key]
     TAGS[tagname] = TAGS.pop(key)
 
 def disable_tag(tagname):
@@ -65,5 +55,4 @@ def disable_tag(tagname):
         raise TagRegistryException(
             f"Tag is unregisted or already disabled: {tagname}"
         )
-    tag = TAGS[tagname]
     TAGS[key] = TAGS.pop(tagname)

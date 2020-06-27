@@ -1,8 +1,9 @@
 """The top-level parser for liquid template"""
 from functools import partial
-from collections import deque, namedtuple, OrderedDict
+from collections import deque, OrderedDict
+from varname import namedtuple
 from lark import v_args, Lark, Transformer as LarkTransformer
-from lark.exceptions import VisitError
+from lark.exceptions import VisitError as LarkVisitError
 # load all shared tags
 from . import tags # pylint: disable=unused-import
 from ..tagmgr import get_tag
@@ -11,10 +12,10 @@ from ..exceptions import (
     TagWrongPosition
 )
 
-TagContext = namedtuple('TagContext', ['template_name',
-                                       'context_getter',
-                                       'line',
-                                       'column'])
+TagContext = namedtuple(['template_name', # pylint: disable=invalid-name
+                         'context_getter',
+                         'line',
+                         'column'])
 
 @v_args(inline=True)
 class Transformer(LarkTransformer):
@@ -26,12 +27,71 @@ class Transformer(LarkTransformer):
         _direct_tags (list): The direct tags of the ROOT tag
     """
 
-    def __init__(self, template_info):
+    def __init__(self, config, template_info):
         """Construct"""
         super().__init__()
+        self.config = config
         self._stack = deque()
         self._direct_tags = []
         self._template_info = template_info
+
+    def output_tag(self, tagstr):
+        """The output tag: {{ ... }}, or content of {% echo ... %}"""
+        # Should we allow: {{--1}}?
+        # This will be currently rendered as 1, but -1 is intended.
+        tagdata = tagstr[2:-2].strip('-').strip()
+        tag = get_tag('__OUTPUT__', tagdata, self._tag_context(tagstr))
+        self.config.logger.info('  Hit output tag: %s', tag)
+        self._opening_tag(tag)
+        return tag
+
+    def open_tag(self, tagstr):
+        """Open a tag"""
+        tagname, tagdata = self._clean_tagstr(tagstr)
+        tag = get_tag(tagname, tagdata, self._tag_context(tagstr))
+        self.config.logger.info('  Hit tag: %s', tag)
+        self._opening_tag(tag)
+        return tag
+
+    def close_tag(self, tagstr):
+        """Handle tag relationships when closing a tag."""
+        self.config.logger.info('  Hit closing tag: %s', tagstr)
+        if not self._stack:
+            raise EndTagUnexpected(tagstr)
+
+        tagname, _ = self._clean_tagstr(tagstr)
+        tagname = tagname[3:]
+
+        last_tag = self._stack.pop()
+        if last_tag.name == tagname:
+            # collapse VOID to False for maybe VOID tags
+            if last_tag.VOID == 'maybe':
+                self.config.logger.debug(
+                    '    Collapsing tag (VOID: maybe -> False): %s', last_tag
+                )
+                last_tag.VOID = False
+            self.config.logger.debug(
+                '    Closing tag: %s', last_tag
+            )
+        else:
+            # see if we are cloing most prior tag
+            # for example, "if" from "else"
+            most_prior = last_tag._most_prior()
+            if (most_prior and
+                    most_prior.VOID is False):
+                if most_prior.name == tagname:
+                    self.config.logger.debug(
+                        '    Closing first sibling tag: %s', most_prior
+                    )
+                else:
+                    raise TagUnclosed(
+                        most_prior._format_error(most_prior)
+                    )
+            # we are closing nothing
+            else:
+                raise EndTagUnexpected(
+                    self._format_error(tagstr, EndTagUnexpected)
+                )
 
     def literal_tag(self, tree):
         """The literal_tag from master grammar
@@ -43,8 +103,28 @@ class Transformer(LarkTransformer):
             TagLiteral: The literal tag
         """
         tag = get_tag('__LITERAL__', tree, self._tag_context(tree))
+        self.config.logger.info('  Hit literal tag: %s', tag)
         self._opening_tag(tag)
         return tag
+
+    def literal_tag_both_compact(self, tagstr):
+        """Literal with both end compact"""
+        return tagstr.update(tagstr.strip())
+
+    def literal_tag_left_compact(self, tagstr):
+        """Literal with left end compact"""
+        return tagstr.update(tagstr.lstrip())
+
+    def literal_tag_right_compact(self, tagstr):
+        """Literal with right end compact"""
+        return tagstr.update(tagstr.rstrip())
+
+    def literal_tag_non_compact(self, tagstr):
+        """Literal with no compact"""
+        return tagstr
+
+    literal_tag_first = literal_tag_non_compact
+    literal_tag_first_right_compact = literal_tag_right_compact
 
     def _tag_context(self, token):
         """Get the TagContext object to attached to each Tag for
@@ -67,6 +147,7 @@ class Transformer(LarkTransformer):
         else:
             error = ''
 
+
         context = self._tag_context(tag)
         formatted = [
             error,
@@ -81,6 +162,9 @@ class Transformer(LarkTransformer):
                          else ' ')
             formatted.append(f'{indicator} {str(lineno).ljust(lineno_width)}'
                              f'. {line}')
+
+        while hasattr(tag, 'parent') and tag.parent:
+            formatted += tag.parent._format_error()
 
         return '\n'.join(formatted) + '\n'
 
@@ -117,18 +201,23 @@ class Transformer(LarkTransformer):
         child of its prior tags
         """
         if not self._stack:
-            if tag.PRIOR_TAGS and '' not in tag.PRIOR_TAGS:
-                raise TagWrongPosition(f'{tag} requires a prior tag.')
             if tag.PARENT_TAGS and '' not in tag.PARENT_TAGS:
                 raise TagWrongPosition(
                     f"Expecting parents {tag.PARENT_TAGS}: {tag}"
                 )
+            if tag.PRIOR_TAGS and '' not in tag.PRIOR_TAGS:
+                raise TagWrongPosition(f'{tag} requires a prior tag.')
+            self.config.logger.debug('    Set as level_1 tag: %s', tag)
             self._direct_tags.append(tag)
         else:
+            # assign siblings
             if tag.PRIOR_TAGS and self._stack[-1].name in tag.PRIOR_TAGS:
                 prev_tag = self._stack.pop()
                 prev_tag.next = tag
                 tag.prev = prev_tag
+                self.config.logger.debug('    Found prior tag: %s', prev_tag)
+
+            # prior tags should not have VOID maybe, check?
             elif self._stack[-1].VOID == 'maybe':
                 void_tag = self._stack.pop()
                 void_tag.VOID = True
@@ -142,45 +231,20 @@ class Transformer(LarkTransformer):
             if self._stack:
                 self._stack[-1].children.append(tag)
                 tag.parent = self._stack[-1]
+                self.config.logger.debug('    Set as child of tag: %s',
+                                         tag.parent)
 
-                if tag.PARENT_TAGS and tag.parent.name not in tag.PARENT_TAGS:
-                    raise TagWrongPosition(
-                        f"Expecting parents {tag.PARENT_TAGS}: {tag}"
-                    )
+            # parent check
+            # we need to do it after siblings assignment, because
+            # direct parent could also valid from first sibling's
+            # direct parent
+            if not tag._parent_check():
+                raise TagWrongPosition(
+                    f"Expecting parents {tag.PARENT_TAGS}: {tag}"
+                )
 
         if not tag.VOID or tag.VOID == 'maybe':
             self._stack.append(tag)
-
-    def close_tag(self, tagstr):
-        """Handle tag relationships when closing a tag."""
-        if not self._stack:
-            raise EndTagUnexpected(tagstr)
-
-        tagname, _ = self._clean_tagstr(tagstr)
-        tagname = tagname[3:]
-
-        last_tag = self._stack.pop()
-        if last_tag.name == tagname:
-            # collapse VOID to False for maybe VOID tags
-            if last_tag.VOID == 'maybe':
-                last_tag.VOID = False
-        else:
-            # see if we are cloing most prior tag
-            # for example, "if" from "else"
-            most_prior = last_tag._most_prior()
-            if (most_prior and
-                    most_prior.VOID is False and
-                    most_prior.name == tagname):
-                pass
-            # see if we are closing parent
-            # for example: "case" from "else"
-            elif (last_tag.parent and last_tag.parent.name == tagname):
-                pass
-            # we are closing nothing
-            else:
-                raise EndTagUnexpected(
-                    self._format_error(tagstr, EndTagUnexpected)
-                )
 
     def _clean_tagstr(self, tagdata):
         """Clean up the tag data, removing the tag signs
@@ -200,7 +264,7 @@ class Transformer(LarkTransformer):
         if self._stack:
             last_tag = self._stack.pop()
             if last_tag.VOID != 'maybe':
-                raise TagUnclosed(last_tag)
+                raise TagUnclosed(last_tag._format_error(last_tag))
             # this tag is VOID, take children out
             last_tag.VOID = True
             self._direct_tags.extend(last_tag.children)
@@ -224,7 +288,10 @@ class Parser:
     GRAMMAR = None
     TRANSFORMER = Transformer
 
-    def parse(self, template_string, template_name='<string>'):
+    def __init__(self, config):
+        self.config = config
+
+    def parse(self, template_string, template_name):
         """Parse the template string
 
         Args:
@@ -235,13 +302,19 @@ class Parser:
                 the template with envs/context
         """
         # // TODO: put transformer in Lark to make it faster in prodction stage
-        parser = Lark(self.GRAMMAR, parser='earley')
+        parser = Lark(self.GRAMMAR, parser='lalr')
+
+        self.config.logger.info('Parsing %s', template_name)
         tree = parser.parse(template_string)
 
-        return self.TRANSFORMER(
-            (template_name,
-                partial(self._context_getter, template_string=template_string))
-        ).transform(tree)
+        try:
+            return self.TRANSFORMER(
+                self.config,
+                (template_name,
+                 partial(self._context_getter, template_string=template_string))
+            ).transform(tree)
+        except LarkVisitError as verr:
+            raise verr.orig_exc from None
 
     def _context_getter(
             self,

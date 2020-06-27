@@ -3,8 +3,14 @@
 class LiquidException(Exception):
     """The base class for all liquidpy exceptions"""
 
+class LiquidConfigError(LiquidException):
+    """When something goes wrong with the configurations"""
+
 class TagRegistryException(LiquidException):
-    """Raises when a tag is unknown"""
+    """Raises when operate the tag registry incorrectly"""
+
+class FilterRegistryException(LiquidException):
+    """Raises when operate the filter registry incorrectly"""
 
 class LiquidSyntaxError(LiquidException):
     """Template syntax error"""

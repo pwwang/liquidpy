@@ -4,31 +4,31 @@
 ...
 {% endfor %}
 """
-from collections import namedtuple
+from varname import namedtuple
 from lark import v_args
-from ...tagmgr import register
-from ...common.tagparser import Tag, TagTransformer
-from ...common.tagfrag import TagFrag, TagFragConst
+from ...tagmgr import register_tag
+from ..tagparser import Tag, TagTransformer
+from ..tagfrag import TagFrag, TagFragConst
 
-ForObject = namedtuple(
-    'ForObject', ['itername', 'obj', 'limit', 'offset', 'reversed']
+ForObject = namedtuple( # pylint: disable=invalid-name
+    ['itername', 'obj', 'limit', 'offset', 'reversed']
 )
 
 class TagFragFor(TagFrag):
 
-    def render(self, envs):
+    def render(self, local_envs, global_envs):
         itername, expr, args = self.data
-        obj = expr.render(envs)
+        obj = expr.render(local_envs, global_envs)
         args = dict(args)
         limit = args.get('limit', None)
         if limit:
-            limit = limit.render(envs)
+            limit = limit.render(local_envs, global_envs)
         offset = args.get('offset', None)
         if offset:
-            offset = offset.render(envs)
+            offset = offset.render(local_envs, global_envs)
         rvsed = args.get('reversed', False)
         if rvsed:
-            rvsed = rvsed.render(envs)
+            rvsed = rvsed.render(local_envs, global_envs)
         return ForObject(str(itername), obj, limit, offset, rvsed)
 
 
@@ -55,10 +55,10 @@ class TransformerFor(TagTransformer):
         return itername
 
     def for_syntax(self, itername, expr, *args):
-        return TagFragFor((itername, expr, args))
+        return TagFragFor(itername, expr, args)
 
 
-@register
+@register_tag
 class TagFor(Tag):
     """Class for if tag"""
     SYNTAX = r"""
@@ -78,14 +78,14 @@ class TagFor(Tag):
 
     TRANSFORMER = TransformerFor
 
-    def _render(self, envs):
+    def _render(self, local_envs, global_envs):
         rendered = ''
         forobj = self.frag_rendered
+        local_envs_inside = local_envs.copy()
         for var in forobj.obj:
-            envs[forobj.itername] = var
-            print(envs)
-            rendered += self._children_rendered(envs)
+            local_envs_inside[forobj.itername] = var
+            rendered += self._children_rendered(local_envs_inside, global_envs)
         if not forobj.obj:
-            next_rendered, _ = self.next.render(envs)
+            next_rendered, _ = self.next.render(local_envs, global_envs)
             rendered += next_rendered
         return rendered

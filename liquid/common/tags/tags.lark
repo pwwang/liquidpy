@@ -1,13 +1,11 @@
-// we have to use earley to make this priority work
-?expr_with_filters: expr_with_filters "|" expr_filter
-    | expr
+output: expr ("|" expr_filter)*
 
-?expr_filter: filter ":" filter_args
-    | filter
+expr_filter: filter [":" filter_args]
 
 filter: VAR
 filter_args: expr ("," expr)*
 
+// we have to use earley to make this priority work
 ?expr: "(" (number|var) ".." (number|var) ")" -> range
     | "(" expr ")"
     | logical_or

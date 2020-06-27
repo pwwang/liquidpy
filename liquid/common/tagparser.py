@@ -9,9 +9,11 @@ from .tagfrag import (
     TagFragOpComparison,
     TagFragGetItem,
     TagFragGetAttr,
-    TagFragRange
+    TagFragRange,
+    TagFragFilter,
+    TagFragOutput
 )
-from ..tagmgr import register
+from ..tagmgr import register_tag
 from ..exceptions import TagSyntaxError, TagRenderError
 
 # common grammar file, used to import some common grammar rules
@@ -59,15 +61,15 @@ class TagTransformer(LarkTransformer):
 
     def tags__op_comparison(self, left, op, right):
         """The operator comparisons"""
-        return TagFragOpComparison((left, op, right))
+        return TagFragOpComparison(left, op, right)
 
     def tags__getitem(self, obj, subscript):
         """The getitem operation"""
-        return TagFragGetItem((obj, subscript))
+        return TagFragGetItem(obj, subscript)
 
     def tags__getattr(self, obj, attr):
         """The getattr operation"""
-        return TagFragGetAttr((obj, attr))
+        return TagFragGetAttr(obj, attr)
 
     def tags__string(self, quoted_string):
         """The strings"""
@@ -89,7 +91,20 @@ class TagTransformer(LarkTransformer):
 
     def tags__range(self, start, end):
         """The range from start to end"""
-        return TagFragRange((start, end))
+        return TagFragRange(start, end)
+
+    def tags__filter(self, filtername):
+        return TagFragFilter(filtername)
+
+    def tags__filter_args(self, *exprs):
+        return exprs
+
+    def tags__expr_filter(self, filtername, filter_args):
+        # TagFragFilter, (arg1, arg2, ...)
+        return (filtername, filter_args)
+
+    def tags__output(self, expr, *expr_filters):
+        return TagFragOutput(expr, expr_filters)
 
 
     # parse these separately to implement precedence
@@ -121,16 +136,6 @@ class Tag:
     SYNTAX = None
     # The transform for the parser of this tag
     TRANSFORMER = TagTransformer
-    # Whether this tag is frozen or not
-    # A frozen tag won't change the envs
-    # so that we don't need to copy the envs
-    # Otherwise, we will need to pass the changed envs
-    # For example, if a tag has an `assign` tag in it,
-    # the envs that are changed by the `assign` tag should be
-    # only take effect inside this tag.
-    # Then we will need to pass by the intact envs, meaning
-    # we need to make a copy of it.
-    FROZEN = True
     # Prior tags pattern, used to valiate if this tag is in the right
     # position.
     # This should be a pyparsing object able to match the prior tags
@@ -151,24 +156,51 @@ class Tag:
         self.parent = self.prev = self.next = None
         self.parsed = self.parse()
 
-    def _children_rendered(self, envs):
+    def _children_rendered(self, local_envs, global_envs):
         """Render the children
         This will be done recursively to render the whole template
         """
         rendered = ''
         for child in self.children:
-            child_rendered, envs = child.render(envs)
+            child_rendered, local_envs = child.render(local_envs, global_envs)
             rendered += child_rendered
         return rendered
 
-    def _format_error(self, error):
+    def _parent_check(self):
+        """Check if we have valid direct or indirect parents
+
+        This is done after parent and prev have been assigned
+        """
+        # I don't require any parents
+        # or I optionally require some
+        # pylint: disable=unsupported-membership-test
+        if not self.PARENT_TAGS or '' in self.PARENT_TAGS:
+            return True
+
+        # Checking for direct parents? TODO?
+        if not self.parent:
+            return False
+
+        parent = self.parent
+        while parent:
+            if parent.name in self.PARENT_TAGS:
+                return True
+            parent = parent.parent
+        return False
+
+
+    def _format_error(self, error=''):
         if isinstance(error, Exception):
-            error = f"[{error.__class__.__name__}] {error}"
+            error = f"[{error.__class__.__name__}] {error}\n"
+        elif callable(error):
+            error = f"[{error.__name__}] {error}\n"
+        elif error:
+            error = f"{error}\n"
         else:
-            error = str(error)
+            error = ''
+
         formatted = [
             error,
-            '',
             f'{self.context.template_name}:'
             f'{self.context.line}:{self.context.column}',
             '-' * 80
@@ -220,20 +252,8 @@ class Tag:
 
         return self.TRANSFORMER().transform(tree)
 
-    def _split_envs(self, envs):
-        """Split the environment into local and global ones.
-
-        local ones are supposed to be changed by this tag or
-        its children, global ones should be passed through to the
-        next tag
-
-        if FROZEN is True, then these two should be the same
-        object.
-        """
-        local_envs = envs if self.FROZEN else envs.copy()
-        return local_envs, envs
-
-    def _render(self, envs): # pylint: disable=unused-argument
+    def _render(self, local_envs, # pylint: disable=unused-argument
+                global_envs):     # pylint: disable=unused-argument
         """A function for sub-classes to implement
 
         We don't have to handle local/global envs, as it is handled
@@ -241,7 +261,7 @@ class Tag:
         """
         return str(self.data)
 
-    def render(self, envs):
+    def render(self, local_envs, global_envs):
         """Render the tag
 
         By default, we just render directly whatever in the data, act
@@ -249,13 +269,12 @@ class Tag:
 
         Note that this function has to return the envs
         """
-        local_envs, global_envs = self._split_envs(envs)
         if self.parsed:
             try:
-                self.frag_rendered = self.parsed.render(local_envs)
+                self.frag_rendered = self.parsed.render(local_envs, global_envs)
             except Exception as exc:
                 raise TagRenderError(self._format_error(exc))
-        return self._render(local_envs), global_envs
+        return self._render(local_envs, global_envs), local_envs
 
     def __repr__(self):
         data = str(self.data)
@@ -268,18 +287,18 @@ class Tag:
                 f'data={shortened_data!r}, '
                 f'children={len(self.children)})>')
 
-@register('__LITERAL__')
+@register_tag('__LITERAL__')
 class TagLiteral(Tag):
     """The literal tag"""
     VOID = True
 
-@register('__ROOT__')
+@register_tag('__ROOT__')
 class TagRoot(Tag):
     """The virtual root tag with all the direct children
     So we can render this tag so that the whole template
     will be rendered recursively
     """
 
-    def _render(self, envs):
+    def _render(self, local_envs, global_envs):
         """Render all children"""
-        return self._children_rendered(envs)
+        return self._children_rendered(local_envs, global_envs)

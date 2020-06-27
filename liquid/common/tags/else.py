@@ -26,10 +26,10 @@
 {% endfor %}
 """
 
-from ...tagmgr import register
-from ...common.tagparser import Tag
+from ...tagmgr import register_tag
+from ..tagparser import Tag
 
-@register
+@register_tag
 class TagElse(Tag):
     """Class for tag else"""
     SYNTAX = '<EMPTY>'
@@ -38,5 +38,5 @@ class TagElse(Tag):
     PARENT_TAGS = ['case', '']
     PRIOR_TAGS = ['if', 'when', 'for', 'elsif']
 
-    def _render(self, envs):
-        return self._children_rendered(envs)
+    def _render(self, local_envs, global_envs):
+        return self._children_rendered(local_envs, global_envs)

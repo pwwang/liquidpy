@@ -1,17 +1,19 @@
 """The parsed objects for the syntax inside a tag"""
 
+from ..config import LIQUID_FILTERS_ENVNAME
+
 class TagFrag:
     """Base class for parsed classes"""
 
-    def __init__(self, data):
+    def __init__(self, *data):
         """Initialize the object
 
         Args:
             data: The data of the parsed object
         """
-        self.data = data
+        self.data = data if len(data) > 1 else data[0]
 
-    def render(self, envs): # pylint: disable=unused-argument
+    def render(self, local_envs, global_envs): # pylint: disable=unused-argument
         """Render the fragment with the given envs"""
         return self.data
 
@@ -21,9 +23,12 @@ class TagFrag:
 class TagFragVar(TagFrag):
     """Fragment for variables"""
 
-    def render(self, envs):
+    def render(self, local_envs, global_envs):
         """Get the value of a variable from envs"""
-        return envs[str(self.data)]
+        varname = str(self.data)
+        if varname in local_envs:
+            return local_envs[varname]
+        return global_envs[varname]
 
 class TagFragConst(TagFrag):
     """Fragment for constant values"""
@@ -31,11 +36,11 @@ class TagFragConst(TagFrag):
 class TagFragOpComparison(TagFrag):
     """Comparisons with given operator"""
 
-    def render(self, envs):
+    def render(self, local_envs, global_envs):
         """Get the value from the comparison"""
         left, op, right = self.data
-        left = left.render(envs)
-        right = right.render(envs)
+        left = left.render(local_envs, global_envs)
+        right = right.render(local_envs, global_envs)
         if op == '==':
             return left == right
         if op in ('!=', '<>'):
@@ -54,30 +59,38 @@ class TagFragOpComparison(TagFrag):
             return left and right
         if op == 'or':
             return left or right
+        raise SyntaxError(f'Unknown operator: {op}')
 
 class TagFragGetItem(TagFrag):
     """Fragment for `obj[subscript]`"""
 
-    def render(self, envs):
+    def render(self, local_envs, global_envs):
         """Try to get the value of the getitem operation"""
         obj, subscript = self.data
-        obj = obj.render(envs)
-        subscript = subscript.render(envs)
+        obj = obj.render(local_envs, global_envs)
+        subscript = subscript.render(local_envs, global_envs)
 
         return obj[subscript]
 
 class TagFragGetAttr(TagFrag):
     """Fragment for `obj.attr`"""
 
-    def render(self, envs):
+    def render(self, local_envs, global_envs):
         """Try to get the value of the getattr operation"""
         obj, attr = self.data
-        obj = obj.render(envs)
+        obj = obj.render(local_envs, global_envs)
         attr = str(attr)
 
         try:
             return getattr(obj, attr)
         except AttributeError as attr_ex:
+            # support size query in liquid
+            if attr == 'size':
+                return len(obj)
+            if attr == 'first':
+                return obj[0]
+            if attr == 'last':
+                return obj[-1]
             try:
                 return obj[attr]
             except KeyError:
@@ -85,9 +98,30 @@ class TagFragGetAttr(TagFrag):
 
 class TagFragRange(TagFrag):
     """Fragment for range"""
-    def render(self, envs):
+    def render(self, local_envs, global_envs):
         start, end = self.data
-        start = start.render(envs)
-        end = end.render(envs)
+        start = start.render(local_envs, global_envs)
+        end = end.render(local_envs, global_envs)
 
-        return list(range(start, end+1))
+        return list(range(int(start), int(end) + 1))
+
+class TagFragFilter(TagFrag):
+    """Filtername"""
+    def render(self, local_envs, global_envs):
+        filtername = str(self.data)
+        try:
+            return global_envs[LIQUID_FILTERS_ENVNAME][filtername]
+        except KeyError:
+            raise KeyError(f'No such filter: {filtername}') from None
+
+class TagFragOutput(TagFrag):
+    """Output inside {{ ... }}"""
+    def render(self, local_envs, global_envs):
+        base, filters = self.data
+        base = base.render(local_envs, global_envs)
+        for filt, fargs in filters:
+            filt = filt.render(local_envs, global_envs)
+            fargs = [farg.render(local_envs, global_envs) for farg in fargs]
+            fargs.insert(0, base)
+            base = filt(*fargs)
+        return base

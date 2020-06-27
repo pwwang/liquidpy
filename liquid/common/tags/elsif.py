@@ -9,9 +9,9 @@
 {% endif %}
 """
 import importlib
-from ...tagmgr import register
+from ...tagmgr import register_tag
 
-@register
+@register_tag
 class TagElsif(
         importlib.import_module('.if', package=__package__).TagIf
 ):
