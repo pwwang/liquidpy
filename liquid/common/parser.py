@@ -1,4 +1,5 @@
 """The top-level parser for liquid template"""
+import re
 from functools import partial
 from collections import deque, OrderedDict
 from varname import namedtuple
@@ -15,7 +16,8 @@ from ..exceptions import (
 TagContext = namedtuple(['template_name', # pylint: disable=invalid-name
                          'context_getter',
                          'line',
-                         'column'])
+                         'column',
+                         'logger'])
 
 @v_args(inline=True)
 class Transformer(LarkTransformer):
@@ -73,25 +75,62 @@ class Transformer(LarkTransformer):
             self.config.logger.debug(
                 '    Closing tag: %s', last_tag
             )
+        elif last_tag.parent and last_tag.parent.name == tagname:
+            assert last_tag.parent is self._stack[-1]
+            self._stack.pop()
+            self.config.logger.debug(
+                '    Closing parent tag: %s, of last tag: %s',
+                last_tag.parent,
+                last_tag
+            )
         else:
-            # see if we are cloing most prior tag
-            # for example, "if" from "else"
+            # now we tried to
+            # 1) close the direct tag (last_tag) or
+            # 2) the parent of the last_tag
+            # However, for 2) we need to check if the tags inside the parent
+            # tag have been closed
+            # In the case of
+            #
+            # {% for ... %}
+            #     {% if ... %}
+            # {% endfor %}
+            #
+            # "endfor" will close "for ...", but "if ..."
+            # remains unclosed
+            #
+            # if last_tag has siblings, we check the most prior one
             most_prior = last_tag._most_prior()
-            if (most_prior and
-                    most_prior.VOID is False):
+            if most_prior:
                 if most_prior.name == tagname:
+                    # nothing to do, since it's not in the stack already
                     self.config.logger.debug(
                         '    Closing first sibling tag: %s', most_prior
                     )
-                else:
+                # if it has to be closed
+                elif (most_prior.PARENT_TAGS and
+                      '' not in most_prior.PARENT_TAGS):
                     raise TagUnclosed(
                         most_prior._format_error(most_prior)
                     )
-            # we are closing nothing
+            # if last_tag doesn't have first sibling
+            # check itself
+            elif (last_tag.PARENT_TAGS and
+                  '' not in last_tag.PARENT_TAGS):
+                raise TagUnclosed(
+                    last_tag._format_error(last_tag)
+                )
             else:
                 raise EndTagUnexpected(
                     self._format_error(tagstr, EndTagUnexpected)
                 )
+
+    def raw_tag(self, content):
+        cleaned = re.sub(r'^\{%-?\s*raw\s*-?%\}|\{%-?\s*endraw\s*-?%\}$',
+                         '', str(content))
+        tag = get_tag('__RAW__', cleaned, self._tag_context(content))
+        self.config.logger.info('  Hit raw tag: %s', tag)
+        self._opening_tag(tag)
+        return tag
 
     def literal_tag(self, tree):
         """The literal_tag from master grammar
@@ -133,11 +172,16 @@ class Transformer(LarkTransformer):
         """Get the TagContext object to attached to each Tag for
         exceptions"""
         if self._template_info:
-            return TagContext(*self._template_info, token.line, token.column)
+            return TagContext(
+                *self._template_info, token.line, token.column,
+                self.config.logger
+            )
+
         return TagContext('<unknown>',
                           lambda line, context_lines: {},
                           token.line,
-                          token.column)
+                          token.column,
+                          self.config.logger)
 
 
     def _format_error(self, tag, error=None):

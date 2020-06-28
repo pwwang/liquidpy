@@ -6,6 +6,15 @@
 from lark import v_args
 from ...tagmgr import register_tag
 from ..tagparser import Tag, TagTransformer
+from ..tagfrag import TagFrag
+
+class TagFragAssign(TagFrag):
+
+    def render(self, local_envs, global_envs):
+        varname, value = self.data
+        varname = str(varname)
+        value = value.render(local_envs, global_envs)
+        global_envs[varname] = value
 
 @v_args(inline=True)
 class TransformerAssign(TagTransformer):
@@ -13,7 +22,7 @@ class TransformerAssign(TagTransformer):
     output = TagTransformer.tags__output
 
     def assign(self, varname, value):
-        return (varname, value)
+        return TagFragAssign(varname, value)
 
 @register_tag
 class TagAssign(Tag):
@@ -32,8 +41,4 @@ class TagAssign(Tag):
     TRANSFORMER = TransformerAssign
 
     def _render(self, local_envs, global_envs):
-        varname, value = self.data
-        varname = str(varname)
-        value = value.render(local_envs, global_envs)
-        local_envs[varname] = value
         return ''

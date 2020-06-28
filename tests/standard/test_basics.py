@@ -65,6 +65,7 @@ def test_operators():
         'This product has been tagged with "Hello".'
     )
 
+def test_or_and():
     tpl = """
     {%- if true or false and false -%}
       This evaluates to true, since the `and` condition is checked first.
@@ -74,6 +75,7 @@ def test_operators():
         "This evaluates to true, since the `and` condition is checked first."
     )
 
+def test_multiple_and_or():
     tpl = """
     {%- if true and false and false or true %}
     This evaluates to false, since the tags are checked like this:
@@ -86,5 +88,66 @@ def test_operators():
     """
     assert Liquid(tpl).render() == ''
 
+def test_truthy_falsy():
+    tpl = """
+    {% assign tobi = "Tobi" %}
 
+    {% if tobi %}
+      This condition will always be true.
+    {% endif %}
+    """
+    assert Liquid(tpl).render().strip() == 'This condition will always be true.'
 
+    tpl = """
+    {% if settings.fp_heading %}
+      <h1>{{ settings.fp_heading }}</h1>
+    {% endif %}
+    """
+    assert Liquid(tpl).render(
+        settings={'fp_heading': ''}
+    ).strip() == '<h1></h1>'
+
+def test_types():
+    tpl = "The current user is {{ user.name }}"
+    assert Liquid(tpl).render(user={"name": None}) == 'The current user is '
+
+    tpl = """
+    {%- for user in site.users %} {{ user }}
+    {%- endfor -%}
+    """
+    assert Liquid(tpl).render(
+        site={"users": ["Tobi", "Laura", "Tetsuro", "Adam"]}
+    ) == ' Tobi Laura Tetsuro Adam'
+
+    tpl = "{{ site.users[0] }} {{ site.users[1] }} {{ site.users[3] }}"
+    assert Liquid(tpl).render(
+        site={"users": ["Tobi", "Laura", "Tetsuro", "Adam"]}
+    ) == 'Tobi Laura Adam'
+
+def test_wscontrol():
+    tpl = """
+{% assign my_variable = "tomato" %}
+{{ my_variable }}"""
+
+    assert Liquid(tpl).render() == '\n\ntomato'
+    tpl = """
+{%- assign my_variable = "tomato" -%}
+{{ my_variable }}"""
+
+    assert Liquid(tpl).render() == 'tomato'
+
+    tpl = """{% assign username = "John G. Chalmers-Smith" %}
+{% if username and username.size > 10 %}
+  Wow, {{ username }}, you have a long name!
+{% else %}
+  Hello there!
+{% endif %}"""
+    assert Liquid(tpl).render() == "\n\n  Wow, John G. Chalmers-Smith, you have a long name!\n"
+
+    tpl = """{%- assign username = "John G. Chalmers-Smith" -%}
+{%- if username and username.size > 10 -%}
+  Wow, {{ username }}, you have a long name!
+{%- else -%}
+  Hello there!
+{%- endif -%}"""
+    assert Liquid(tpl).render() == "Wow, John G. Chalmers-Smith, you have a long name!"

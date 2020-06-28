@@ -11,7 +11,7 @@ def register_filter(name_or_filter):
 
     else:
         names = name_or_filter
-        if not isinstance(names (tuple, list)):
+        if not isinstance(names, (tuple, list)):
             names = [names]
 
         def decorator(func):
@@ -43,4 +43,3 @@ def disable_filter(filtername):
             f"Filter is unregisted or already disabled: {filtername}"
         )
     LIQUID_FILTERS[key] = LIQUID_FILTERS.pop(filtername)
-

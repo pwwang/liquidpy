@@ -46,7 +46,7 @@ class StandardParser(Parser):
     OUTPUT_TAG.3: /\{\{-?('.*?(?<!\\)(\\\\)*?'|".*?(?<!\\)(\\\\)*?"|.*?)*?-?\}\}/s
     CLOSE_TAG.4: /\{%-?\s*end.*?-?%\}/s
     OPEN_TAG.3: /\{%-?('.*?(?<!\\)(\\\\)*?'|".*?(?<!\\)(\\\\)*?"|.*?)*?-?%\}/s
-    RAW_TAG.3: /\{%-?\s*raw\s*-?%\}.*?\{%-?\s*endraw\s*-?%\}/s
+    RAW_TAG.4: /\{%-?\s*raw\s*-?%\}.*?\{%-?\s*endraw\s*-?%\}/s
     """
 
     TRANSFORMER = StandardTransformer

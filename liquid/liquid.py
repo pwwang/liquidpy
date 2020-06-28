@@ -1,5 +1,6 @@
 """The main class file for Liquid"""
 import logging
+from contextlib import suppress
 from pathlib import Path
 from .config import Config, LIQUID_LOGGER_NAME, LIQUID_FILTERS_ENVNAME
 from .filtermgr import LIQUID_FILTERS
@@ -9,9 +10,10 @@ from .filtermgr import LIQUID_FILTERS
 LOGGER = logging.getLogger(LIQUID_LOGGER_NAME)
 
 def _template_meta(template):
-    if Path(template).is_file():
-        template = Path(template)
-        return template.stem, template.read_text()
+    with suppress(OSError): # File name too long
+        if Path(template).is_file():
+            template = Path(template)
+            return template.stem, template.read_text()
 
     template_name = '<unknown>'
     template_content = ''

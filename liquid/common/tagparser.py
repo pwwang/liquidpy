@@ -51,6 +51,10 @@ class TagTransformer(LarkTransformer):
         """The exprs"""
         return exprstr
 
+    def tags__expr_nological(self, exprstr):
+        """The exprs without logical operators"""
+        return exprstr
+
     def tags__atom(self, atomnode):
         """The atomics"""
         return atomnode
@@ -77,6 +81,10 @@ class TagTransformer(LarkTransformer):
         return TagFragConst(quoted_string[1:-1]
                             .replace('\\\'', '\'')
                             .replace('\\"', '"'))
+    def tags__int(self, token):
+        """The nil constant"""
+        return TagFragConst(int(str(token)))
+
     def tags__nil(self):
         """The nil constant"""
         return TagFragConst(None)
@@ -106,11 +114,46 @@ class TagTransformer(LarkTransformer):
     def tags__output(self, expr, *expr_filters):
         return TagFragOutput(expr, expr_filters)
 
+    def tags__logical(self, expr, *op_expr):
+        """liquid does not have a good support precedence of and / or
+        if we have more than 3 operators
+        however, with 3 operators, and has higher precedence
+        see:
+        https://shopify.github.io/liquid/basics/operators/#order-of-operations
+        """
+        len_op_expr = len(op_expr) // 2
+        if len_op_expr == 1:
+            return TagFragOpComparison(expr, *op_expr)
+        if len_op_expr == 2: # 0,1,2,3
+            # "and" have precedence
+            if op_expr[2] == 'and':
+                return TagFragOpComparison(
+                    expr, op_expr[0],
+                    TagFragOpComparison(*op_expr[1:])
+                )
+            return TagFragOpComparison(
+                TagFragOpComparison(expr, *op_expr[:2]),
+                *op_expr[2:]
+            )
+        else:
+            # Start from the right most
+            # expr (op_expr) (op_expr) (op_expr)
+            # true (or false) (or false) (or true)
+            # (true or) (false or) (false or) true
+            op_expr = list(reversed(op_expr))
+            op_expr.append(expr)
+            expr = op_expr.pop(0)
+            # true (or false) (or false) (or true)
+
+            opc = TagFragOpComparison(op_expr[1], op_expr[0], expr)
+            for i in range(1, len_op_expr):
+                op = op_expr[2*i]
+                expr = op_expr[2*i+1]
+                opc = TagFragOpComparison(expr, op, opc)
+            return opc
 
     # parse these separately to implement precedence
     tags__contains = tags__op_comparison
-    tags__logical_or = tags__op_comparison
-    tags__logical_and = tags__op_comparison
 
 class Tag:
     """Tag class, for the Tags defined in the template
@@ -227,6 +270,14 @@ class Tag:
             prior = prior.prev
         return None # pragma: no cover
 
+    def _cloest_parent(self, prtname):
+        parent = self.parent
+        while parent:
+            if parent.name == prtname:
+                return parent
+            parent = parent.parent
+        return None
+
     def parse(self):
         """Parse the fragments of this tag for later processing
 
@@ -261,7 +312,7 @@ class Tag:
         """
         return str(self.data)
 
-    def render(self, local_envs, global_envs):
+    def render(self, local_envs, global_envs, from_prior=False):
         """Render the tag
 
         By default, we just render directly whatever in the data, act
@@ -269,6 +320,12 @@ class Tag:
 
         Note that this function has to return the envs
         """
+        # If I have prior sibling tag, I can't run independently
+        if self.prev and not from_prior:
+            return '', local_envs
+
+        if self.context:
+            self.context.logger.info('- Rendering: %s', self)
         if self.parsed:
             try:
                 self.frag_rendered = self.parsed.render(local_envs, global_envs)
@@ -291,6 +348,10 @@ class Tag:
 class TagLiteral(Tag):
     """The literal tag"""
     VOID = True
+
+@register_tag('__RAW__')
+class TagRaw(TagLiteral):
+    """The raw tag"""
 
 @register_tag('__ROOT__')
 class TagRoot(Tag):
