@@ -12,13 +12,13 @@ readme = "README.md"
 homepage = "https://github.com/pwwang/liquidpy"
 repository = "https://github.com/pwwang/liquidpy"
 [[tool.poetry.packages]]
-include = "liquid/*.py"
+include = ["liquid/*.py", "liquid/common/tags/tags.lark"]
 
 [tool.poetry.dependencies]
 python = "^3.6"
 diot = "*"
-attrs = "^19.3"
-attr_property = "*"
+lark-parser = "^0.8"
+python-varname = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
