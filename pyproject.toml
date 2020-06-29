@@ -11,8 +11,9 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/pwwang/liquidpy"
 repository = "https://github.com/pwwang/liquidpy"
+include = ["liquid/common/tags/tags.lark"]
 [[tool.poetry.packages]]
-include = ["liquid/*.py", "liquid/common/tags/tags.lark"]
+include = "liquid"
 
 [tool.poetry.dependencies]
 python = "^3.6"
