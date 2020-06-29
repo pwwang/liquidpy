@@ -24,3 +24,4 @@ python-varname = "*"
 [tool.poetry.dev-dependencies]
 pytest = "*"
 pytest-cov = "*"
+python-dateutil = "^2"
