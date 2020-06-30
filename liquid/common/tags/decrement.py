@@ -11,7 +11,6 @@ from .increment import TagIncrement
 class TagDecrement(TagIncrement):
 
     def _render(self, local_envs, global_envs):
-        self.parsed = None
         # Variables created through the decrement tag are independent
         # from variables created through assign or capture.
         var = f'__decremental__{self.data}'

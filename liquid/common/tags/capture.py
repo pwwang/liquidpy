@@ -11,6 +11,7 @@ from ..tagparser import Tag
 class TagCapture(Tag):
     """Class for if tag"""
     VOID = False
+    PARSING = False
 
     SYNTAX = r"""
     start: varname
@@ -20,10 +21,6 @@ class TagCapture(Tag):
     %import .tags (VAR, WS_INLINE)
     %ignore WS_INLINE
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.parsed = None
 
     def _render(self, local_envs, global_envs):
         var = str(self.data)

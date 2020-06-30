@@ -31,8 +31,8 @@ op_comparison: atom OP atom
     | "nil"   -> nil
     | "true"  -> true
     | "false" -> false
-    | atom "[" atom "]"    -> getitem
-    | atom "." ATTRNAME    -> getattr
+    | atom "[" atom "]"        -> getitem
+    | atom "." ATTRNAME ["?"]  -> getattr
     | var
     | "(" atom ")"
 

@@ -1,6 +1,7 @@
 """The parsed objects for the syntax inside a tag"""
 
 from ..config import LIQUID_FILTERS_ENVNAME
+from .filters import EmptyDrop
 
 class TagFrag:
     """Base class for parsed classes"""
@@ -27,8 +28,12 @@ class TagFragVar(TagFrag):
         """Get the value of a variable from envs"""
         varname = str(self.data)
         if varname in local_envs:
-            return local_envs[varname]
-        return global_envs[varname]
+            var = local_envs[varname]
+        else:
+            var = global_envs[varname]
+        if isinstance(var, (tuple, list)) and len(var) == 0:
+            return EmptyDrop()
+        return var
 
 class TagFragConst(TagFrag):
     """Fragment for constant values"""
@@ -70,7 +75,10 @@ class TagFragGetItem(TagFrag):
         obj = obj.render(local_envs, global_envs)
         subscript = subscript.render(local_envs, global_envs)
 
-        return obj[subscript]
+        try:
+            return obj[subscript]
+        except KeyError:
+            return EmptyDrop()
 
 class TagFragGetAttr(TagFrag):
     """Fragment for `obj.attr`"""
@@ -91,10 +99,7 @@ class TagFragGetAttr(TagFrag):
                 return obj[0]
             if attr == 'last':
                 return obj[-1]
-            try:
-                return obj[attr]
-            except KeyError:
-                raise attr_ex
+            return obj[attr]
 
 class TagFragRange(TagFrag):
     """Fragment for range"""

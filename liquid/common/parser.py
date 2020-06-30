@@ -3,11 +3,13 @@ import re
 from functools import partial
 from collections import deque, OrderedDict
 from varname import namedtuple
+from diot import Diot
 from lark import v_args, Lark, Transformer as LarkTransformer
 from lark.exceptions import VisitError as LarkVisitError
 # load all shared tags
 from . import tags # pylint: disable=unused-import
 from ..tagmgr import get_tag
+from ..config import LIQUID_LOG_INDENT
 from ..exceptions import (
     TagUnclosed, EndTagUnexpected,
     TagWrongPosition
@@ -43,7 +45,6 @@ class Transformer(LarkTransformer):
         # This will be currently rendered as 1, but -1 is intended.
         tagdata = tagstr[2:-2].strip('-').strip()
         tag = get_tag('__OUTPUT__', tagdata, self._tag_context(tagstr))
-        self.config.logger.info('  Hit output tag: %s', tag)
         self._opening_tag(tag)
         return tag
 
@@ -51,13 +52,11 @@ class Transformer(LarkTransformer):
         """Open a tag"""
         tagname, tagdata = self._clean_tagstr(tagstr)
         tag = get_tag(tagname, tagdata, self._tag_context(tagstr))
-        self.config.logger.info('  Hit tag: %s', tag)
         self._opening_tag(tag)
         return tag
 
     def close_tag(self, tagstr):
         """Handle tag relationships when closing a tag."""
-        self.config.logger.info('  Hit closing tag: %s', tagstr)
         if not self._stack:
             raise EndTagUnexpected(tagstr)
 
@@ -72,17 +71,28 @@ class Transformer(LarkTransformer):
                     '    Collapsing tag (VOID: maybe -> False): %s', last_tag
                 )
                 last_tag.VOID = False
-            self.config.logger.debug(
-                '    Closing tag: %s', last_tag
-            )
+            self.config.logger.info('%s<EndTag(name=%s)>',
+                                    LIQUID_LOG_INDENT * last_tag.level,
+                                    last_tag.name)
         elif last_tag.parent and last_tag.parent.name == tagname:
             assert last_tag.parent is self._stack[-1]
             self._stack.pop()
-            self.config.logger.debug(
-                '    Closing parent tag: %s, of last tag: %s',
-                last_tag.parent,
-                last_tag
-            )
+            self.config.logger.info('%s<EndTag(name=%s)>',
+                                    LIQUID_LOG_INDENT * last_tag.parent.level,
+                                    last_tag.parent.name)
+            # we have to check if children of last_tag's parent have been closed
+            # in other words, last_tag's siblings
+            most_prior = last_tag._most_prior()
+            # of course it is not VOID
+            # If a tag needs parent, supposingly, the parent will close
+            # for it
+            if (most_prior and (
+                    not most_prior.PARENT_TAGS or
+                    '' in most_prior.PARENT_TAGS
+                )):
+                raise TagUnclosed(
+                    most_prior._format_error(most_prior)
+                )
         else:
             # now we tried to
             # 1) close the direct tag (last_tag) or
@@ -103,19 +113,21 @@ class Transformer(LarkTransformer):
             if most_prior:
                 if most_prior.name == tagname:
                     # nothing to do, since it's not in the stack already
-                    self.config.logger.debug(
-                        '    Closing first sibling tag: %s', most_prior
+                    self.config.logger.info(
+                        '%s<EndTag(name=%s)>',
+                        LIQUID_LOG_INDENT * most_prior.level,
+                        tagname
                     )
                 # if it has to be closed
-                elif (most_prior.PARENT_TAGS and
-                      '' not in most_prior.PARENT_TAGS):
+                elif (not most_prior.PARENT_TAGS or
+                      '' in most_prior.PARENT_TAGS):
                     raise TagUnclosed(
                         most_prior._format_error(most_prior)
                     )
             # if last_tag doesn't have first sibling
             # check itself
-            elif (last_tag.PARENT_TAGS and
-                  '' not in last_tag.PARENT_TAGS):
+            elif (not last_tag.PARENT_TAGS or
+                  '' in last_tag.PARENT_TAGS):
                 raise TagUnclosed(
                     last_tag._format_error(last_tag)
                 )
@@ -125,10 +137,10 @@ class Transformer(LarkTransformer):
                 )
 
     def raw_tag(self, content):
+        """The raw tag, where the tags are not interpreted by liquidpy"""
         cleaned = re.sub(r'^\{%-?\s*raw\s*-?%\}|\{%-?\s*endraw\s*-?%\}$',
                          '', str(content))
         tag = get_tag('__RAW__', cleaned, self._tag_context(content))
-        self.config.logger.info('  Hit raw tag: %s', tag)
         self._opening_tag(tag)
         return tag
 
@@ -142,7 +154,6 @@ class Transformer(LarkTransformer):
             TagLiteral: The literal tag
         """
         tag = get_tag('__LITERAL__', tree.value, self._tag_context(tree))
-        self.config.logger.info('  Hit literal tag: %s', tag)
         self._opening_tag(tag)
         return tag
 
@@ -177,16 +188,16 @@ class Transformer(LarkTransformer):
                 self.config.logger
             )
 
-        return TagContext('<unknown>',
-                          lambda line, context_lines: {},
-                          token.line,
-                          token.column,
-                          self.config.logger)
+        # return TagContext('<unknown>',
+        #                   lambda line, context_lines: {},
+        #                   token.line,
+        #                   token.column,
+        #                   self.config.logger)
 
 
     def _format_error(self, tag, error=None):
         if isinstance(error, Exception):
-            error = f"[{error.__class__.__name__}] {tag}\n"
+            error = f"[{error.__class__.__name__}: {error}] {tag}\n"
         elif callable(error):
             error = f"[{error.__name__}] {tag}\n"
         elif error:
@@ -209,9 +220,6 @@ class Transformer(LarkTransformer):
                          else ' ')
             formatted.append(f'{indicator} {str(lineno).ljust(lineno_width)}'
                              f'. {line}')
-
-        while hasattr(tag, 'parent') and tag.parent:
-            formatted += tag.parent._format_error()
 
         return '\n'.join(formatted) + '\n'
 
@@ -254,7 +262,12 @@ class Transformer(LarkTransformer):
                 )
             if tag.PRIOR_TAGS and '' not in tag.PRIOR_TAGS:
                 raise TagWrongPosition(f'{tag} requires a prior tag.')
-            self.config.logger.debug('    Set as level_1 tag: %s', tag)
+
+            tag.level = 0
+            self.config.logger.info(
+                '%s%s',
+                LIQUID_LOG_INDENT * tag.level, tag
+            )
             self._direct_tags.append(tag)
         else:
             # assign siblings
@@ -262,7 +275,8 @@ class Transformer(LarkTransformer):
                 prev_tag = self._stack.pop()
                 prev_tag.next = tag
                 tag.prev = prev_tag
-                self.config.logger.debug('    Found prior tag: %s', prev_tag)
+
+                tag.level = prev_tag.level
 
             # prior tags should not have VOID maybe, check?
             elif self._stack[-1].VOID == 'maybe':
@@ -278,8 +292,10 @@ class Transformer(LarkTransformer):
             if self._stack:
                 self._stack[-1].children.append(tag)
                 tag.parent = self._stack[-1]
-                self.config.logger.debug('    Set as child of tag: %s',
-                                         tag.parent)
+                tag.level = tag.parent.level + 1
+                self.config.logger.info('%s%s',
+                                        LIQUID_LOG_INDENT * tag.level,
+                                        tag)
 
             # parent check
             # we need to do it after siblings assignment, because
@@ -320,7 +336,10 @@ class Transformer(LarkTransformer):
         if self._stack:
             raise TagUnclosed(self._stack.pop())
 
-        root = get_tag('__ROOT__', None, None)
+        self.config.logger.info('')
+
+        root = get_tag('__ROOT__', None, Diot(line=1, column=1,
+                                              logger=self.config.logger))
         root.children = self._direct_tags
         return root
 
@@ -348,10 +367,11 @@ class Parser:
             TagRoot: The TagRoot object, allowing later rendering
                 the template with envs/context
         """
-        # // TODO: put transformer in Lark to make it faster in prodction stage
         parser = Lark(self.GRAMMAR, parser='lalr')
 
-        self.config.logger.info('Parsing %s', template_name)
+        self.config.logger.info('PARSING %s', template_name)
+        self.config.logger.info('-' * min(40, len(template_name) + 8))
+
         tree = parser.parse(template_string)
 
         try:

@@ -79,7 +79,7 @@ class TagTablerow(Tag):
 
     def _render(self, local_envs, global_envs):
         rendered = ''
-        trobj = self.frag_rendered
+        trobj = self.fragments
         # parameters
         obj = trobj.obj
         if trobj.offset is not None and trobj.limit is not None:

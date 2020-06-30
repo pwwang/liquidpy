@@ -5,6 +5,8 @@ from .exceptions import LiquidConfigError
 
 # some constants
 LIQUID_LOGGER_NAME = 'LIQUID'
+# Indentions to show the tree structure in logging
+LIQUID_LOG_INDENT = '  '
 LIQUID_FILTERS_ENVNAME = '__LIQUID_FILTERS__'
 
 DEFAULT_CONFIG = Diot(
@@ -23,6 +25,7 @@ class Config(Diot):
                 self[key] = DEFAULT_CONFIG[key]
 
     def update_logger(self, from_template=False):
+        """Update the logger configuration according to the configuration"""
         if self.strict and from_template:
             raise LiquidConfigError(
                 'Not allowed to update logger in strict mode from template.'

@@ -137,6 +137,7 @@ def test_forloop():
     assert Liquid(tpl).render(products=range(5)).split() == [
         "1", "2", "3", "4", "5"]
 
+def test_forloop_index0():
     tpl = """
     {% for product in products %}
         {{ forloop.index0 }}

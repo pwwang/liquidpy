@@ -13,7 +13,9 @@ from .tagfrag import (
     TagFragFilter,
     TagFragOutput
 )
+from .filters import EmptyDrop
 from ..tagmgr import register_tag
+from ..config import LIQUID_LOG_INDENT
 from ..exceptions import TagSyntaxError, TagRenderError
 
 # common grammar file, used to import some common grammar rules
@@ -102,16 +104,20 @@ class TagTransformer(LarkTransformer):
         return TagFragRange(start, end)
 
     def tags__filter(self, filtername):
+        """Rule filter"""
         return TagFragFilter(filtername)
 
     def tags__filter_args(self, *exprs):
+        """Rule filter_args"""
         return exprs
 
     def tags__expr_filter(self, filtername, filter_args=None):
+        """Rule expr_filter"""
         # TagFragFilter, (arg1, arg2, ...)
         return (filtername, filter_args or ())
 
     def tags__output(self, expr, *expr_filters):
+        """Rule output {{ }} """
         return TagFragOutput(expr, expr_filters)
 
     def tags__logical(self, expr, *op_expr):
@@ -163,13 +169,14 @@ class Tag:
         name (str): The name of the tag
         data (lark.Tree): The parsed tag data
         context (TagContext): The context of this tag in the template
-        frag_rendered: The rendered object for fragments in this tag,
+        fragments: The rendered object for fragments in this tag,
             generated in render function and may be used by its children
         parsed (TagParsed): Parsed object from the tag data
         children (list): List of children of the tag
         parent (Tag): The parent tag
         prev (Tag): The previous tag
         next (Tag): The next tag
+        level (int): The level of the tag from the root
     """
 
     # whether the tag is void, meaning True if there is no children allow
@@ -187,17 +194,22 @@ class Tag:
     PRIOR_TAGS = None
     # Parent tags where this tags allows to be put in
     PARENT_TAGS = None
+    # Whether this tag needs further parsing
+    PARSING = True
+    # Whether this tag is allowed in strict mode
+    SECURE = True
 
     def __init__(self, tagname, tagdata, tagcontext):
         self.name = tagname
         self.data = tagdata
         self.context = tagcontext
-        self.frag_rendered = None
         # The children of this tag
         self.children = []
         # Parent, previous and next tag object
         self.parent = self.prev = self.next = None
-        self.parsed = self.parse()
+        self.parsed = self.parse() if self.PARSING else None
+        self.level = 0
+        self.fragments = ''
 
     def _children_rendered(self, local_envs, global_envs):
         """Render the children
@@ -294,7 +306,7 @@ class Tag:
         if not self.SYNTAX:
             return None
         syntax = _load_grammar(self.SYNTAX)
-        # // TODO: put transformer in Lark to make it faster in prodction stage
+
         parser = Lark(syntax, parser='earley')
         try:
             tree = parser.parse(self.data)
@@ -324,14 +336,30 @@ class Tag:
         if self.prev and not from_prior:
             return '', local_envs
 
-        if self.context:
-            self.context.logger.info('- Rendering: %s', self)
         if self.parsed:
             try:
-                self.frag_rendered = self.parsed.render(local_envs, global_envs)
+                self.fragments = self.parsed.render(local_envs, global_envs)
             except Exception as exc:
                 raise TagRenderError(self._format_error(exc))
-        return self._render(local_envs, global_envs), local_envs
+
+        if self.name != '__ROOT__':
+            self.context.logger.info('%s%s',
+                                     LIQUID_LOG_INDENT * self.level,
+                                     self)
+            if self.parsed:
+                self.context.logger.debug(
+                    '%s>>> %r',
+                    LIQUID_LOG_INDENT * self.level,
+                    self.fragments
+                    if (not isinstance(self.fragments, str) or
+                        len(self.fragments) < 40)
+                    else self.fragments + ' ...'
+                )
+        else:
+            self.context.logger.info('RENDERING')
+            self.context.logger.info('---------')
+
+        return str(self._render(local_envs, global_envs)), local_envs
 
     def __repr__(self):
         data = str(self.data)
@@ -340,14 +368,17 @@ class Tag:
             if len(data) > 20
             else data
         )
+        context = f"line={self.context.line}, col={self.context.column}, "
         return (f'<Tag(name={self.name}, '
                 f'data={shortened_data!r}, '
-                f'children={len(self.children)})>')
+                f'{context if self.context else ""}'
+                f'VOID={self.VOID})>')
 
 @register_tag('__LITERAL__')
 class TagLiteral(Tag):
     """The literal tag"""
     VOID = True
+    PARSING = False
 
 @register_tag('__RAW__')
 class TagRaw(TagLiteral):
@@ -359,7 +390,10 @@ class TagRoot(Tag):
     So we can render this tag so that the whole template
     will be rendered recursively
     """
+    PARSING = False
 
     def _render(self, local_envs, global_envs):
         """Render all children"""
+        # check keyword empty?
+        local_envs['empty'] = global_envs['empty'] = EmptyDrop()
         return self._children_rendered(local_envs, global_envs)

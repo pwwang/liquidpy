@@ -90,7 +90,7 @@ class TagFor(Tag):
 
     def _render(self, local_envs, global_envs):
         rendered = ''
-        forobj = self.frag_rendered
+        forobj = self.fragments
         # parameters
         obj = forobj.obj
         if forobj.offset is not None and forobj.limit is not None:
@@ -106,6 +106,7 @@ class TagFor(Tag):
             obj = reversed(obj)
 
         obj = list(obj)
+        print(obj)
         # make it avaiable for generators
         forlen = len(obj)
         local_envs_inside = local_envs.copy()

@@ -9,7 +9,7 @@ from ..tagparser import Tag, TagTransformer
 from ..tagfrag import TagFrag
 
 class TagFragAssign(TagFrag):
-
+    """The fragment for assign"""
     def render(self, local_envs, global_envs):
         varname, value = self.data
         varname = str(varname)
@@ -22,6 +22,7 @@ class TransformerAssign(TagTransformer):
     output = TagTransformer.tags__output
 
     def assign(self, varname, value):
+        """Rule: assign"""
         return TagFragAssign(varname, value)
 
 @register_tag

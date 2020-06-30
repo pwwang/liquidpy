@@ -45,6 +45,7 @@ from liquid import Liquid
      datetime.today().strftime("%Y-%m-%d")),
     ('', 'default: 2.99', 2.99),
     (4.99, 'default: 2.99', 4.99),
+    (0, 'default: 2.99', 0),
     (16, 'divided_by: 4', 4),
     (5, 'divided_by: 3', 1),
     (20, 'divided_by: 7', 2),
@@ -106,6 +107,9 @@ from liquid import Liquid
      'truncate: 20',
      "Ground control to..."),
     ("Ground control to Major Tom.",
+     'truncate: 120',
+     "Ground control to Major Tom."),
+    ("Ground control to Major Tom.",
      'truncate: 25, ", and so on"',
      "Ground control, and so on"),
     ("Ground control to Major Tom.",
@@ -114,6 +118,9 @@ from liquid import Liquid
     ("Ground control to Major Tom.",
      'truncatewords: 3',
      "Ground control to..."),
+    ("Ground control to Major Tom.",
+     'truncatewords: 30',
+     "Ground control to Major Tom."),
     ("Ground control to Major Tom.",
      'truncatewords: 3, "--"',
      "Ground control to--"),
@@ -234,3 +241,13 @@ def test_concat():
     - tables
     - shelves
     """
+
+# for coverage
+def test_dot():
+    a = lambda:None
+    setattr(a, 'a-b', 1)
+    b = lambda:None
+    setattr(b, 'a-b', 2)
+    assert Liquid(
+        "{{a | where: 'a-b', 1 | map: 'a-b' | first}}"
+    ).render(a=[a, b]) == '1'

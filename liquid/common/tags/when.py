@@ -21,7 +21,7 @@ class TagWhen(TagCase):
     PRIOR_TAGS = ['when', '']
 
     def _render(self, local_envs, global_envs):
-        if self.frag_rendered == self.parent.frag_rendered:
+        if self.fragments == self.parent.fragments:
             return self._children_rendered(local_envs.copy(), global_envs)
         if self.next:
             return self.next.render(local_envs, global_envs,

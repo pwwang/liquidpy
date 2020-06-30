@@ -55,7 +55,7 @@ class TagCycle(Tag):
     TRANSFORMER = TransformerCycle
 
     def _render(self, local_envs, global_envs):
-        cycle = self.frag_rendered
+        cycle = self.fragments
         parent = self._cloest_parent('for')
 
         group = cycle.group or str(cycle.args)

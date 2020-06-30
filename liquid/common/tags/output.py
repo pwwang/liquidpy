@@ -30,4 +30,5 @@ class TagOutput(Tag):
     TRANSFORMER = TransformerOutput
 
     def _render(self, local_envs, global_envs):
-        return '' if self.frag_rendered is None else str(self.frag_rendered)
+        fragments = self.fragments
+        return str(fragments) if fragments is not None else ''

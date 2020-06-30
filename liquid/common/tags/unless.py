@@ -14,18 +14,18 @@ class TagUnless(
 
     def _render(self, local_envs, global_envs):
         rendered = ''
-
+        frag_rendered = self.fragments
         # Strings, even when empty, are truthy.
         # See: https://shopify.github.io/liquid/basics/truthy-and-falsy/#truthy
-        if isinstance(self.frag_rendered, str):
-            self.frag_rendered = True
-        elif (self.frag_rendered not in (True, False) and
-              isinstance(self.frag_rendered, (int, float))):
-            self.frag_rendered = True
-        elif isinstance(self.frag_rendered, (tuple, list)):
-            self.frag_rendered = True
+        if isinstance(frag_rendered, str):
+            frag_rendered = True
+        elif (frag_rendered not in (True, False) and
+              isinstance(frag_rendered, (int, float))):
+            frag_rendered = True
+        elif isinstance(frag_rendered, (tuple, list)):
+            frag_rendered = True
 
-        if not self.frag_rendered:
+        if not frag_rendered:
             rendered += self._children_rendered(local_envs.copy(), global_envs)
 
         return rendered
