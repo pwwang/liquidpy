@@ -1,12 +1,15 @@
 start: tag*
 
-?tag: end_tag | start_tag | output_tag | literal_tag | literal_start_tag
+?tag: raw_tag | end_tag | start_tag | output_tag | literal_tag | literal_start_tag
 
+raw_tag: RAW_TAG
 end_tag: OPEN_BRACE "end" VAR CLOSE_BRACE
 output_tag: OPEN_OUTPUT output CLOSE_OUTPUT
 start_tag: OPEN_BRACE inner_tag CLOSE_BRACE
 literal_tag: /(?<=[%\}]\})((?![\}%]\}).)+?(?=\{[\{%]|$)/s
 literal_start_tag: /^((?![\}%]\}).)+?(?=\{[\{%]|$)/s
+
+RAW_TAG.4: /\{%-?\s*raw\s*-?%\}.*?\{%-?\s*endraw\s*-?%\}/s
 
 ?inner_tag:
 
@@ -38,31 +41,36 @@ filter_args: expr ("," expr)*
 op_comparison: atom OP atom
 !contains: atom "contains" atom
 
-?atom: "(" (int|var) ".." (int|var) ")" -> range
+?atom: RANGE -> range
     | number
     | string
     | "nil"   -> nil
     | "true"  -> true
     | "false" -> false
     | atom "[" atom "]"       -> getitem
-    | atom "." ATTRNAME "?"?  -> getattr
+    | atom "." ATTRNAME ["?"] -> getattr
     | var
 
 var: VAR
-int: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER
-number: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER
+int: INT
+number: INT | FLOAT_NUMBER
 string: STRING
 
+// have to define this as a terminal
+// since 1..a will get translated into getattr
+// (1.).a
+RANGE.3: "(" (INT | VAR) ".." (INT | VAR) ")"
 // note the order here
 OP: "<>"|"=="|">="|"<="|"!="|"<"|">"
 STRING: ESCAPED_STRING | ("'" _STRING_ESC_INNER "'")
 // earley does support terminal priorities
 ATTRNAME: /[A-Za-z_][\w_\-]*/
-DEC_NUMBER: /[-+]?(0|[1-9]\d*)/i
-HEX_NUMBER: /[-+]?0x[\da-f]*/i
-OCT_NUMBER: /[-+]?0o[0-7]*/i
-BIN_NUMBER : /[-+]?0b[0-1]*/i
-FLOAT_NUMBER: /[-+]?((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+DEC_NUMBER: /[-+]?(0|[1-9]\d*)/
+HEX_NUMBER: /[-+]?0x[\dA-Fa-f]*/
+OCT_NUMBER: /[-+]?0o[0-7]*/
+BIN_NUMBER : /[-+]?0b[0-1]*/
+FLOAT_NUMBER.2: /[-+]?((\d+\.\d*|\.\d+)([Ee][-+]?\d+)?|\d+([Ee][-+]?\d+))/
+INT: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER
 
 OPEN_BRACE: _OPEN_BRACE_COMPACT | _OPEN_BRACE
 CLOSE_BRACE: _CLOSE_BRACE_COMPACT | _CLOSE_BRACE

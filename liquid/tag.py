@@ -170,7 +170,7 @@ class Tag:
         try:
             return self._render(local_envs, global_envs), local_envs
         except Exception as ex:
-            raise TagRenderError(self._format_error(ex)) from None
+            raise TagRenderError(self._format_error(ex))
 
 @register_tag('LITERAL')
 class TagLiteral(Tag):
@@ -184,6 +184,13 @@ class TagLiteral(Tag):
         if self.RIGHT_COMPACT:
             data = data.rstrip()
         return data
+
+@register_tag('RAW')
+class TagRaw(Tag):
+    VOID = True
+
+    def _render(self, local_envs, global_envs):
+        return str(self.data)
 
 @register_tag('OUTPUT')
 class TagOutput(Tag):

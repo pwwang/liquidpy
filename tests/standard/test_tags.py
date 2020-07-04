@@ -83,6 +83,7 @@ def test_for():
     }).strip() == "The collection is empty."
 
     assert Liquid("{{(1..5)}}", liquid_config={'debug':'+'}).render() == "[1, 2, 3, 4, 5]"
+    assert Liquid("{{(1..a)}}", liquid_config={'debug':'+'}).render(a=5) == "[1, 2, 3, 4, 5]"
 
     tpl = """
     {% for i in (1..5) %}
@@ -455,7 +456,7 @@ def test_raw():
       {{{ that }}} will not.
     {% endraw -%}
     """
-    assert Liquid(tpl).render() == """
+    assert Liquid(tpl, liquid_config={'debug':'+'}).render() == """
       In Handlebars, {{ this }} will be HTML-escaped, but
       {{{ that }}} will not.
     """

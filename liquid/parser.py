@@ -18,7 +18,6 @@ from .tagfrag import (
     TagFragOutput,
     TagFragOpComparison,
 )
-from .grammar import Grammar
 from .tag import Tag, TagLiteral
 from .tagmgr import get_tag
 from .config import LIQUID_LOG_INDENT
@@ -153,7 +152,16 @@ class TagFactory(Transformer):
     def var(self, data):
         return TagFragVar(data)
 
-    def range(self, start, stop):
+    def range(self, token):
+        start, stop = token[1:-1].split('..', 1)
+        try:
+            start = int(start)
+        except (TypeError, ValueError):
+            start = TagFragVar(start)
+        try:
+            stop = int(stop)
+        except (TypeError, ValueError):
+            stop = TagFragVar(stop)
         return TagFragRange(start, stop)
 
     def getitem(self, obj, subscript):
@@ -222,6 +230,26 @@ class TagFactory(Transformer):
     def output(self, expr, *expr_filters):
         """Rule output {{ }} """
         return TagFragOutput(expr, expr_filters)
+
+    def raw_tag(self, raw):
+        match = re.match(
+            r'^(\{%-?)\s*raw\s*(-?%\})([\s\S]*?)(\{%-?)\s*end\s*raw\s*(-?%\})',
+            raw
+        )
+        open_brace1 = match.group(1)
+        close_brace1 = match.group(2)
+        content = match.group(3)
+        open_brace2 = match.group(4)
+        close_brace2 = match.group(5)
+
+        self._ws_control(open_brace1, close_brace2)
+        if '-' in close_brace1:
+            content = content.lstrip()
+        if '-' in open_brace2:
+            content = content.rstrip()
+        tag = get_tag('RAW', content, self._context(raw))
+        self._starting_tag(tag)
+        return tag
 
     def start_tag(self, open_brace, inner, close_brace):
         self._ws_control(open_brace, close_brace)
@@ -383,6 +411,7 @@ class Parser:
                     parser='lalr',
                     start='start',
                     debug=False,
+                    maybe_placeholders=True,
                     transformer=self.TRANSFORMER(self),
                     cache=cachefile).parse(template_string)
 

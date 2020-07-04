@@ -24,11 +24,9 @@ class TagCycle(Tag):
         self._group = None
         self._args = None
 
-    def t_tag_cycle(self, tagname, group, args=None):
+    def t_tag_cycle(self, tagname, group, colon, args=None):
         if args is None:
-            args = group
-            group = None
-
+            args = colon
         return TagCycle(tagname, [group, args, 0])
 
     def group(self, local_envs, global_envs):

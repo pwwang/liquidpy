@@ -1,4 +1,5 @@
 """Tag for
+
 {% for <loop> <args> %}
 ...
 {% endfor %}
@@ -21,8 +22,8 @@ class TagFor(Tag):
     inner_tag: tag_for
     !tag_for: $tagnames VAR "in" atom for_args*
     ?for_args: for_limit_arg | for_offset_arg | for_reversed_arg
-    for_limit_arg: "limit" ":" (number|var)
-    for_offset_arg: "offset" ":" (number|var)
+    for_limit_arg: "limit" ":" (int|var)
+    for_offset_arg: "offset" ":" (int|var)
     for_reversed_arg: "reversed"
     """
 
