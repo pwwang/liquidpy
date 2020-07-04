@@ -55,15 +55,15 @@ def test_debug(caplog):
     -1
     15,24,13,
     """
-    assert ": <Tag(name=capture, data='x', line=3, col=5, VOID=False)>" in caplog.text
-    assert ":   <Tag(name=for, data='i in array reversed', line=4, col=9, VOID=False)>" in caplog.text
-    assert ":     <Tag(name=if, data='forloop.index0 < 3', line=5, col=13, VOID=False)>" in caplog.text
-    assert ":       <Tag(name=cycle, data='1, 2', line=6, col=17, VOID=True)>" in caplog.text
-    assert ":       <Tag(name=continue, data='', line=7, col=17, VOID=True)>" in caplog.text
-    assert ":     <Tag(name=else, data='', line=8, col=13, VOID=False)>" in caplog.text
-    assert ":       <Tag(name=break, data='', line=9, col=17, VOID=True)>" in caplog.text
-    assert ":       <Tag(name=break, data='', line=9, col=17, VOID=True)>" in caplog.text
-    assert ": <Tag(name=case, data='true', line=13, col=5, VOID=False)>" in caplog.text
-    assert ": <Tag(name=case, data='true', line=13, col=5, VOID=False)>" in caplog.text
-    assert ":   <Tag(name=when, data='false', line=14, col=9, VOID=False)>" in caplog.text
-    assert ":   <Tag(name=else, data='', line=16, col=9, VOID=False)>" in caplog.text
+    assert ": <Tag(name=capture, line=3, col=5, VOID=False)>" in caplog.text
+    assert ":   <Tag(name=for, line=4, col=9, VOID=False)>" in caplog.text
+    assert ":     <Tag(name=if, line=5, col=13, VOID=False)>" in caplog.text
+    assert ":       <Tag(name=cycle, line=6, col=17, VOID=True)>" in caplog.text
+    assert ":       <Tag(name=continue, line=7, col=17, VOID=True)>" in caplog.text
+    assert ":     <Tag(name=else, line=8, col=13, VOID=False)>" in caplog.text
+    assert ":       <Tag(name=break, line=9, col=17, VOID=True)>" in caplog.text
+    assert ":       <Tag(name=break, line=9, col=17, VOID=True)>" in caplog.text
+    assert ": <Tag(name=case, line=13, col=5, VOID=False)>" in caplog.text
+    assert ": <Tag(name=case, line=13, col=5, VOID=False)>" in caplog.text
+    assert ":   <Tag(name=when, line=14, col=9, VOID=False)>" in caplog.text
+    assert ":   <Tag(name=else, line=16, col=9, VOID=False)>" in caplog.text

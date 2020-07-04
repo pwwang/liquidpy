@@ -4,11 +4,20 @@
 {% decrement my_counter %}
 {% decrement my_counter %}
 """
-from ...tagmgr import register_tag
-from .increment import TagIncrement
+from ..tagmgr import register_tag
+from ..tag import Tag
 
 @register_tag
-class TagDecrement(TagIncrement):
+class TagDecrement(Tag):
+    """Class for tag decrement"""
+    VOID = True
+    SYNTAX = r"""
+    inner_tag: tag_decrement
+    !tag_decrement: $tagnames VAR
+    """
+
+    def t_tag_decrement(self, tagname, var):
+        return TagDecrement(tagname, var)
 
     def _render(self, local_envs, global_envs):
         # Variables created through the decrement tag are independent

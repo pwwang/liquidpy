@@ -1,6 +1,6 @@
 """All filters from shopify's liquid"""
 import math
-from ..filtermgr import register_filter
+from .filtermgr import register_filter
 
 class EmptyDrop:
 

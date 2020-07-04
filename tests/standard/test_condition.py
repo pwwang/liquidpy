@@ -2,7 +2,7 @@
 https://github.com/Shopify/liquid/blob/master/test/unit/condition_unit_test.rb
 """
 import pytest
-from liquid.common.tagfrag import (
+from liquid.tagfrag import (
     TagFragOpComparison, TagFragConst, TagFrag, TagFragVar
 )
 

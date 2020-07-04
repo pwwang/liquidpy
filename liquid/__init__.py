@@ -2,8 +2,8 @@
 from .liquid import Liquid, LOGGER
 from .config import DEFAULT_CONFIG
 from .tagmgr import (
-    register_tag, unregister_tag, enable_tag, disable_tag
+    register_tag_external as register_tag, unregister_tag
 )
 from .filtermgr import (
-    register_filter, unregister_filter, enable_filter, disable_filter
+    register_filter, unregister_filter
 )

@@ -1,6 +1,6 @@
 """The parsed objects for the syntax inside a tag"""
 
-from ..config import LIQUID_FILTERS_ENVNAME
+from .config import LIQUID_FILTERS_ENVNAME
 from .filters import EmptyDrop
 
 class TagFrag:
@@ -44,8 +44,8 @@ class TagFragOpComparison(TagFrag):
     def render(self, local_envs, global_envs):
         """Get the value from the comparison"""
         left, op, right = self.data
-        left = left.render(local_envs, global_envs)
-        right = right.render(local_envs, global_envs)
+        left = try_render(left, local_envs, global_envs)
+        right = try_render(right, local_envs, global_envs)
         if op == '==':
             return left == right
         if op in ('!=', '<>'):
@@ -72,8 +72,8 @@ class TagFragGetItem(TagFrag):
     def render(self, local_envs, global_envs):
         """Try to get the value of the getitem operation"""
         obj, subscript = self.data
-        obj = obj.render(local_envs, global_envs)
-        subscript = subscript.render(local_envs, global_envs)
+        obj = try_render(obj, local_envs, global_envs)
+        subscript = try_render(subscript, local_envs, global_envs)
 
         try:
             return obj[subscript]
@@ -86,7 +86,7 @@ class TagFragGetAttr(TagFrag):
     def render(self, local_envs, global_envs):
         """Try to get the value of the getattr operation"""
         obj, attr = self.data
-        obj = obj.render(local_envs, global_envs)
+        obj = try_render(obj, local_envs, global_envs)
         attr = str(attr)
 
         try:
@@ -105,8 +105,8 @@ class TagFragRange(TagFrag):
     """Fragment for range"""
     def render(self, local_envs, global_envs):
         start, end = self.data
-        start = start.render(local_envs, global_envs)
-        end = end.render(local_envs, global_envs)
+        start = try_render(start, local_envs, global_envs)
+        end = try_render(end, local_envs, global_envs)
 
         return list(range(int(start), int(end) + 1))
 
@@ -123,10 +123,16 @@ class TagFragOutput(TagFrag):
     """Output inside {{ ... }}"""
     def render(self, local_envs, global_envs):
         base, filters = self.data
-        base = base.render(local_envs, global_envs)
+        base = try_render(base, local_envs, global_envs)
         for filt, fargs in filters:
             filt = filt.render(local_envs, global_envs)
-            fargs = [farg.render(local_envs, global_envs) for farg in fargs]
+            fargs = [try_render(farg, local_envs, global_envs)
+                     for farg in fargs]
             fargs.insert(0, base)
             base = filt(*fargs)
         return base
+
+def try_render(tagfrag, local_envs, global_envs):
+    if isinstance(tagfrag, TagFrag):
+        return tagfrag.render(local_envs, global_envs)
+    return tagfrag

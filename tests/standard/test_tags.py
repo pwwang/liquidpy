@@ -82,7 +82,7 @@ def test_for():
         'products': []
     }).strip() == "The collection is empty."
 
-    assert Liquid("{{(1..5)}}").render() == "[1, 2, 3, 4, 5]"
+    assert Liquid("{{(1..5)}}", liquid_config={'debug':'+'}).render() == "[1, 2, 3, 4, 5]"
 
     tpl = """
     {% for i in (1..5) %}

@@ -2,7 +2,7 @@
 https://github.com/Shopify/liquid/blob/master/test/unit/context_unit_test.rb
 """
 import pytest
-from liquid.common.tagfrag import (
+from liquid.tagfrag import (
     TagFragVar, TagFragGetAttr, TagFragOutput, TagFragFilter,
     TagFragGetItem, TagFragConst, TagFragRange
 )

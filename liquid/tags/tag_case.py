@@ -10,30 +10,25 @@
      This is not a cake nor a cookie
 {% endcase %}
 """
-from lark import v_args
-from ...tagmgr import register_tag
-from ...exceptions import TagSyntaxError
-from ..tagparser import Tag, TagTransformer
-
-@v_args(inline=True)
-class TransformerCase(TagTransformer):
-    """Transformer for fragment parsing case tag"""
-    output = TagTransformer.tags__output
+from ..tagmgr import register_tag
+from ..tag import Tag
+from ..tagfrag import try_render
+from ..exceptions import TagSyntaxError
 
 @register_tag
 class TagCase(Tag):
-    """Class for if tag"""
+    """Class for case tag"""
 
     SYNTAX = r"""
-    start: output
-
-    %import .tags (output, WS_INLINE)
-    %ignore WS_INLINE
+    inner_tag: tag_case
+    !tag_case: $tagnames output
     """
 
-    TRANSFORMER = TransformerCase
+    def t_tag_case(self, tagname, output):
+        return TagCase(tagname, output)
 
     def _render(self, local_envs, global_envs):
+        self.data = try_render(self.data, local_envs, global_envs)
         rendered = ''
         for child in self.children:
             child_rendered, _ = child.render(local_envs, global_envs)

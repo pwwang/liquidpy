@@ -12,7 +12,7 @@ LIQUID_FILTERS_ENVNAME = '__LIQUID_FILTERS__'
 DEFAULT_CONFIG = Diot(
     extended=False,
     strict=True,
-    debug=False
+    debug=True
 )
 
 class Config(Diot):

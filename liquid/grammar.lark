@@ -1,7 +1,21 @@
+start: tag*
+
+?tag: end_tag | start_tag | output_tag | literal_tag | literal_start_tag
+
+end_tag: OPEN_BRACE "end" VAR CLOSE_BRACE
+output_tag: OPEN_OUTPUT output CLOSE_OUTPUT
+start_tag: OPEN_BRACE inner_tag CLOSE_BRACE
+literal_tag: /(?<=[%\}]\})((?![\}%]\}).)+?(?=\{[\{%]|$)/s
+literal_start_tag: /^((?![\}%]\}).)+?(?=\{[\{%]|$)/s
+
+?inner_tag:
+
+// tags
+
 // expr too broad for output? maybe atom?
 output: expr ("|" expr_filter)*
 
-expr_filter: filter [":" filter_args]
+?expr_filter: filter [":" filter_args]
 
 filter: VAR
 filter_args: expr ("," expr)*
@@ -22,29 +36,26 @@ filter_args: expr ("," expr)*
     | atom
 
 op_comparison: atom OP atom
-    | "(" op_comparison ")"
 !contains: atom "contains" atom
-    | "(" contains ")"
 
 ?atom: "(" (int|var) ".." (int|var) ")" -> range
-    | number | string
+    | number
+    | string
     | "nil"   -> nil
     | "true"  -> true
     | "false" -> false
-    | atom "[" atom "]"        -> getitem
-    | atom "." ATTRNAME ["?"]  -> getattr
+    | atom "[" atom "]"       -> getitem
+    | atom "." ATTRNAME "?"?  -> getattr
     | var
-    | "(" atom ")"
 
 var: VAR
-
 int: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER
 number: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER
 string: STRING
 
 // note the order here
 OP: "<>"|"=="|">="|"<="|"!="|"<"|">"
-STRING: (ESCAPED_STRING | "'" _STRING_ESC_INNER "'")
+STRING: ESCAPED_STRING | ("'" _STRING_ESC_INNER "'")
 // earley does support terminal priorities
 ATTRNAME: /[A-Za-z_][\w_\-]*/
 DEC_NUMBER: /[-+]?(0|[1-9]\d*)/i
@@ -53,5 +64,20 @@ OCT_NUMBER: /[-+]?0o[0-7]*/i
 BIN_NUMBER : /[-+]?0b[0-1]*/i
 FLOAT_NUMBER: /[-+]?((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
 
+OPEN_BRACE: _OPEN_BRACE_COMPACT | _OPEN_BRACE
+CLOSE_BRACE: _CLOSE_BRACE_COMPACT | _CLOSE_BRACE
+OPEN_OUTPUT: _OPEN_OUTPUT_COMPACT | _OPEN_OUTPUT
+CLOSE_OUTPUT: _CLOSE_OUTPUT_COMPACT | _CLOSE_OUTPUT
+
+_OPEN_BRACE: "{%"
+_OPEN_BRACE_COMPACT.2: "{%-"
+_CLOSE_BRACE: "%}"
+_CLOSE_BRACE_COMPACT.2: "-%}"
+_OPEN_OUTPUT: "{{"
+_OPEN_OUTPUT_COMPACT.2: "{{-"
+_CLOSE_OUTPUT: "}}"
+_CLOSE_OUTPUT_COMPACT.2: "-}}"
+
 %import common.CNAME -> VAR
 %import common (ESCAPED_STRING, _STRING_ESC_INNER, WS_INLINE)
+%ignore WS_INLINE

@@ -4,12 +4,20 @@
 {% increment my_counter %}
 {% increment my_counter %}
 """
-from ...tagmgr import register_tag
-from .capture import TagCapture
+from ..tagmgr import register_tag
+from ..tag import Tag
 
 @register_tag
-class TagIncrement(TagCapture):
+class TagIncrement(Tag):
+    """Class for tag increment"""
     VOID = True
+    SYNTAX = r"""
+    inner_tag: tag_increment
+    !tag_increment: $tagnames VAR
+    """
+
+    def t_tag_increment(self, tagname, var):
+        return TagIncrement(tagname, var)
 
     def _render(self, local_envs, global_envs):
         # Variables created through the increment tag are independent
