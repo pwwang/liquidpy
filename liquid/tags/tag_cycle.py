@@ -25,25 +25,29 @@ class TagCycle(Tag):
         self._args = None
 
     def t_tag_cycle(self, tagname, group, colon, args=None):
+        """Transformer for tag cycle"""
         if args is None:
             args = colon
         return TagCycle(tagname, [group, args, 0])
 
     def group(self, local_envs, global_envs):
+        """Get the group of the cycle"""
         if self._group is None:
             self._group = try_render(self.data[0], local_envs, global_envs)
         return self._group
 
     def args(self, local_envs, global_envs):
+        """Get the args of the cycle"""
         if self._args is None:
             self._args = [try_render(arg, local_envs, global_envs)
                           for arg in self.data[1]]
         return self._args
 
     def get_value(self, local_envs, global_envs):
-        group = self.group(local_envs, global_envs)
+        """Get current value of the cycle, and
+        increment the cursor"""
         args = self.args(local_envs, global_envs)
-        at = self.data[2]
+        at = self.data[2] # pylint: disable=invalid-name
 
         ret = args[at % len(args)]
         self.data[2] = at + 1

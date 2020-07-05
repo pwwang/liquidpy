@@ -2,11 +2,9 @@
 import re
 import ast
 from pathlib import Path
-from functools import partial
 from collections import deque, OrderedDict
 from diot import Diot
 from lark import v_args, Lark, Transformer
-from lark.exceptions import VisitError as LarkVisitError
 # load all shared tags
 from . import tags # pylint: disable=unused-import
 from .tagfrag import (
@@ -19,8 +17,9 @@ from .tagfrag import (
     TagFragOpComparison,
 )
 from .tag import Tag, TagLiteral
-from .tagmgr import get_tag
+from .tagmgr import get_tag, _load_all_tag_transformers, _load_all_tag_syntaxes
 from .config import LIQUID_LOG_INDENT
+from .grammar import BASE_GRAMMAR
 from .exceptions import (
     TagUnclosed, EndTagUnexpected,
     TagWrongPosition
@@ -28,20 +27,21 @@ from .exceptions import (
 
 @v_args(inline=True)
 class TagFactory(Transformer):
+    """Transformer for the parser"""
     # Last literal tag or last compact mode
     LAST_LITERAL_OR_COMPACT = None
 
     def __init__(self, parser, base_level=0):
-        """Construct"""
+        """Construct. base_level is used for tags like liquid"""
         super().__init__()
         self.parser = parser
         self.config = parser.config
         self.stack = deque()
         self.base_level = base_level
         self.root = get_tag(
-            'ROOT', None, self._context(Diot(line=1, column=1)
-        ))
-        if not isinstance(self.parser.template_name, Tag):
+            'ROOT', None, self._context(Diot(line=1, column=1))
+        )
+        if base_level == 0:
             self.config.logger.info('PARSING %s ...',
                                     self.parser.template_name)
             self.config.logger.info('-' * 40)
@@ -50,6 +50,7 @@ class TagFactory(Transformer):
         if not isinstance(self.LAST_LITERAL_OR_COMPACT, TagLiteral):
             return
         self.LAST_LITERAL_OR_COMPACT.RIGHT_COMPACT = "-" in open_brace
+        # pylint: disable=invalid-name
         self.LAST_LITERAL_OR_COMPACT = "-" in close_brace
 
     def _context(self, token):
@@ -59,37 +60,33 @@ class TagFactory(Transformer):
 
     def _starting_tag(self, tag):
         """Handle the relationships between tags when a tag is opening
+
         When the stack is empty, we treat the tag as direct tag (to ROOT),
         Then these tags will be rendered directly by ROOT tag (a virtual tag
         that deals with all direct child tags)
+
         If it is not empty, then that means this tag is a child of
         the last tag (parent) of the stack, we attach it to the children of the
         parent, and attach the parent to the parent of the child as well
         (useful to detect when a tag is inside the one that it is supposed to
         be. For exaple, `cycle` should be with `for` tag. Then we are able to
         trace back the parent to see if `for` is one of its parents)
+
         Also if VOID is False, meaning that this tag can have children, we
         need to push it into the stack.
+
         Another case we can do for the extended mode is that, we can allow
         tags to be both VOID and non-VOID.
-        We can also do VOID = 'maybe' case. However, this type of tags can only
-        have literals in it. When we hit the end tag of it, then we know it is
-        a VOID = False tag. But before that, if we hit the other open tags,
-        close tag of its parent or EOF then we know if it is a VOID = True tag,
-        we need to move all the children of it to the upper level (its parent)
-        For cases of set of tags appearing together, non-first tags should have
-        PRIOR_TAGS and PARENT_TAGS defined, we need them to validate if the tag
-        is in the right place or within the right parent. More than that,
-        we also need the PRIOR_TAGS to prevent this tag to be treated as a
-        child of its prior tags
         """
         if not self.stack:
             if tag._require_parents():
                 raise TagWrongPosition(
-                    f"Expecting parents {tag.PARENT_TAGS}: {tag}"
+                    tag._format_error(f"Expecting parents {tag.PARENT_TAGS}")
                 )
             if tag._require_elders():
-                raise TagWrongPosition(f'{tag} requires a prior tag.')
+                raise TagWrongPosition(
+                    tag._format_error(f"Expecting elder tags {tag.ELDER_TAGS}")
+                )
 
             tag.level = self.base_level
             if not isinstance(tag, TagLiteral):
@@ -112,30 +109,19 @@ class TagFactory(Transformer):
 
                 tag.level = prev_tag.level
 
-            # prior tags should not have VOID maybe, check?
-            elif self.stack[-1].VOID == 'maybe':
-                void_tag = self.stack.pop()
-                void_tag.VOID = True
-                if not void_tag.parent:
-                    self.root.children.extend(void_tag.children)
-                else:
-                    void_tag.parent.children.extend(void_tag.children)
-
-                del void_tag.children[:]
-
             if self.stack:
                 self.stack[-1].children.append(tag)
                 tag.parent = self.stack[-1]
                 tag.level = tag.parent.level + 1
 
-                if not isinstance(tag, TagLiteral):
-                    self.config.logger.info('%s%s',
-                                            LIQUID_LOG_INDENT * tag.level,
-                                            tag)
-                else:
-                    self.config.logger.debug('%s%s',
-                                             LIQUID_LOG_INDENT * tag.level,
-                                             tag)
+            if not isinstance(tag, TagLiteral):
+                self.config.logger.info('%s%s',
+                                        LIQUID_LOG_INDENT * tag.level,
+                                        tag)
+            else:
+                self.config.logger.debug('%s%s',
+                                         LIQUID_LOG_INDENT * tag.level,
+                                         tag)
 
             # parent check
             # we need to do it after siblings assignment, because
@@ -143,16 +129,20 @@ class TagFactory(Transformer):
             # direct parent
             if not tag._parents_valid():
                 raise TagWrongPosition(
-                    f"Expecting parents {tag.PARENT_TAGS}: {tag}"
+                    tag._format_error(f"Expecting parents {tag.PARENT_TAGS}")
                 )
 
-        if not tag.VOID or tag.VOID == 'maybe':
+        if not tag.VOID:
             self.stack.append(tag)
 
+        tag._post_starting()
+
     def var(self, data):
+        """Variables"""
         return TagFragVar(data)
 
     def range(self, token):
+        """Ranges"""
         start, stop = token[1:-1].split('..', 1)
         try:
             start = int(start)
@@ -165,15 +155,15 @@ class TagFactory(Transformer):
         return TagFragRange(start, stop)
 
     def getitem(self, obj, subscript):
-        """The getitem operation"""
+        """Gettiem: a[b]"""
         return TagFragGetItem(obj, subscript)
 
     def getattr(self, obj, attr):
-        """The getattr operation"""
+        """Getattr: a.b"""
         return TagFragGetAttr(obj, attr)
 
     def op_comparison(self, left, op, right):
-        """The operator comparisons"""
+        """Operator comparison"""
         return TagFragOpComparison(left, op, right)
 
     def logical(self, expr, *op_expr):
@@ -232,6 +222,7 @@ class TagFactory(Transformer):
         return TagFragOutput(expr, expr_filters)
 
     def raw_tag(self, raw):
+        """The raw tag"""
         match = re.match(
             r'^(\{%-?)\s*raw\s*(-?%\})([\s\S]*?)(\{%-?)\s*end\s*raw\s*(-?%\})',
             raw
@@ -252,11 +243,16 @@ class TagFactory(Transformer):
         return tag
 
     def start_tag(self, open_brace, inner, close_brace):
+        """Start of a tag"""
         self._ws_control(open_brace, close_brace)
         # inner is already transformed into a tag
         # is it enough to point to the tag itself or
         # we need to point to the fragments as well
-        inner.context = self._context(open_brace)
+        if not inner.context:
+            if hasattr(inner.name, 'line'):
+                inner.context = self._context(inner.name)
+            else:
+                inner.context = self._context(open_brace)
         self._starting_tag(inner)
         return inner
 
@@ -270,12 +266,6 @@ class TagFactory(Transformer):
 
         last_tag = self.stack.pop()
         if last_tag.name == tagname:
-            # collapse VOID to False for maybe VOID tags
-            if last_tag.VOID == 'maybe':
-                self.config.logger.debug(
-                    '    Collapsing tag (VOID: maybe -> False): %s', last_tag
-                )
-                last_tag.VOID = False
             self.config.logger.info('%s<EndTag(name=end%s, line=%s, col=%s)>',
                                     LIQUID_LOG_INDENT * last_tag.level,
                                     last_tag.name,
@@ -342,12 +332,14 @@ class TagFactory(Transformer):
 
 
     def output_tag(self, open_brace, output, close_brace):
+        """The output tag {{ }}"""
         self._ws_control(open_brace, close_brace)
         tag = get_tag('OUTPUT', output, self._context(open_brace))
         self._starting_tag(tag)
         return tag
 
     def literal_tag(self, literal):
+        """The literals"""
         tag = get_tag('LITERAL', literal, self._context(literal))
         if self.LAST_LITERAL_OR_COMPACT is True:
             tag.LEFT_COMPACT = True
@@ -355,14 +347,15 @@ class TagFactory(Transformer):
         self._starting_tag(tag)
         return tag
 
-    def start(self, *tags):
+    def start(self, *_tags):
+        """The root rule"""
         return self.root
 
     int = number = string = lambda _, data: ast.literal_eval(str(data))
     nil = lambda _: None
     true = lambda _: True
     false = lambda _: False
-    contains = op_comparison
+    #contains = op_comparison
     expr_nological = expr = tag = inner_tag = lambda _, data: data
     literal_start_tag = literal_tag
 
@@ -412,10 +405,18 @@ class Parser:
                     start='start',
                     debug=False,
                     maybe_placeholders=True,
+                    # pylint: disable=not-callable
                     transformer=self.TRANSFORMER(self),
                     cache=cachefile).parse(template_string)
 
     def get_context(self, lineno, contexts=10):
+        """Get the context lines of the given lineno
+
+        Args:
+            lineno (int): The current line number
+            contexts (int): The number of contexts lines to include
+                including before and after the current line.
+        """
         # [1,2,...9]
         # line = 8, pre_/post_lines = 5
         # should show: 3,4,5,6,7, 8, 9
@@ -426,3 +427,13 @@ class Parser:
             range(pre_lineno, post_lineno+1),
             self.template[(pre_lineno-1):post_lineno]
         ))
+
+@v_args(inline=True)
+@_load_all_tag_transformers
+class StandardTagFactory(TagFactory):
+    """Tag factory (transformers) for standard parser"""
+
+@_load_all_tag_syntaxes(BASE_GRAMMAR)
+class StandardParser(Parser):
+    """Parser for standard liquid"""
+    TRANSFORMER = StandardTagFactory

@@ -17,6 +17,7 @@ class TagIncrement(Tag):
     """
 
     def t_tag_increment(self, tagname, var):
+        """Transformer for tag increment"""
         return TagIncrement(tagname, var)
 
     def _render(self, local_envs, global_envs):

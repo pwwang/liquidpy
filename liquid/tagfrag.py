@@ -18,9 +18,6 @@ class TagFrag:
         """Render the fragment with the given envs"""
         return self.data
 
-    def __repr__(self):
-        return f"<{self.__class__.__name__}({self.data!r})>"
-
 class TagFragVar(TagFrag):
     """Fragment for variables"""
 
@@ -91,15 +88,18 @@ class TagFragGetAttr(TagFrag):
 
         try:
             return getattr(obj, attr)
-        except AttributeError as attr_ex:
+        except AttributeError as attre:
             # support size query in liquid
-            if attr == 'size':
-                return len(obj)
-            if attr == 'first':
-                return obj[0]
-            if attr == 'last':
-                return obj[-1]
-            return obj[attr]
+            try:
+                if attr == 'size':
+                    return len(obj)
+                if attr == 'first':
+                    return obj[0]
+                if attr == 'last':
+                    return obj[-1]
+                return obj[attr]
+            except (KeyError, TypeError):
+                raise attre from None
 
 class TagFragRange(TagFrag):
     """Fragment for range"""
@@ -133,6 +133,11 @@ class TagFragOutput(TagFrag):
         return base
 
 def try_render(tagfrag, local_envs, global_envs):
+    """Try to render a fragment
+
+    If it is a TagFrag object, render it with the envs,
+    otherwise, return the value itself
+    """
     if isinstance(tagfrag, TagFrag):
         return tagfrag.render(local_envs, global_envs)
     return tagfrag

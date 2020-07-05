@@ -21,6 +21,7 @@ class TagBreak(Tag):
     PARENT_TAGS = RequiredTags('for')
 
     def t_tag_break(self, tagname):
+        """Transformer for tag break"""
         return TagBreak(tagname)
 
     def _render(self, local_envs, global_envs):

@@ -96,6 +96,13 @@ def test_for():
     """
     assert Liquid(tpl).render().split() == ["1", "2", "3"]
 
+    tpl = """
+    {% for i in (1..10) limit:3 offset:3 %}
+    {{i}}
+    {% endfor %}
+    """
+    assert Liquid(tpl).render().split() == ["4", "5", "6"]
+
 def test_for_continue():
     tpl = """
     {% for i in (1..5) %}
@@ -449,6 +456,35 @@ def test_tablerow():
     </table>
     """
 
+    tpl = """
+    <table>
+    {% tablerow product in collection.products cols:2 limit:2 offset:3 %}
+      {{ product.title }}
+    {% endtablerow %}
+    </table>
+    """
+
+    rendered = Liquid(tpl).render(collection={
+        'products': [
+            {'title': 'Cool Shirt'},
+            {'title': 'Alien Poster'},
+            {'title': 'Batman Poster'},
+            {'title': 'Bullseye Shirt'},
+            {'title': 'Another Classic Vinyl'},
+            {'title': 'Awesome Jeans'},
+        ]
+    })
+
+    assert rendered == """
+    <table>
+    <tr class="row1"><td class="col1">
+      Bullseye Shirt
+    </td><td class="col2">
+      Another Classic Vinyl
+    </td></tr>
+    </table>
+    """
+
 def test_raw():
     tpl = """
     {%- raw %}
@@ -498,5 +534,13 @@ def test_xcrement():
     """
     assert Liquid(tpl).render().split() == ["-1", "-2", "-3"]
 
-
-
+def test_liquid():
+    tpl = """
+    {% liquid
+    if condition
+        echo 'true'
+    else
+        echo 'false'
+    endif %}
+    """
+    assert Liquid(tpl).render(condition=False).strip() == "false"

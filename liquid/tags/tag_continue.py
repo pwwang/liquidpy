@@ -21,6 +21,7 @@ class TagContinue(Tag):
     PARENT_TAGS = RequiredTags('for')
 
     def t_tag_continue(self, tagname):
+        """Transformer for tag continue"""
         return TagContinue(tagname)
 
     def _render(self, local_envs, global_envs):

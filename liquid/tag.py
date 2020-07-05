@@ -1,7 +1,8 @@
+"""Tag class for liquidpy"""
 from .tagmgr import register_tag
 from .tagfrag import try_render
-from .exceptions import TagRenderError
-from . import tags
+from . import tags # pylint: disable=unused-import
+from .exceptions import LiquidRenderError, LiquidException
 
 class _PositionalTuple(tuple):
     def __new__(cls, *args):
@@ -49,7 +50,7 @@ class Tag:
     SECURE = True
 
     def __init__(self, name, data=None, context=None):
-        self.name = str(name)
+        self.name = name
         self.data = data
         self.context = context
         # The children of this tag
@@ -68,11 +69,11 @@ class Tag:
         if not self._require_parents():
             return True
         parent_name = parent.name if isinstance(parent, Tag) else parent
-        return parent_name in self.PARENT_TAGS
+        return str(parent_name) in self.PARENT_TAGS
 
     def _can_be_elder(self, elder):
         elder_name = elder.name if isinstance(elder, Tag) else elder
-        return self.ELDER_TAGS and elder_name in self.ELDER_TAGS
+        return self.ELDER_TAGS and str(elder_name) in self.ELDER_TAGS
 
     def _children_rendered(self, local_envs, global_envs):
         """Render the children
@@ -101,7 +102,7 @@ class Tag:
 
         parent = self.parent
         while parent:
-            if parent.name in self.PARENT_TAGS:
+            if self._can_be_parent(parent):
                 return True
             parent = parent.parent
         return False
@@ -162,18 +163,38 @@ class Tag:
 
     def _render(self, local_envs, global_envs):
         """Render the tag"""
+        # pragma: no cover
         raise NotImplementedError()
 
+    def _post_starting(self):
+        """Hook for actions after tag relationships have been resolved."""
+
     def render(self, local_envs, global_envs, from_elder=False):
+        """Render the tag, using the envs
+
+        Args:
+            local_envs (dict): The local environments
+            global_envs (dict): The global environments
+            from_elder (bool): Whether the rendering is called from
+                an elder tag. If I have a previous tag, then I must be
+                rendered from the previous tag.
+
+        Returns:
+            tuple: The rendered object and the local environment that may
+                be changed by this tag.
+        """
         if self.prev and not from_elder:
             return '', local_envs
         try:
             return self._render(local_envs, global_envs), local_envs
-        except Exception as ex:
-            raise TagRenderError(self._format_error(ex))
+        except LiquidException as lre:
+            raise lre
+        except Exception as exc:
+            raise LiquidRenderError(self._format_error(exc))
 
 @register_tag('LITERAL')
 class TagLiteral(Tag):
+    """Literal tag"""
     VOID = True
     LEFT_COMPACT = RIGHT_COMPACT = False
 
@@ -187,6 +208,7 @@ class TagLiteral(Tag):
 
 @register_tag('RAW')
 class TagRaw(Tag):
+    """Raw tag"""
     VOID = True
 
     def _render(self, local_envs, global_envs):
@@ -194,6 +216,7 @@ class TagRaw(Tag):
 
 @register_tag('OUTPUT')
 class TagOutput(Tag):
+    """Output/varable tag"""
     VOID = True
     def _render(self, local_envs, global_envs):
         rendered = try_render(self.data, local_envs, global_envs)
@@ -201,6 +224,6 @@ class TagOutput(Tag):
 
 @register_tag('ROOT')
 class TagRoot(Tag):
-
+    """The virtual root tag"""
     def _render(self, local_envs, global_envs):
         return self._children_rendered(local_envs, global_envs)

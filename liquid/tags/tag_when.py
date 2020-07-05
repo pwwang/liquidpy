@@ -26,6 +26,7 @@ class TagWhen(Tag):
     ELDER_TAGS = OptionalTags('when')
 
     def t_tag_when(self, tagname, output):
+        """Transformer for tag when"""
         return TagWhen(tagname, output)
 
     def _render(self, local_envs, global_envs):

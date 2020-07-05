@@ -17,7 +17,8 @@ class TagAssign(Tag):
     !tag_assign: $tagnames VAR "=" output
     """
 
-    def t_tag_assign(self, tagname, varname, eq, output):
+    def t_tag_assign(self, tagname, varname, _eq, output):
+        """Transformer for tag assign"""
         return TagAssign(tagname,
                          (str(varname), output))
 

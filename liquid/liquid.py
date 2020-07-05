@@ -2,10 +2,9 @@
 import logging
 from contextlib import suppress
 from pathlib import Path
-from lark import v_args
 from .config import Config, LIQUID_LOGGER_NAME, LIQUID_FILTERS_ENVNAME
 from .filtermgr import LIQUID_FILTERS
-from .tagmgr import _load_all_tag_transformers, _load_all_tag_syntaxes
+from .parser import StandardParser
 
 # For global LOGGER configurations
 # Because all loggers are sub-loggers of this one
@@ -29,14 +28,6 @@ def _template_meta(template):
         template_content = template
     return template_name, template_content
 
-def _get_parser(extended):
-    if extended:
-        from .extended.parser import ExtendedParser as Parser
-    else:
-        from .standard.parser import StandardParser as Parser
-    return Parser
-
-
 
 class Liquid:
     """Liquid class"""
@@ -45,10 +36,10 @@ class Liquid:
     def __init__(self, liquid_template, liquid_config=None, **envs):
         self.envs = envs
         self.config = Config(liquid_config or {})
+        parser = StandardParser
         if self.config.extended:
-            from .extended.parser import ExtendedParser as Parser
-        else:
-            from .standard.parser import StandardParser as Parser
+            from .extended.parser import ExtendedParser
+            parser = ExtendedParser
 
         # // TODO Cache parsed object
         template_name, template_content = _template_meta(liquid_template)
@@ -58,7 +49,7 @@ class Liquid:
         # update the logger configuration
         self.config.update_logger()
 
-        self.parsed = Parser(self.config).parse(
+        self.parsed = parser(self.config).parse(
             template_content, template_name
         )
 

@@ -15,6 +15,7 @@ class TagComment(Tag):
     """
 
     def t_tag_comment(self, tagname):
+        """Transformer for tag comment"""
         return TagComment(tagname)
 
     def _render(self, local_envs, global_envs):

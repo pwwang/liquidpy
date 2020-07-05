@@ -4,7 +4,7 @@ https://github.com/Shopify/liquid/blob/master/test/unit/block_unit_test.rb
 import pytest
 import logging
 from functools import partial
-from liquid.standard.parser import StandardParser as Parser
+from liquid.parser import StandardParser as Parser
 from liquid.config import Config, LIQUID_LOGGER_NAME
 
 @pytest.fixture

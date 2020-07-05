@@ -91,9 +91,13 @@ def register_tag(*tagnames):
     return lambda cls, tagnames=tagnames: _tag_class_decorator(cls, tagnames)
 
 def register_tag_external(*tagnames, extended=False):
+    """Register an external tag
+
+    Since all internal tags have already been registered, so we
+    need to load the syntax and transformers from the external tag"""
     parsers = []
     if not extended or extended == 'both':
-        from .standard.parser import StandardParser
+        from .parser import StandardParser
         parsers.append(StandardParser)
     if extended: # True/both
         from .extended.parser import ExtendedParser

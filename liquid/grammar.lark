@@ -6,14 +6,14 @@ raw_tag: RAW_TAG
 end_tag: OPEN_BRACE "end" VAR CLOSE_BRACE
 output_tag: OPEN_OUTPUT output CLOSE_OUTPUT
 start_tag: OPEN_BRACE inner_tag CLOSE_BRACE
+// a better way?
 literal_tag: /(?<=[%\}]\})((?![\}%]\}).)+?(?=\{[\{%]|$)/s
 literal_start_tag: /^((?![\}%]\}).)+?(?=\{[\{%]|$)/s
-
+// a better way?
 RAW_TAG.4: /\{%-?\s*raw\s*-?%\}.*?\{%-?\s*endraw\s*-?%\}/s
 
-?inner_tag:
-
 // tags
+?inner_tag:
 
 // expr too broad for output? maybe atom?
 output: expr ("|" expr_filter)*
@@ -35,11 +35,11 @@ filter_args: expr ("," expr)*
 // we have to use earley to make this priority work
 // liquid does not support parentheses, here we just add in case
 ?expr_nological: op_comparison
-    | contains
+//    | contains
     | atom
 
 op_comparison: atom OP atom
-!contains: atom "contains" atom
+//!contains: atom "contains" atom
 
 ?atom: RANGE -> range
     | number
@@ -61,7 +61,7 @@ string: STRING
 // (1.).a
 RANGE.3: "(" (INT | VAR) ".." (INT | VAR) ")"
 // note the order here
-OP: "<>"|"=="|">="|"<="|"!="|"<"|">"
+OP: "<>"|"=="|">="|"<="|"!="|"<"|">"|"contains"
 STRING: ESCAPED_STRING | ("'" _STRING_ESC_INNER "'")
 // earley does support terminal priorities
 ATTRNAME: /[A-Za-z_][\w_\-]*/
@@ -87,5 +87,6 @@ _CLOSE_OUTPUT: "}}"
 _CLOSE_OUTPUT_COMPACT.2: "-}}"
 
 %import common.CNAME -> VAR
+%import common.NEWLINE -> _NL
 %import common (ESCAPED_STRING, _STRING_ESC_INNER, WS_INLINE)
 %ignore WS_INLINE

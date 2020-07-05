@@ -28,15 +28,19 @@ class TagFor(Tag):
     """
 
     def t_for_limit_arg(self, arg):
+        """Transformer for for_limit_arg"""
         return ('limit', arg)
 
     def t_for_offset_arg(self, arg):
+        """Transformer for for_offset_arg"""
         return ('offset', arg)
 
     def t_for_reversed_arg(self):
+        """Transformer for for_reversed_arg"""
         return ('reversed', True)
 
     def t_tag_for(self, tagname, varname, _in, atom, *args):
+        """Transformer for tag for"""
         return TagFor(tagname, (varname, atom, args))
 
     def __init__(self, *args, **kwargs):

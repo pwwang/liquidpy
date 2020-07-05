@@ -34,9 +34,10 @@ class TagElse(Tag):
     !tag_else: $tagnames
     """
     PARENT_TAGS = OptionalTags('case')
-    ELDER_TAGS = RequiredTags('if', 'when', 'for', 'elsif')
+    ELDER_TAGS = RequiredTags('if', 'unless', 'when', 'for', 'elsif')
 
     def t_tag_else(self, tagname):
+        """Transformer for tag else"""
         return TagElse(tagname)
 
     def _render(self, local_envs, global_envs):

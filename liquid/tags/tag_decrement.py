@@ -17,6 +17,7 @@ class TagDecrement(Tag):
     """
 
     def t_tag_decrement(self, tagname, var):
+        """Transformer for tag decrement"""
         return TagDecrement(tagname, var)
 
     def _render(self, local_envs, global_envs):

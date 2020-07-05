@@ -30,15 +30,19 @@ class TagTablerow(Tag):
     """
 
     def t_tablerow_limit_arg(self, arg):
+        """Transformer for tablerow_limit_arg"""
         return ('limit', arg)
 
     def t_tablerow_offset_arg(self, arg):
+        """Transformer for tablerow_offset_arg"""
         return ('offset', arg)
 
     def t_tablerow_cols_arg(self, arg):
+        """Transformer for tablerow_cols_arg"""
         return ('cols', arg)
 
     def t_tag_tablerow(self, tagname, varname, _in, atom, *args):
+        """Transformer for tag tablerow"""
         return TagTablerow(tagname, (varname, atom, args))
 
     def _render(self, local_envs, global_envs):

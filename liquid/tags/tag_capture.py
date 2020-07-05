@@ -16,6 +16,7 @@ class TagCapture(Tag):
     """
 
     def t_tag_capture(self, tagname, varname):
+        """Transformer for tag capture"""
         return TagCapture(tagname, varname)
 
     def _render(self, local_envs, global_envs):

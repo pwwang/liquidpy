@@ -6,6 +6,7 @@
 from ..tagmgr import register_tag
 from ..tag import Tag
 from ..tagfrag import try_render
+from ..filters import EmptyDrop
 
 @register_tag
 class TagIf(Tag):
@@ -17,6 +18,7 @@ class TagIf(Tag):
     """
 
     def t_tag_if(self, tagname, expr):
+        """Transformer for tag if"""
         return TagIf(tagname, expr)
 
     def _render(self, local_envs, global_envs):
@@ -28,11 +30,12 @@ class TagIf(Tag):
         # See: https://shopify.github.io/liquid/basics/truthy-and-falsy/#truthy
         if isinstance(expr, str):
             expr = True
-        elif (expr not in (True, False) and
-              isinstance(expr, (int, float))):
+        elif (isinstance(expr, (int, float)) and
+              expr is not True and
+              expr is not False):
             expr = True
-        elif isinstance(expr, (tuple, list)):
-            expr = True
+        elif isinstance(expr, EmptyDrop):
+            expr = False
 
         from_elder = True
         if expr:

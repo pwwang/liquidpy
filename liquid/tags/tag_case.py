@@ -25,6 +25,7 @@ class TagCase(Tag):
     """
 
     def t_tag_case(self, tagname, output):
+        """Transformer for tag case"""
         return TagCase(tagname, output)
 
     def _render(self, local_envs, global_envs):
