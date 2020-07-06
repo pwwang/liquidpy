@@ -8,6 +8,14 @@ A port of [liquid][1] template engine for python
 pip install liquidpy
 ```
 
+## Current status and plans
+- Note that this branch is not fully compatible with shopify's liquid. For compatible versions, please check branches [lark][14] and [larkone][15].
+- This branch is current NOT safe agaist malicious input ([#22][16]), so we tried to re-implement the engine using `lark-parser`. However, both versions were very slow for lexer.
+- With branch `lark`, we tried to tokenize each tag and parse the content of the tags later using independent parsers, while with `larkone`, we tried to put all grammars together, and made it into a universal parser. However, both of them are slow, due to tokenization of whole tags (`raw` and `comment`) and literals (See `grammar.lark` in the code).
+- If you have a better grammar or idea for tokenization, you are very welcome to submit issues or PRs (writing naive lexer is just too much work).
+- We left some APIs to extend the `lark` ones with some functions from `master`. However, it won't happen before we find a faster lexer.
+- A temporary plan for the `master` branch is to do some security check to address [#22][16].
+
 ## Full Documentation
 [ReadTheDocs][8]
 
@@ -41,3 +49,6 @@ ret = liq.render(a="path/to/file.txt")
 [11]: https://travis-ci.org/pwwang/liquidpy
 [12]: https://app.codacy.com/manual/pwwang/liquidpy/dashboard
 [13]: https://img.shields.io/readthedocs/liquidpy?style=flat-square
+[14]: https://github.com/pwwang/liquidpy/tree/lark
+[15]: https://github.com/pwwang/liquidpy/tree/larkone
+[16]: https://github.com/pwwang/liquidpy/issues/22
