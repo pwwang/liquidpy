@@ -1,31 +1,36 @@
 # liquidpy
 A port of [liquid][1] template engine for python
 
+This is the branch with compatibility to shopify's liquid template language.
+
 [![Pypi][2]][9] [![Github][3]][10] [![PythonVers][4]][9] [![ReadTheDocs building][13]][8] [![Travis building][5]][11] [![Codacy][6]][12] [![Codacy coverage][7]][12]
 
 ## Install
 ```shell
-pip install liquidpy
+pip install git+https://github.com/pwwang/liquidpy@lark
+# or
+pip install git+https://github.com/pwwang/liquidpy@larkone
 ```
 
 ## Full Documentation
-[ReadTheDocs][8]
+Check shopify's liquid [documentation][1]
 
 ## Baisic usage
 ```python
 from liquid import Liquid
 liq = Liquid('{{a}}')
-ret = liq.render(a = 1)
+ret = liq.render(a=1)
 # ret == '1'
 
-# load template from a file
-liq = Liquid('/path/to/template', liquid_from_file=True)
-```
-With environments:
-```python
-liq = Liquid('{{a | os.path.basename}}', os=__import__('os'))
-ret = liq.render(a="path/to/file.txt")
-# ret == 'file.txt'
+# with environments pre-loaded
+liq = Liquid('{{a}}', a=1)
+ret = liq.render()
+# ret == '1'
+
+# With debug on:
+liq = Liquid('{{a}}', liquid_config={'debug': True})
+# or with more verbosed message
+liq = Liquid('{{a}}', liquid_config={'debug': 'plus'})
 ```
 
 [1]: https://shopify.github.io/liquid/
