@@ -7,6 +7,7 @@ Now only applies to tags!
 """
 
 from pathlib import Path
+from copy import deepcopy
 from contextlib import suppress
 from diot import OrderedDiot
 
@@ -62,6 +63,12 @@ class Grammar:
         with suppress(AttributeError):
             grammar_lines.close()
 
+        return ret
+
+    def copy(self):
+        """Copy the grammar object"""
+        ret = Grammar('')
+        ret.grammar = deepcopy(self.grammar)
         return ret
 
     def update(self, other):

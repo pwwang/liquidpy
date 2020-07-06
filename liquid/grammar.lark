@@ -1,8 +1,8 @@
 start: tag*
 
-?tag: raw_tag | end_tag | start_tag | output_tag | literal_tag | literal_start_tag
+?tag: whole_tag | end_tag | start_tag | output_tag | literal_tag | literal_start_tag
 
-raw_tag: RAW_TAG
+whole_tag: RAW_TAG | COMMENT_TAG
 end_tag: OPEN_BRACE "end" VAR CLOSE_BRACE
 output_tag: OPEN_OUTPUT output CLOSE_OUTPUT
 start_tag: OPEN_BRACE inner_tag CLOSE_BRACE
@@ -11,6 +11,7 @@ literal_tag: /(?<=[%\}]\})((?![\}%]\}).)+?(?=\{[\{%]|$)/s
 literal_start_tag: /^((?![\}%]\}).)+?(?=\{[\{%]|$)/s
 // a better way?
 RAW_TAG.4: /\{%-?\s*raw\s*-?%\}.*?\{%-?\s*endraw\s*-?%\}/s
+COMMENT_TAG.4: /\{%-?\s*comment\s*-?%\}.*?\{%-?\s*endcomment\s*-?%\}/s
 
 // tags
 ?inner_tag:

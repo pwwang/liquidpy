@@ -17,7 +17,7 @@ from .tagfrag import (
     TagFragOpComparison,
 )
 from .tag import Tag, TagLiteral
-from .tagmgr import get_tag, _load_all_tag_transformers, _load_all_tag_syntaxes
+from .tagmgr import get_tag, load_all_tags
 from .config import LIQUID_LOG_INDENT
 from .grammar import BASE_GRAMMAR
 from .exceptions import (
@@ -221,24 +221,26 @@ class TagFactory(Transformer):
         """Rule output {{ }} """
         return TagFragOutput(expr, expr_filters)
 
-    def raw_tag(self, raw):
-        """The raw tag"""
+    def whole_tag(self, whole):
+        """The whole tag"""
         match = re.match(
-            r'^(\{%-?)\s*raw\s*(-?%\})([\s\S]*?)(\{%-?)\s*end\s*raw\s*(-?%\})',
-            raw
+            r'^(\{%-?)\s*([A-Za-z_][\w_]*)\s*(-?%\})([\s\S]*?)'
+            r'(\{%-?)\s*end\s*\2\s*(-?%\})',
+            str(whole)
         )
         open_brace1 = match.group(1)
-        close_brace1 = match.group(2)
-        content = match.group(3)
-        open_brace2 = match.group(4)
-        close_brace2 = match.group(5)
+        tagname = match.group(2)
+        close_brace1 = match.group(3)
+        content = match.group(4)
+        open_brace2 = match.group(5)
+        close_brace2 = match.group(6)
 
         self._ws_control(open_brace1, close_brace2)
         if '-' in close_brace1:
             content = content.lstrip()
         if '-' in open_brace2:
             content = content.rstrip()
-        tag = get_tag('RAW', content, self._context(raw))
+        tag = get_tag(tagname, content, self._context(whole))
         self._starting_tag(tag)
         return tag
 
@@ -428,12 +430,10 @@ class Parser:
             self.template[(pre_lineno-1):post_lineno]
         ))
 
-@v_args(inline=True)
-@_load_all_tag_transformers
 class StandardTagFactory(TagFactory):
     """Tag factory (transformers) for standard parser"""
 
-@_load_all_tag_syntaxes(BASE_GRAMMAR)
+@load_all_tags(BASE_GRAMMAR)
 class StandardParser(Parser):
     """Parser for standard liquid"""
     TRANSFORMER = StandardTagFactory

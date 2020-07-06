@@ -6,33 +6,32 @@ from .exceptions import TagRegistryException
 # The registry for all tags
 LIQUID_TAGS = {}
 
-def _load_all_tag_transformers(transformer_class):
-    """A decorator function for transformer class to register all
-    transformer functions from tags"""
-    for tag_class in LIQUID_TAGS.values():
-        if not tag_class.TRANSFORMERS:
-            continue
-
-        for transformer_func in tag_class.TRANSFORMERS:
-            # remove t_ prefix
-            transformer_name = transformer_func.__name__[2:]
-            setattr(transformer_class, transformer_name, transformer_func)
-
-        tag_class.TRANSFORMERS = None
-    return transformer_class
-
-def _load_all_tag_syntaxes(base_grammar):
-    """Decorator function for parser to load all syntax from tags"""
+def load_all_tags(base_grammar):
+    """Load and attach all tags"""
     def wrapper(parser_class):
+        transformer_class = parser_class.TRANSFORMER
         parser_class.GRAMMAR = base_grammar
+        if not hasattr(parser_class, '__loaded_tags__'):
+            parser_class.__loaded_tags__ = []
+
         for tag_class in LIQUID_TAGS.values():
-            if not tag_class.SYNTAX:
+            if tag_class in parser_class.__loaded_tags__:
                 continue
-            base_grammar.update(tag_class.SYNTAX)
-            tag_class.SYNTAX = None
+
+            parser_class.__loaded_tags__.append(tag_class)
+            if tag_class.SYNTAX:
+                base_grammar.update(tag_class.SYNTAX)
+
+            if tag_class.TRANSFORMERS:
+                for transformer_func in tag_class.TRANSFORMERS:
+                    # remove t_ prefix
+                    transformer_name = transformer_func.__name__[2:]
+                    setattr(transformer_class,
+                            transformer_name,
+                            transformer_func)
+        parser_class.TRANSFORMER = v_args(inline=True)(transformer_class)
         return parser_class
     return wrapper
-
 
 def get_tag(tagname, tagdata, tagcontext):
     """Get the Tag object by given tag name and data
@@ -106,10 +105,7 @@ def register_tag_external(*tagnames, extended=False):
     def decorator(cls, tagnames=tagnames):
         cls = _tag_class_decorator(cls, tagnames=tagnames)
         for parser in parsers:
-            parser.TRANSFORMER = v_args(inline=True)(
-                _load_all_tag_transformers(parser.TRANSFORMER)
-            )
-            _load_all_tag_syntaxes(parser.GRAMMAR)(parser)
+            load_all_tags(parser.GRAMMAR)(parser)
         return cls
 
     if len(tagnames) == 1 and callable(tagnames[0]):

@@ -48,6 +48,8 @@ class Tag:
     PARSING = True
     # Whether this tag is allowed in strict mode
     SECURE = True
+    # Whether all content should be treated as raw
+    RAW = False
 
     def __init__(self, name, data=None, context=None):
         self.name = name
@@ -206,13 +208,21 @@ class TagLiteral(Tag):
             data = data.rstrip()
         return data
 
-@register_tag('RAW')
+@register_tag('raw')
 class TagRaw(Tag):
     """Raw tag"""
     VOID = True
 
     def _render(self, local_envs, global_envs):
         return str(self.data)
+
+@register_tag('comment')
+class TagComment(Tag):
+    """comment tag"""
+    VOID = True
+
+    def _render(self, local_envs, global_envs):
+        return ''
 
 @register_tag('OUTPUT')
 class TagOutput(Tag):
