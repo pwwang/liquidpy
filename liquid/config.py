@@ -1,18 +1,37 @@
-"""The configuration for liquidpy"""
+"""The configuration for liquidpy
+
+Attributes:
+    LIQUID_LOGGER_NAME: The name of the logger
+    LIQUID_LOG_INDENT: Indentions to show the tree structure in logging
+    LIQUID_FILTERS_ENVNAME: The variable containing all filters
+    LIQUID_EXC_MAX_STACKS: The stacks to show in exceptions when debug is on
+    LIQUID_EXC_CODE_CONTEXT: The number of context lines to show codes in
+        exceptions when debug is on
+    DEFAULT_CONFIG: The default configuration
+"""
 import logging
 from diot import Diot
-from .exceptions import LiquidConfigError
 
 # some constants
+# type: str
 LIQUID_LOGGER_NAME = 'LIQUID'
-# Indentions to show the tree structure in logging
+# type: str
 LIQUID_LOG_INDENT = '  '
+# type: str
 LIQUID_FILTERS_ENVNAME = '__LIQUID_FILTERS__'
+# type: int
+LIQUID_EXC_MAX_STACKS = 5
+# type: int
+LIQUID_EXC_CODE_CONTEXT = 3
 
+# type: Diot
 DEFAULT_CONFIG = Diot(
-    extended=False,
+    mode='standard',
     strict=True,
-    debug=False
+    debug=False,
+    cache=False,
+    extends_dir=[],
+    include_dir=[]
 )
 
 class Config(Diot):
@@ -20,30 +39,16 @@ class Config(Diot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # set the default if not set
-        for key in DEFAULT_CONFIG:
-            if key not in self:
-                self[key] = DEFAULT_CONFIG[key]
+        self |= DEFAULT_CONFIG | self
 
-    def update_logger(self, from_template=False):
-        """Update the logger configuration according to the configuration"""
-        if self.strict and from_template:
-            raise LiquidConfigError(
-                'Not allowed to update logger in strict mode from template.'
-            )
-        if not self.logger:
-            raise LiquidConfigError('Not logger initialized.')
+    def update_logger(self):
+        # type: (bool) -> None
+        """Update the logger configuration according to the configuration
+        """
+
+        from .utils import logger
 
         if not self.debug:
-            self.logger.setLevel(logging.CRITICAL)
-        elif self.debug is True:
-            self.logger.setLevel(logging.INFO)
+            logger.setLevel(logging.CRITICAL)
         else:
-            self.logger.setLevel(logging.DEBUG)
-
-        if not self.logger.handlers:
-            stream_handler = logging.StreamHandler()
-            stream_handler.setFormatter(logging.Formatter(
-                "[%(asctime)s][%(levelname)5s] %(name)s: %(message)s",
-                "%m-%d %H:%M:%S"
-            ))
-            self.logger.addHandler(stream_handler)
+            logger.setLevel(logging.DEBUG)

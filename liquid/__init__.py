@@ -1,9 +1,14 @@
-"""The main entry point of the package"""
-from .liquid import Liquid, LOGGER
-from .config import DEFAULT_CONFIG
-from .tagmgr import (
-    register_tag, unregister_tag, enable_tag, disable_tag
+"""A port of liquid template engine in python"""
+from .liquid import Liquid
+from .filters import filter_manager
+from .tags import tag_manager
+from .exceptions import (
+    LiquidException,
+    LiquidTagRegistryException,
+    LiquidFilterRegistryException,
+    LiquidNameError,
+    LiquidSyntaxError,
+    LiquidRenderError,
 )
-from .filtermgr import (
-    register_filter, unregister_filter, enable_filter, disable_filter
-)
+
+__version__ = '0.6.0'
