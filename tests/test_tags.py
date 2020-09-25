@@ -1,5 +1,5 @@
 """Tests grabbed from:
-https://shopify.github.io/liquid/comment
+https://shopify.github.io/liquid/tags/comment/
 """
 import pytest
 

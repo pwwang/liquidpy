@@ -27,7 +27,7 @@ class TagWhen(TagOUTPUT, use_parser=True):
     def _render(self, local_vars, global_vars):
         data = self.PARSER.parse(self.content).render(local_vars, global_vars)
         if data == self.closest_parent.data:
-            return self._render_children(local_vars.copy(), global_vars)
+            return self._render_children(local_vars, global_vars)
         if self.next:
             return self.next.render(local_vars, global_vars,
                                     from_elder=True)[0]

@@ -54,7 +54,7 @@ class TagManager(Singleton):
                 names = tag_class_or_alias
                 if isinstance(names, str):
                     names = (alias.strip() for alias in names.split(','))
-                name.extend(names)
+                name = names
 
             for nam in name:
                 self.__class__.tags[nam] = tag_class

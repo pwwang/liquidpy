@@ -34,7 +34,7 @@ class TagUnless(TagIf, use_parser=True):
         if not expr:
             # don't go next
             # from_elder = False
-            rendered += self._render_children(local_vars.copy(), global_vars)
+            rendered += self._render_children(local_vars, global_vars)
         # {% else %} not supported in standard mode
         # if self.next:
         #     next_rendered, _ = self.next.render(local_vars,

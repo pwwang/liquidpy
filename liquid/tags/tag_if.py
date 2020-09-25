@@ -37,7 +37,7 @@ class TagIf(Tag):
         if expr:
             # don't go next
             from_elder = False
-            rendered += self._render_children(local_vars.copy(), global_vars)
+            rendered += self._render_children(local_vars, global_vars)
         if self.next:
             next_rendered, _ = self.next.render(local_vars,
                                                 global_vars,

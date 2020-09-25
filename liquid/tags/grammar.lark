@@ -3,7 +3,7 @@ output: test ("|" test_filter)*
 test_filter: varname [":" arguments]
 
 arguments: argvalue ("," argvalue)*
-argvalue: test ["=" test]
+argvalue: test ("=" test)?
 
 ?test: comparison | logical_test
 

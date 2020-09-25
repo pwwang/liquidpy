@@ -5,9 +5,8 @@ from liquid import *
 def test_register_tag():
 
     from liquid.python.tags import Tag
-    from liquid.python.tags.transformer import TagTransformer
 
-    @tag_manager.register('print', mode='python')
+    @tag_manager.register('print,echo', mode='python')
     class TagEcho(Tag):
         VOID = True
         START = 'varname'
@@ -70,6 +69,17 @@ def test_assign():
         {% assign x = {'a':1, 'b':2, 'c':3} %}{{x['a']}}
     ''', {'mode': 'python'}).render().strip() == '1'
 
+def test_assign_expr():
+    liq = Liquid('''
+        {% assign x = a - 1 %}{{x}}
+    ''', {'mode': 'python'}).render(a=2)
+    assert liq.strip() == '1'
+
+    liq = Liquid('''
+        {% assign x = a ** 3 %}{{x}}
+    ''', {'mode': 'python'}).render(a=2)
+    assert liq.strip() == '8'
+
 def test_if_else():
     assert Liquid('''
     {% if False %}1{%else %}2{%endif %}
@@ -116,7 +126,7 @@ def test_output():
 
 def test_expr():
     assert Liquid(
-        '{{[1,2][1 | 1]}}', {'mode': 'python'}
+        '{{[1,2][1 || 1]}}', {'mode': 'python'}
     ).render() == '2'
     assert Liquid(
         '{{[1,2][1 & 1]}}', {'mode': 'python'}
@@ -160,6 +170,9 @@ def test_expr():
     assert Liquid(
         '{{list()}}', {'mode': 'python'}
     ).render() == '[]'
+    assert Liquid(
+        '{{a > 0}}', {'mode': 'python'}
+    ).render(a=1) == 'True'
 
 def test_collections():
     assert Liquid(
@@ -171,3 +184,69 @@ def test_collections():
     assert Liquid(
         '{{ {} }}', {'mode': 'python'}
     ).render() == '{}'
+
+def test_else_following():
+    with pytest.raises(LiquidSyntaxError) as exc:
+        Liquid('{%if False%}{%else%}{%else%}{%endif%}',
+               {'mode': 'python'})
+    assert 'No tags allowed after' in str(exc.value)
+
+def test_elif():
+
+    assert Liquid('{% if a %}a{% elif b %}b{% endif %}',
+                  {'mode': 'python'}).render(a=1, b=0) == 'a'
+    assert Liquid('{% if a %}a{% elif b %}b{% endif %}',
+                  {'mode': 'python'}).render(a=0, b=1) == 'b'
+    assert Liquid('{% if a %}a{% elsif b %}b{% endif %}',
+                  {'mode': 'python'}).render(a=1, b=0) == 'a'
+    assert Liquid('{% if a %}a{% elsif b %}b{% endif %}',
+                  {'mode': 'python'}).render(a=0, b=1) == 'b'
+
+
+def test_for():
+
+    assert Liquid('{% for i in range(3) %}{{i}}{% endfor %}',
+                  {'mode': 'python'}).render() == '012'
+
+    assert Liquid('''{% for i in range(3) -%}
+        {% if i == 0 %}{% continue %}{% endif %}{{i}}
+        {%- endfor -%}
+    ''', {'mode': 'python'}).render() == '12'
+
+    assert Liquid('''{% for i in range(3) -%}
+        {% if i == 1 %}{% break %}{% endif %}{{i}}
+        {%- endfor -%}
+    ''', {'mode': 'python'}).render() == '0'
+
+    assert Liquid('''{% for i in range(3) -%}
+        {{i}}
+        {%- else -%}x
+        {%- endfor -%}
+    ''', {'mode': 'python'}).render() == '012x'
+
+    assert Liquid('''{% for i in range(3) -%}
+        {{i}}{% break %}
+        {%- else -%}x
+        {%- endfor -%}
+    ''', {'mode': 'python'}).render() == '0'
+
+def test_while():
+
+    assert Liquid('''
+    {% assign x = 2 %}
+    {% while x > 0 -%}
+        {{- x -}}
+        {%assign x = x - 1 -%}
+    {% else -%}9
+    {%- endwhile -%}
+    ''', {'mode': 'python'}).render().strip() == '219'
+
+    assert Liquid('''
+    {% assign x = 2 %}
+    {% while x > 0 -%}
+        {{- x -}}
+        {% if x == 1 %}{%break %}{%endif -%}
+        {%assign x = x - 1 -%}
+    {% else -%}9
+    {%- endwhile -%}
+    ''', {'mode': 'python'}).render().strip() == '21'

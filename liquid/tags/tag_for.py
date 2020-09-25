@@ -50,7 +50,7 @@ class TagFor(Tag):
     """
     START = 'tag_for'
     GRAMMAR = '''
-    tag_for: NAME "in" atom for_args*
+    tag_for: varname "in" atom for_args*
     ?for_args: for_limit_arg | for_offset_arg | for_reversed_arg
     for_limit_arg: "limit" ":" (number|var)
     for_offset_arg: "offset" ":" (number|var)
@@ -70,7 +70,7 @@ class TagFor(Tag):
     def _render(self, local_vars, global_vars):
         rendered = ''
 
-        varname, atom, args = self.PARSER.parse(self.content)
+        varname, atom, args = self.parsed
         obj = render_segment(atom, local_vars, global_vars)
         forargs = {'limit': None, 'offset': None, 'reversed': False}
         for argname, argvalue in args:

@@ -2,6 +2,7 @@
 import ast
 from abc import ABC, abstractmethod
 from functools import partialmethod
+from typing import OrderedDict
 from lark import v_args, Transformer
 from ..config import LIQUID_FILTERS_ENVNAME
 from ..filters import EmptyDrop
@@ -63,6 +64,9 @@ class TagSegment(ABC):
 
 class TagSegmentVar(TagSegment):
     """segment for variables"""
+
+    def __str__(self):
+        return str(self.data[0])
 
     def render(self, local_vars, global_vars):
         """Get the value of a variable from envs"""
@@ -170,36 +174,24 @@ class TagSegmentOutput(TagSegment):
             return base
 
         # filter_name is Token
-        for filter_name, filter_arg in self.data[1:]:
-            if filter_arg is None:
-                filter_args, filter_kwargs = (), {}
-            else:
-                filter_args, filter_kwargs = filter_arg.render(
-                    local_vars, global_vars
-                )
-            filtname = str(filter_name)
-
-            if filtname not in global_vars[LIQUID_FILTERS_ENVNAME]:
-                error = KeyError(f'No such filter: {filtname!r}')
-                error.lineno = filter_name.line
-                error.colno = filter_name.column
-                raise error
-
-            filter_func = global_vars[LIQUID_FILTERS_ENVNAME][filtname]
-            base = filter_func(base, *filter_args, **filter_kwargs)
+        for filter_func in self.data[1:]:
+            base = filter_func.render(local_vars, global_vars)(base)
 
         return base
 
 class TagSegmentArguments(TagSegment):
 
-    def render(self, local_vars, global_vars):
+    def render(self, local_vars, global_vars, as_is=False):
         args = []
-        kwargs = {}
+        kwargs = OrderedDict()
         for test1, test2 in self.data:
-            if test2 is None:
-                args.append(render_segment(test1, local_vars, global_vars))
+            test1name = str(test1)
+
+            if test2 is NOTHING:
+                args.append(test1name if as_is
+                            else render_segment(test1, local_vars, global_vars))
             else:
-                kwargs[str(test1.data[0])] = render_segment(
+                kwargs[test1name] = render_segment(
                     test2, local_vars, global_vars
                 )
         return args, kwargs
@@ -213,6 +205,35 @@ class TagSegmentLogical(TagSegment):
         if and_or == 'and':
             return test1 and test2
         return test1 or test2
+
+class TagSegmentFilter(TagSegment):
+
+    def render(self, local_vars, global_vars):
+        filter_name, filter_args = self.data
+
+        args, kwargs = [], {}
+        if filter_args is not NOTHING:
+            rendered_args = render_segment(filter_args, local_vars, global_vars)
+            if rendered_args is not None:
+                args, kwargs = rendered_args
+
+        filtname = str(filter_name)
+
+        filter_func_orig = global_vars[LIQUID_FILTERS_ENVNAME].get(
+            filtname, global_vars.get(filtname, NOTHING)
+        )
+
+        if filter_func_orig is NOTHING:
+            error = KeyError(f'No such filter: {filtname!r}')
+            error.lineno = filter_name.line
+            error.colno = filter_name.column
+            raise error
+
+        def filter_func(base):
+            filter_args = [base] + args
+            return filter_func_orig(*filter_args, **kwargs)
+
+        return filter_func
 
 @v_args(inline=True)
 class TagTransformer(Transformer):
@@ -244,6 +265,9 @@ class TagTransformer(Transformer):
         """Keep the token information for tracking"""
         return vname
 
+    def argvalue(self, test1, test2=NOTHING):
+        return (test1, test2)
+
     def _passby(self, *args):
         return args
 
@@ -253,7 +277,6 @@ class TagTransformer(Transformer):
     def _passby_single_segment(self, arg=NOTHING, segment=None):
         return segment(arg)
 
-    argvalue = test_filter = _passby
     number = string = lambda _, data: ast.literal_eval(str(data))
     get_item = partialmethod(_passby_segment, segment=TagSegmentGetItem)
     get_attr = partialmethod(_passby_segment, segment=TagSegmentGetAttr)
@@ -261,6 +284,7 @@ class TagTransformer(Transformer):
     var = partialmethod(_passby_segment, segment=TagSegmentVar)
     output = partialmethod(_passby_segment, segment=TagSegmentOutput)
     logical_test = partialmethod(_passby_segment, segment=TagSegmentLogical)
+    test_filter = partialmethod(_passby_segment, segment=TagSegmentFilter)
     const_none = lambda _: None
     const_true = lambda _: True
     const_false = lambda _: False

@@ -46,7 +46,7 @@ def test_add_filter():
 
     out = TagSegmentOutput(
         TagSegmentVar('hi'),
-        ('hi', TagSegmentArguments())
+        TagSegmentFilter('hi', None),
     )
     assert out.render(
         {'hi': 'hi?', LIQUID_FILTERS_ENVNAME: filter_manager.filters},
@@ -322,7 +322,7 @@ def test_new_isolated_subcontext_inherits_filters():
 
     out = TagSegmentOutput(
         123,
-        ('my_filter', TagSegmentArguments())
+        TagSegmentFilter('my_filter', None)
     )
     assert out.render(
         {'hi': 'hi?', LIQUID_FILTERS_ENVNAME: filter_manager.filters},

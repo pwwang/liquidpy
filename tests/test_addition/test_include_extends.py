@@ -13,7 +13,7 @@ def test_extends(caplog):
 
 def test_extends_config():
     tpl = (HERE / 'templates' / 'curr2.liquid').open()
-    liq = Liquid(tpl, dict(strict=False))
+    liq = Liquid(tpl, dict(strict=False, mode='python'))
     assert liq.render() == 'abc'
 
 def test_extends_error():

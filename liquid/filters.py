@@ -56,7 +56,7 @@ class FilterManager(Singleton):
                 names = name_or_filter
                 if isinstance(names, str):
                     names = (nam.strip() for nam in names.split(','))
-                name.extend(names)
+                name = names
             for nam in name:
                 self.__class__.filters[nam] = filterfunc
 

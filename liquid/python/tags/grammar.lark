@@ -3,16 +3,20 @@
 // We are trying to support Python3 single statement here (test)
 
 test: or_test ("if" or_test "else" test)?
-output: atom_expr ("|" test_filter)*
+output: test ("|" test_filter)*
 
 test_filter: varname [":" arguments]
+     | [test_filter] "?" [test_filter | constant] "!" [test_filter | constant]
+     | "lambda" lambody
+
+lambody: [arguments] ":" test
 
 or_test: and_test ("or" and_test)*
 and_test: not_test ("and" not_test)*
 ?not_test: "not" not_test -> not_
          | comparison
 comparison: expr (_comp_op expr)*
-expr: xor_expr ("|" xor_expr)*
+expr: xor_expr ("||" xor_expr)*
 xor_expr: and_expr ("^" and_expr)*
 and_expr: shift_expr ("&" shift_expr)*
 shift_expr: arith_expr (_shift_op arith_expr)*
@@ -45,16 +49,16 @@ power: atom_expr ("**" factor)?
 ?constant:
      | number
      | string+   -> atom_string
-     | "None"    -> const_none
-     | "True"    -> const_true
-     | "False"   -> const_false
+     | ("nil"|"None")     -> const_none
+     | ("true"|"True")    -> const_true
+     | ("false"|"False")  -> const_false
 
 testlist_comp: test ("," test)* [","]
 subscript: test | [test] ":" [test] (":" [test])?
 dictmarker: test ":" test ("," test ":" test)* [","]
 
 arguments: argvalue ("," argvalue)*
-argvalue: test ["=" test]
+argvalue: test ("=" test)?
 
 // variables, should read value from context
 var: NAME

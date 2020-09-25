@@ -6,7 +6,6 @@ from ...tags.transformer import (
     render_segment,
     TagSegment,
     TagSegmentComparison,
-    TagSegmentArguments,
     TagTransformer as TagTransformerStandard
 )
 from ...utils import NOTHING
@@ -70,7 +69,7 @@ class TagSegmentGetItem(TagSegment):
 class TagSegmentExpr(TagSegment):
     """Expressions in python"""
     def render(self, local_vars, global_vars):
-        sign = self.data[0]
+        sign = str(self.data[0])
         ret = render_segment(self.data[1], local_vars, global_vars)
         for data in self.data[2:]:
             data = render_segment(data, local_vars, global_vars)
@@ -173,19 +172,50 @@ class TagSegmentSlice(TagSegment):
         return slice(*(render_segment(data, local_vars, global_vars)
                        for data in self.data))
 
-class TagSegmentOutput(TagSegment):
-    """Output inside {{ ... }}"""
+class TagSegmentLambda(TagSegment):
+    """Lambda objects in python"""
     def render(self, local_vars, global_vars):
-        """Render the output segment"""
-        base = render_segment(self.data[0], local_vars, global_vars)
-        if len(self) == 1:
-            return base
+        arglist, test = self.data
+        al_args, al_kwargs = arglist.render(
+            local_vars, global_vars, as_is=True
+        ) if arglist else (), {}
+        al_kwargs_keys = list(al_kwargs.keys())
+        len_al_args = len(al_args)
 
-        # filter_name is Token
-        for filter_name, filter_arg in self.data[1:]:
+        def lambdafunc(*args, **kwargs):
+            local_vars_inside = local_vars.copy()
+            local_vars_inside.update(al_kwargs)
+            local_vars_inside.update(kwargs)
+            for i, arg in enumerate(args):
+                if i < len_al_args:
+                    local_vars_inside[al_args[i]] = arg
+                else:
+                    key = al_kwargs_keys[i - len_al_args]
+                    if key in kwargs:
+                        raise TypeError(f'Argument {key!r} got multiple values')
+                    local_vars_inside[key] = arg
+
+            return render_segment(test, local_vars_inside, global_vars)
+
+        return lambdafunc
+
+class TagSegmentFilter(TagSegment):
+    """Filter, including
+    - append: ".html"
+    - isinstance: _, int ?? int :: str
+    - lambda _: _
+    """
+    def render(self, local_vars, global_vars):
+        if len(self) == 1: # lambda
+            return self.data[0].render(local_vars, global_vars)
+
+        if len(self) == 2: # varname: arguments
+            filter_name, filter_arg = self.data
             if filter_arg is None:
-                filter_args, filter_kwargs = (), {}
+                filter_args, filter_kwargs = [], {}
             else:
+                local_vars_copy = local_vars.copy()
+                local_vars_copy['_'] = NOTHING
                 filter_args, filter_kwargs = filter_arg.render(
                     local_vars, global_vars
                 )
@@ -201,15 +231,42 @@ class TagSegmentOutput(TagSegment):
                 error.colno = filter_name.column
                 raise error
 
-            base = filter_func(base, *filter_args, **filter_kwargs)
+            def filter_function(base):
+                args = filter_args
+                if NOTHING in args:
+                    args[args.index(NOTHING)] = base
+                else:
+                    args.insert(0, base)
+                return filter_func(*args, **filter_kwargs)
 
-        return base
+            return filter_function
+
+        # ternary
+        condfilter, truth, falsity = self.data
+
+        def filter_ternary(base):
+            cond = (condfilter.render(local_vars, global_vars)(base)
+                    if condfilter
+                    else base)
+            if cond:
+                return (truth.render(local_vars, global_vars)(base)
+                        if isinstance(truth, TagSegmentFilter)
+                        else base
+                        if truth is None
+                        else render_segment(truth, local_vars, global_vars))
+            return (falsity.render(local_vars, global_vars)(base)
+                    if isinstance(falsity, TagSegmentFilter)
+                    else base
+                    if falsity is None
+                    else render_segment(falsity, local_vars, global_vars))
+
+        return filter_ternary
 
 @v_args(inline=True)
 class TagTransformer(TagTransformerStandard):
     """Transformer for python grammar"""
-    def test(self, value, cond=None, false_value=None):
-        if cond is None and false_value is None:
+    def test(self, value, cond=NOTHING, false_value=NOTHING):
+        if cond is NOTHING and false_value is NOTHING:
             return value
         return TagSegmentIfelse(value, cond, false_value)
 
@@ -232,6 +289,8 @@ class TagTransformer(TagTransformerStandard):
             op = ''
         return ret
 
+    def ternary(self, cond=NOTHING, true_value=NOTHING, false_value=NOTHING):
+        return cond, true_value, false_value
 
     def term(self, one, *more):
         if not more:
@@ -240,14 +299,14 @@ class TagTransformer(TagTransformerStandard):
             more[0], one, *(mor for i, mor in enumerate(more) if i % 2)
         )
 
-    def factor(self, factor_op_or_power, factor=None):
-        if factor is None:
+    def factor(self, factor_op_or_power, factor=NOTHING):
+        if factor is NOTHING:
             return factor_op_or_power
 
         return TagSegmentFactor(factor_op_or_power, factor)
 
-    def power(self, atom_expr, factor=None):
-        if factor is None:
+    def power(self, atom_expr, factor=NOTHING):
+        if factor is NOTHING:
             return atom_expr
         return TagSegmentPower(atom_expr, factor)
 
@@ -286,11 +345,11 @@ class TagTransformer(TagTransformerStandard):
     funccall = partialmethod(_passby_segment, segment=TagSegmentFuncCall)
     get_item = partialmethod(_passby_segment, segment=TagSegmentGetItem)
     get_attr = partialmethod(_passby_segment, segment=TagSegmentGetAttr)
-    arguments = partialmethod(_passby_segment, segment=TagSegmentArguments)
     atom_tuple = partialmethod(_passby_single_segment, segment=TagSegmentTuple)
     atom_list = partialmethod(_passby_single_segment, segment=TagSegmentList)
-    output = partialmethod(_passby_segment, segment=TagSegmentOutput)
     subscript = partialmethod(_passby_segment, segment=TagSegmentSlice)
     not_ = partialmethod(_passby_segment, segment=TagSegmentNot)
+    test_filter = partialmethod(_passby_segment, segment=TagSegmentFilter)
+    lambody = partialmethod(_passby_segment, segment=TagSegmentLambda)
     shift_expr = arith_expr = term
     testlist_comp = _passby

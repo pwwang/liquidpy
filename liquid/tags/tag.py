@@ -26,6 +26,8 @@ class Tag:
             This is a list since a tag can be with multiple tags,
             For example, "else" with "if", "for" and "case"
         PARENT_TAGS: Parent tags where this tags allows to be put in
+        YONGER_TAGS: A flag to tell whether a yonger sibling tag is allowed to
+            be followed.
         SECURE: Is this tag secure?
             An insecure tag is not allowed in strict mode
         RAW: Whether all content should be treated as raw
@@ -57,6 +59,7 @@ class Tag:
     VOID = False
     ELDER_TAGS = ()
     PARENT_TAGS = ()
+    YONGER_TAGS = True
     SECURE = True
     RAW = False
 
@@ -282,6 +285,7 @@ class Tag:
         try:
             rendered = self._render(local_vars, global_vars)
         except Exception as exc:
+            import traceback
             if hasattr(exc, 'lineno'):
                 if exc.lineno > 1:
                     self.context.lineno += exc.lineno - 1
@@ -290,7 +294,11 @@ class Tag:
                     self.context.colno += exc.colno - 1
 
             raise LiquidRenderError(
-                str(exc), self.context, self.parser
+                '\n\n' + '>>> Original Tracebacks:' +
+                '\n'   + '-----------------------\n' +
+                traceback.format_exc(),
+                self.context,
+                self.parser
             ) from None
         else:
             return str(rendered), local_vars
