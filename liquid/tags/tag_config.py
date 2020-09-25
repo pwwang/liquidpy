@@ -32,7 +32,7 @@ class TagConfig(Tag):
     START = 'tag_config'
     GRAMMAR = '''
     tag_config: config_item+
-    config_item: varname ("=" constant)?
+    config_item: var ("=" constant)?
     '''
     TRANSFORMER = TagConfigTransformer()
 

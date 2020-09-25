@@ -23,7 +23,7 @@ class TagAssign(Tag):
     """The assign tag"""
     VOID = True
     START = 'tag_assign'
-    GRAMMAR = 'tag_assign: varname "=" output'
+    GRAMMAR = 'tag_assign: var "=" output'
     TRANSFORMER = TagAssignTransformer()
 
     def _render(self, local_vars, global_vars):

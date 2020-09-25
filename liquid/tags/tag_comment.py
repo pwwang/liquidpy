@@ -13,5 +13,6 @@ from .tag import Tag
 @tag_manager.register
 class TagComment(Tag):
     """The comment tag"""
+    RAW = True
     def _render(self, local_vars, global_vars):
         return ''

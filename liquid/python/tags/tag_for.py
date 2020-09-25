@@ -21,7 +21,7 @@ class TagFor(Tag):
         cycles: The cycle object for cycle tags
     """
     START = 'tag_for'
-    GRAMMAR = 'tag_for: varname ("," varname)* "in" test'
+    GRAMMAR = 'tag_for: var ("," var)* "in" test'
     TRANSFORMER = TagForTransformer()
 
     def __init__(self, *args, **kwargs):

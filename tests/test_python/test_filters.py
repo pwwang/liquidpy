@@ -6,10 +6,10 @@ def test_register_filter():
     def incr(base, inc=1):
         return base + inc
 
-    # liq = Liquid('{{ 2 | incr}}', dict(mode='python'))
-    # assert liq.render() == '3'
-    # liq = Liquid('{{ 2 | incr:2}}', dict(mode='python'))
-    # assert liq.render() == '4'
+    liq = Liquid('{{ 2 | incr}}', dict(mode='python'))
+    assert liq.render() == '3'
+    liq = Liquid('{{ 2 | incr:2}}', dict(mode='python'))
+    assert liq.render() == '4'
     liq = Liquid('{{ 2 | incr:inc=3}}', dict(mode='python'))
     assert liq.render() == '5'
 

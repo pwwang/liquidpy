@@ -9,7 +9,7 @@ def test_register_tag():
     @tag_manager.register('print,echo', mode='python')
     class TagEcho(Tag):
         VOID = True
-        START = 'varname'
+        START = 'var'
 
         def _render(self, local_vars, global_vars):
             return str(self.parsed)
@@ -250,3 +250,162 @@ def test_while():
     {% else -%}9
     {%- endwhile -%}
     ''', {'mode': 'python'}).render().strip() == '21'
+
+def test_lambda():
+    tpl = """
+    {% assign x = lambda a: a+1 %}
+    {{1 | x}}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render().strip() == '2'
+
+    tpl = """
+    {% assign x = lambda a, b, c=1: a+b+c %}
+    {{x(1,2,3)}}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render().strip() == '6'
+
+
+    tpl = """
+    {% assign x = lambda a, b, c=1: a+b+c %}
+    {{x(1,2,3, c=1)}}
+    """
+    with pytest.raises(LiquidRenderError) as exc:
+        assert Liquid(tpl, {'mode': 'python'}).render()
+    assert 'got multiple values' in str(exc.value)
+
+    tpl = """
+    {{1 | lambda a: a+1}}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render().strip() == '2'
+
+def test_filter_arg_position():
+    tpl = """
+    {% assign f = lambda a, b: a+b %}
+    {{ x | f: 1, _ }}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render(x=2).strip() == '3'
+
+def test_ternary_filter():
+    tpl = """
+    {{ x | ? plus: 1 ! minus: 1}}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render(x=2).strip() == '3'
+    assert Liquid(tpl, {'mode': 'python'}).render(x=0).strip() == '-1'
+
+    tpl = """
+    {{ x | plus: 1 ? plus: 1 ! minus: 1}}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render(x=2).strip() == '3'
+    assert Liquid(tpl, {'mode': 'python'}).render(x=-1).strip() == '-2'
+
+    tpl = """
+    {{ x | ? plus: 1 ! }}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render(x=2).strip() == '3'
+    assert Liquid(tpl, {'mode': 'python'}).render(x=0).strip() == '0'
+
+    tpl = """
+    {{ x | ?! plus: 1 }}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render(x=2).strip() == '2'
+    assert Liquid(tpl, {'mode': 'python'}).render(x=0).strip() == '1'
+
+def test_dot_filter():
+
+    tpl = """
+    {{ x | .__len__ }}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render(x="abc").strip() == '3'
+    tpl = """
+    {{ x | .join: ['a', 'b', 'c'] }}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render(x=",").strip() == 'a,b,c'
+
+def test_subscript_filter():
+
+    tpl = """
+    {{ x | ['a']: 1 }}
+    """
+    assert Liquid(tpl, {'mode': 'python'}).render(
+        x={'a': lambda a: a+2}
+    ).strip() == '3'
+
+def test_dot_subscript_filter_error():
+    tpl = """
+    {{ x | .__len__ }}
+    """
+    with pytest.raises(LiquidRenderError) as exc:
+        Liquid(tpl, {'mode': 'python'}).render(x=object())
+    assert 'No such filter' in str(exc.value)
+    tpl = """
+    {{ x | ['a'] }}
+    """
+    with pytest.raises(LiquidRenderError) as exc:
+        Liquid(tpl, {'mode': 'python'}).render(x=object())
+    assert 'No such filter' in str(exc.value)
+
+def test_complex_start_keyword_filters():
+    with pytest.raises(LiquidRenderError) as exc:
+        Liquid('{{ 1 | @a.b }}', {'mode': 'python'}).render()
+    assert 'No such filter' in str(exc.value)
+
+    @filter_manager.register(mode='python')
+    def addx(a, b):
+        return a + b
+
+    tpl = '''{{ {'a':1, 'b':2} | **addx}}'''
+    assert Liquid(tpl, {'mode': 'python'}).render() == '3'
+
+def test_no_emptydrop():
+    assert Liquid("{{[] | sort}}", {'mode': 'python'}).render() == '[]'
+    assert Liquid("{{[3,2,1] | sort}}",
+                  {'mode': 'python'}).render() == '[1, 2, 3]'
+
+def test_python_void():
+    assert Liquid("{% python x = a %}{{x}}",
+                  {'mode': 'python', 'strict': False}).render(a=1) == '1'
+
+def test_python_block():
+    Liquid("""
+    {% python %}
+    {% if x %}
+    a = 1
+    {% else %}
+    a = 2
+    {% endif %}
+    {% endpython %}{{a}}
+    """, {'mode': 'python', 'strict': False}).render(x=True).strip() == '1'
+
+def test_import():
+    tpl = """
+    {% import os %}
+    {{ os.path.join("a", "b") }}
+    """
+
+    assert Liquid(tpl,
+                  {'mode': 'python', 'strict': False}).render().strip() == 'a/b'
+    tpl = """
+    {% import os as ooss %}
+    {{ ooss.path.join("a", "b") }}
+    """
+
+    assert Liquid(tpl,
+                  {'mode': 'python', 'strict': False}).render().strip() == 'a/b'
+
+def test_from():
+    tpl = """
+    {% from os import path %}
+    {{ path.join("a", "b") }}
+    """
+
+    assert Liquid(tpl,
+                  {'mode': 'python', 'strict': False}).render().strip() == 'a/b'
+    tpl = """
+    {% from os import path as path2 %}
+    {{ ("a", "b") | *@path2.join }}
+    """
+
+    assert Liquid(tpl,
+                  {'mode': 'python', 'strict': False}).render().strip() == 'a/b'
+
+

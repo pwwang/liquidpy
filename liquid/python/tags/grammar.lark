@@ -2,14 +2,21 @@
 // Grabbed from https://github.com/lark-parser/lark/blob/master/examples/advanced/python3.lark
 // We are trying to support Python3 single statement here (test)
 
-test: or_test ("if" or_test "else" test)?
+test: or_test ("if" or_test "else" test)? | lambdef
 output: test ("|" test_filter)*
 
-test_filter: varname [":" arguments]
+test_filter: filter_name [":" arguments]
      | [test_filter] "?" [test_filter | constant] "!" [test_filter | constant]
-     | "lambda" lambody
+     | lambdef
+?filter_name: var
+     | complex_filter
+     | "*" (var | complex_filter) -> star_filter
+     | "**" (var | complex_filter) -> keyword_filter
+     | "." var -> dot_filter
+     | "[" test "]" -> subscript_filter
+complex_filter: "@" atom_expr
 
-lambody: [arguments] ":" test
+lambdef: "lambda" [arguments] ":" test
 
 or_test: and_test ("or" and_test)*
 and_test: not_test ("and" not_test)*
@@ -62,15 +69,12 @@ argvalue: test ("=" test)?
 
 // variables, should read value from context
 var: NAME
-// just the name, will be transformed as str(varname)
-varname: NAME
 
 number: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER | IMAG_NUMBER
 string: STRING | LONG_STRING
 // Tokens
 
 NAME: /[a-zA-Z_]\w*/
-
 STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
 LONG_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
 

@@ -64,6 +64,20 @@ class TagSegment(ABC):
 
 class TagSegmentVar(TagSegment):
     """segment for variables"""
+    __slots__ = ('_data', 'line', 'column')
+
+    def __init__(self, *data):
+        # type: (*Any)
+        """Initialize the object
+        Args:
+            data: The data of the parsed object
+        """
+        super().__init__(*data)
+        try:
+            self.line = data[0].line
+            self.column = data[0].column
+        except AttributeError:
+            pass
 
     def __str__(self):
         return str(self.data[0])

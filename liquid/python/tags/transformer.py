@@ -175,10 +175,10 @@ class TagSegmentSlice(TagSegment):
 class TagSegmentLambda(TagSegment):
     """Lambda objects in python"""
     def render(self, local_vars, global_vars):
-        arglist, test = self.data
+        arglist, body = self.data
         al_args, al_kwargs = arglist.render(
             local_vars, global_vars, as_is=True
-        ) if arglist else (), {}
+        ) if arglist else ([], {})
         al_kwargs_keys = list(al_kwargs.keys())
         len_al_args = len(al_args)
 
@@ -195,7 +195,7 @@ class TagSegmentLambda(TagSegment):
                         raise TypeError(f'Argument {key!r} got multiple values')
                     local_vars_inside[key] = arg
 
-            return render_segment(test, local_vars_inside, global_vars)
+            return render_segment(body, local_vars_inside, global_vars)
 
         return lambdafunc
 
@@ -205,42 +205,37 @@ class TagSegmentFilter(TagSegment):
     - isinstance: _, int ?? int :: str
     - lambda _: _
     """
-    def render(self, local_vars, global_vars):
-        if len(self) == 1: # lambda
-            return self.data[0].render(local_vars, global_vars)
+    def _no_such_filter(self, name_token, exc_wrapper=KeyError):
+        error = exc_wrapper(f"No such filter: {str(name_token)!r}")
+        try:
+            error.lineno = name_token.line
+            error.colno = name_token.column
+        except AttributeError:
+            pass
+        return error
 
-        if len(self) == 2: # varname: arguments
-            filter_name, filter_arg = self.data
-            if filter_arg is None:
-                filter_args, filter_kwargs = [], {}
-            else:
-                local_vars_copy = local_vars.copy()
-                local_vars_copy['_'] = NOTHING
-                filter_args, filter_kwargs = filter_arg.render(
-                    local_vars, global_vars
-                )
-            filtname = str(filter_name)
-
+    def _get_filter_by_name(self, local_vars, global_vars,
+                            name_token, complex=False):
+        if not complex:
+            filtname = str(name_token)
             filter_func = global_vars[LIQUID_FILTERS_ENVNAME].get(
-                filtname, global_vars.get(filtname, NOTHING)
+                filtname, local_vars.get(
+                    filtname, global_vars.get(filtname, NOTHING)
+                )
             )
-
             if filter_func is NOTHING:
-                error = KeyError(f'No such filter: {filtname!r}')
-                error.lineno = filter_name.line
-                error.colno = filter_name.column
-                raise error
+                raise self._no_such_filter(name_token)
+            return filter_func
+        try:
+            filter_func = render_segment(name_token, local_vars, global_vars)
+        except Exception as exc:
+            raise self._no_such_filter(name_token, type(exc)) from None
+        return filter_func
 
-            def filter_function(base):
-                args = filter_args
-                if NOTHING in args:
-                    args[args.index(NOTHING)] = base
-                else:
-                    args.insert(0, base)
-                return filter_func(*args, **filter_kwargs)
+    def _render_lambda(self, local_vars, global_vars):
+        return self.data[0].render(local_vars, global_vars)
 
-            return filter_function
-
+    def _render_ternary(self, local_vars, global_vars):
         # ternary
         condfilter, truth, falsity = self.data
 
@@ -261,6 +256,94 @@ class TagSegmentFilter(TagSegment):
                     else render_segment(falsity, local_vars, global_vars))
 
         return filter_ternary
+
+    def _render_normal(self, local_vars, global_vars,
+                       filter_name, filter_arg, filter_type):
+        if filter_arg is None:
+            filter_args, filter_kwargs = [], {}
+        else:
+            local_vars_copy = local_vars.copy()
+            local_vars_copy['_'] = NOTHING
+            filter_args, filter_kwargs = filter_arg.render(
+                local_vars_copy, global_vars
+            )
+
+        filter_func = self._get_filter_by_name(
+            local_vars, global_vars, filter_name, filter_type == 'complex'
+        )
+
+        def filter_function(base):
+            args = filter_args
+            if NOTHING in args:
+                args[args.index(NOTHING)] = base
+            else:
+                args.insert(0, base)
+
+            return filter_func(*args, **filter_kwargs)
+        return filter_function
+
+    def _render_other(self, local_vars, global_vars,
+                      filter_name, filter_arg, filter_type):
+        if filter_arg is None:
+            filter_args, filter_kwargs = [], {}
+        else:
+            filter_args, filter_kwargs = filter_arg.render(
+                local_vars, global_vars
+            )
+        filtname = str(filter_name)
+
+        def filter_function(base):
+            if filter_type == 'dot':
+                try:
+                    filter_func = getattr(base, filtname)
+                except AttributeError:
+                    raise self._no_such_filter(
+                        filter_name, AttributeError
+                    ) from None
+                return filter_func(*filter_args, **filter_kwargs)
+
+            elif filter_type == 'subscript':
+                try:
+                    filter_func = base[filtname]
+                except (KeyError, TypeError) as exc:
+                    raise self._no_such_filter(
+                        filter_name, type(exc)
+                    ) from None
+
+                return filter_func(*filter_args, **filter_kwargs)
+            else: # start, keyword
+                subtype = 'normal'
+                subname = filter_name
+                if isinstance(filter_name, tuple):
+                    subname, subtype = filter_name
+                filter_func = self._get_filter_by_name(
+                    local_vars, global_vars, subname, subtype == 'complex'
+                )
+                if filter_type == 'star':
+                    return filter_func(*base, *filter_args, **filter_kwargs)
+                return filter_func(*filter_args, **base, **filter_kwargs)
+
+        return filter_function
+
+    def render(self, local_vars, global_vars):
+        if len(self) == 1: # lambda
+            return self._render_lambda(local_vars, global_vars)
+
+        if len(self) == 2: # varname: arguments
+            filter_name, filter_arg = self.data
+            filter_type = 'normal'
+            if isinstance(filter_name, tuple):
+                filter_name, filter_type = filter_name
+
+            if filter_type in ('normal', 'complex'):
+                return self._render_normal(local_vars, global_vars,
+                                           filter_name, filter_arg, filter_type)
+
+            return self._render_other(local_vars, global_vars,
+                                              filter_name, filter_arg,
+                                              filter_type)
+
+        return self._render_ternary(local_vars, global_vars)
 
 @v_args(inline=True)
 class TagTransformer(TagTransformerStandard):
@@ -288,9 +371,6 @@ class TagTransformer(TagTransformerStandard):
             ret = TagSegmentComparison(ret, op, expr2)
             op = ''
         return ret
-
-    def ternary(self, cond=NOTHING, true_value=NOTHING, false_value=NOTHING):
-        return cond, true_value, false_value
 
     def term(self, one, *more):
         if not more:
@@ -327,6 +407,9 @@ class TagTransformer(TagTransformerStandard):
     def atom_string(self, *strings):
         return ''.join(strings)
 
+    def _filter_type(self, var, ftype):
+        return (var, ftype)
+
     def _one_or_more(self, one, *more, sign=None, segment=None):
         if not more:
             return one
@@ -350,6 +433,11 @@ class TagTransformer(TagTransformerStandard):
     subscript = partialmethod(_passby_segment, segment=TagSegmentSlice)
     not_ = partialmethod(_passby_segment, segment=TagSegmentNot)
     test_filter = partialmethod(_passby_segment, segment=TagSegmentFilter)
-    lambody = partialmethod(_passby_segment, segment=TagSegmentLambda)
+    lambdef = partialmethod(_passby_segment, segment=TagSegmentLambda)
     shift_expr = arith_expr = term
     testlist_comp = _passby
+    dot_filter = partialmethod(_filter_type, ftype='dot')
+    star_filter = partialmethod(_filter_type, ftype='star')
+    keyword_filter = partialmethod(_filter_type, ftype='keyword')
+    subscript_filter = partialmethod(_filter_type, ftype='subscript')
+    complex_filter = partialmethod(_filter_type, ftype='complex')
