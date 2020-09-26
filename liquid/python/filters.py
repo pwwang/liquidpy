@@ -4,9 +4,7 @@ from ..filters import FilterManager as FilterManagerStandard, EmptyDrop
 class FilterManager(FilterManagerStandard):
     """A manager for filters in extended mode"""
     INSTANCE = None
-
-    # type: Dict[str, Callable]
-    filters = FilterManagerStandard.filters.copy()
+    filters = FilterManagerStandard.filters.copy() # type: Dict[str, Callable]
 
 # pylint: disable=invalid-name
 filter_manager = FilterManager()

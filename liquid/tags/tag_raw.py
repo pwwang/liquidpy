@@ -14,10 +14,12 @@ class TagRaw(Tag):
     RAW = True
 
     def parse(self, force=False):
+        """No extra content allowed for standard else tag"""
         if self.content:
             raise LiquidSyntaxError(
                 f"No content allow for tag: {self!r}",
-                self.context, self.parser
+                self.context,
+                self.parser
             )
 
     def _render(self, local_vars, global_vars):

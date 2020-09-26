@@ -8,6 +8,7 @@ from .tags import tag_manager
 from .exceptions import LiquidSyntaxError
 
 class Visitor:
+    # pylint: disable=too-few-public-methods
     """Vistor to visit parsed node
 
     Attributes:
@@ -20,6 +21,7 @@ class Visitor:
     Args:
         root: The root tag
     """
+    __slots__ = ('root', 'stack', 'blocks', 'has_mother', '_prev_tag')
 
     def __init__(self, root):
         # type: (Tag) -> None
@@ -144,6 +146,7 @@ class Visitor:
             last_eldest = (last_tag.eldest if last_eldest else None) or last_tag
 
 class Parser:
+    # pylint: disable=too-few-public-methods
     """The root parser for liquidpy
 
     This parses the stream into tags, and each tag will be handled by
@@ -165,10 +168,10 @@ class Parser:
         context: The context
         level: The level of the parser
     """
-    # type: Type[NodeScanner]
-    NODESCANNER_CLASS = NodeScanner
-    # type: Type[Visitor]
-    VISITOR_CLASS = Visitor
+    __slots__ = ('config', 'context', 'parent', 'nodescanner', 'visitor')
+
+    NODESCANNER_CLASS = NodeScanner # type: Type[NodeScanner]
+    VISITOR_CLASS = Visitor # type: Type[Visitor]
 
     def __init__(self, meta, config, context=None, level=0):
         # type: (TemplateMeta, Dict, Optional[Diot], Optional[int]) -> None
@@ -204,8 +207,10 @@ class Parser:
                      self.context.level * LIQUID_LOG_INDENT,
                      self.context.name)
         while True:
-            # type: Optional[bool, Node]
-            scanned = self.nodescanner.consume(self.context.stream)
+            scanned = self.nodescanner.consume(
+                self.context.stream
+            ) # type: Optional[bool, Node]
+
             if scanned is False:
                 self.visitor.root.parse()
                 logger.debug('%s  END PARSING.',

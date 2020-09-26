@@ -19,7 +19,7 @@ class TagExtends(Tag):
         super().__init__(*args, **kwargs)
         self.parser.visitor.has_mother = True
 
-    def parse(self, force=False):
+    def parse(self, force=False): # pylint: disable=unused-argument
         if self.parent.name != 'ROOT':
             raise LiquidSyntaxError(
                 f'Must be first-level tag: {self!r}',
@@ -48,6 +48,7 @@ class TagExtends(Tag):
             ) from None
 
         meta = template_meta(mother)
+        # pylint: disable=attribute-defined-outside-init
         self.parsed = self.parser.__class__(
             meta,
             self.parser.config,

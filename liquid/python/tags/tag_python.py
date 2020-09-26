@@ -1,15 +1,27 @@
+"""The python tag"""
 import textwrap
 from .inherited import tag_manager, Tag
 
 @tag_manager.register
 class TagPython(Tag):
+    """It can be either void or non-void
+
+    ```liquid
+    {% python a = 1 %}
+
+    {% python %}
+    a = 1
+    b = 2
+    {% endpython %}
+    ```
+    """
     VOID = False
     SECURE = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.content:
-            self.VOID = True
+            self.VOID = True # pylint: disable=invalid-name
 
     def _render(self, local_vars, global_vars):
         # pylint: disable=exec-used

@@ -17,7 +17,8 @@ from ..exceptions import LiquidRenderError
 
 @v_args(inline=True)
 class TagCycleTransformer(TagTransformer):
-
+    """The transformer for tag cycle"""
+    # pylint: disable=no-self-use
     def tag_cycle(self, group, args=None):
         """Transformer for tag for"""
         return [group, args, 0]

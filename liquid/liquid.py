@@ -39,13 +39,14 @@ class Liquid:
 
     # pylint: disable=unused-argument
     def __new__(cls, liquid_template, liquid_config=None, **envs):
-        # type: (Union[str, Path, IO], Optional[Dict[str, Any]], **Any)
-        #       -> Type[Liquid]
+        # type: (Union[str, Path, IO], Optional[Dict[str, Any]], Any) -> Liquid
         """Works as a router to determine returning a Liquid or LiquidPython
         object according to liquid_config['extended']
         """
-        # type: str
-        mode = liquid_config.get('mode') if liquid_config else None
+
+        mode = (liquid_config.get('mode')
+                if liquid_config
+                else None) # type: str
         # if mode == 'jekyll':
         #     return LiquidJekyll.__new__(LiquidJekyll)
         if mode == 'python':
@@ -54,7 +55,7 @@ class Liquid:
     # pylint: enable=unused-argument
 
     def __init__(self, liquid_template, liquid_config=None, **envs):
-        # type: (Union[str, Path, IO], Optional[Dict[str, Any]], **Any) -> None
+        # type: (Union[str, Path, IO], Optional[Dict[str, Any]], Any) -> None
         # since __new__ returns an object anyway is a Liquid object
         # we will need to pass handling to LiquidPython itself
 
@@ -94,7 +95,7 @@ class Liquid:
         return envs
 
     def render(self, **context):
-        # type: (**Any) -> str
+        # type: (Any) -> str
         """Render the template with given context
         The parsed is a TagRoot object, whose render gives a string
 
@@ -121,11 +122,12 @@ class Liquid:
 #     __new__ = object.__new__
 
 #     def __init__(self, liquid_template, liquid_config=None, **envs):
-#         # type: (Union[str, Path, IO], Optional[Dict[str, Any]], **Any) -> None
+#         # type: (Union[str, Path, IO], Optional[Dict[str, Any]], Any) -> None
 #         # pylint: disable=super-init-not-called
 #         self._init(liquid_template, liquid_config, **envs)
 
 class LiquidPython(Liquid):
+    # pylint: disable=too-few-public-methods
     """Support for extended mode of liquidpy"""
     PARSER_CLASS = ParserPython
     FILTER_MANAGER = filter_manager_python
@@ -133,7 +135,7 @@ class LiquidPython(Liquid):
     __new__ = object.__new__
 
     def render(self, **context):
-        # type: (**Any) -> str
+        # type: (Any) -> str
         """Render the template with given context
         The parsed is a TagRoot object, whose render gives a string
 

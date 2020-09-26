@@ -17,7 +17,10 @@ class TagBreak(Tag):
     VOID = True
     PARENT_TAGS = RequiredTags('for')
 
+
+    # pylint: disable=unused-argument
     def parse(self, force=False):
+        """Make sure no extra content for this tag"""
         if self.content:
             raise LiquidSyntaxError(
                 f"No content allow for tag: {self!r}",

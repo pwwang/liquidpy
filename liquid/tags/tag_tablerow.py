@@ -16,15 +16,16 @@ from .tag import Tag
 from .tag_for import TagForTransformer
 from .transformer import render_segment
 
-# type: NamedTuple
+
 TablerowObject = namedtuple( # pylint: disable=invalid-name
     'TablerowObject',
     ['itername', 'obj', 'limit', 'offset', 'cols']
-)
+) # type: NamedTuple
 
 @v_args(inline=True)
 class TagTablerowTransformer(TagForTransformer):
     """The transformer for tablerow tag"""
+    # pylint: disable=no-self-use
     def tablerow_cols_arg(self, token):
         """Transform rule: tablerow_cols_arg"""
         return ('cols', token)
@@ -49,6 +50,7 @@ class TagTablerow(Tag):
 
 
     def _render(self, local_vars, global_vars):
+        # pylint: disable=too-many-locals
         rendered = ''
 
         itername, expr, args = self.parsed

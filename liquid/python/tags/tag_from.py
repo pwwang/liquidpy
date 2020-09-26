@@ -1,7 +1,9 @@
+"""Tag from"""
 from .inherited import tag_manager, Tag
 
 @tag_manager.register
 class TagFrom(Tag):
+    """Import submodules from python"""
     VOID = True
     SECURE = False
 

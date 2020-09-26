@@ -1,4 +1,5 @@
 """The segments and transformer for liquidpy in python mode"""
+# pylint: disable=relative-beyond-top-level
 from functools import partialmethod
 from lark import v_args, Token
 from ...config import LIQUID_FILTERS_ENVNAME
@@ -24,6 +25,8 @@ class TagSegmentIfelse(TagSegment):
 class TagSegmentOr(TagSegment):
     """Or statement in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         for data in self.data:
             data = render_segment(data, local_vars, global_vars)
             if data:
@@ -33,6 +36,8 @@ class TagSegmentOr(TagSegment):
 class TagSegmentAnd(TagSegment):
     """And statement in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         lastdata = None
         for data in self.data:
             data = render_segment(data, local_vars, global_vars)
@@ -44,11 +49,15 @@ class TagSegmentAnd(TagSegment):
 class TagSegmentNot(TagSegment):
     """Not statement in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         return not render_segment(self.data[0], local_vars, global_vars)
 
 class TagSegmentGetAttr(TagSegment):
     """Getattr operation in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         obj = render_segment(self.data[0], local_vars, global_vars)
         try:
             return getattr(obj, self.data[1])
@@ -62,6 +71,8 @@ class TagSegmentGetItem(TagSegment):
     """Getitem operation in python"""
 
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         return render_segment(self.data[0], local_vars, global_vars)[
             render_segment(self.data[1], local_vars, global_vars)
         ]
@@ -69,6 +80,8 @@ class TagSegmentGetItem(TagSegment):
 class TagSegmentExpr(TagSegment):
     """Expressions in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         sign = str(self.data[0])
         ret = render_segment(self.data[1], local_vars, global_vars)
         for data in self.data[2:]:
@@ -103,6 +116,8 @@ class TagSegmentExpr(TagSegment):
 class TagSegmentPower(TagSegment):
     """Power expression in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         data1 = render_segment(self.data[0], local_vars, global_vars)
         data2 = render_segment(self.data[1], local_vars, global_vars)
         return data1 ** data2
@@ -111,6 +126,8 @@ class TagSegmentFactor(TagSegment):
     """Factor expression in python"""
 
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         factor_op, factor = self.data
         factor = render_segment(factor, local_vars, global_vars)
         if factor_op == '-':
@@ -127,6 +144,8 @@ class TagSegmentFuncCall(TagSegment):
     """
 
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         func = render_segment(self.data[0], local_vars, global_vars)
         if self.data[1] is None:
             return func()
@@ -136,6 +155,8 @@ class TagSegmentFuncCall(TagSegment):
 class TagSegmentTuple(TagSegment):
     """Tuple literals in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         if not self.data or self.data[0] is NOTHING:
             return ()
         return tuple(render_segment(data, local_vars, global_vars)
@@ -144,6 +165,8 @@ class TagSegmentTuple(TagSegment):
 class TagSegmentList(TagSegment):
     """List literals in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         if not self.data or self.data[0] is NOTHING:
             return []
         return list(render_segment(data, local_vars, global_vars)
@@ -152,12 +175,16 @@ class TagSegmentList(TagSegment):
 class TagSegmentSet(TagSegment):
     """Set literals in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         return set(render_segment(data, local_vars, global_vars)
                    for data in self.data)
 
 class TagSegmentDict(TagSegment):
     """Dict literals in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         return {
             render_segment(key, local_vars, global_vars):
             render_segment(val, local_vars, global_vars)
@@ -167,6 +194,8 @@ class TagSegmentDict(TagSegment):
 class TagSegmentSlice(TagSegment):
     """Slice objects in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         if len(self.data) == 1:
             return render_segment(self.data[0], local_vars, global_vars)
         return slice(*(render_segment(data, local_vars, global_vars)
@@ -175,6 +204,8 @@ class TagSegmentSlice(TagSegment):
 class TagSegmentLambda(TagSegment):
     """Lambda objects in python"""
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         arglist, body = self.data
         al_args, al_kwargs = arglist.render(
             local_vars, global_vars, as_is=True
@@ -200,11 +231,8 @@ class TagSegmentLambda(TagSegment):
         return lambdafunc
 
 class TagSegmentFilter(TagSegment):
-    """Filter, including
-    - append: ".html"
-    - isinstance: _, int ?? int :: str
-    - lambda _: _
-    """
+    """Filter segment"""
+    # pylint: disable=no-self-use
     def _no_such_filter(self, name_token, exc_wrapper=KeyError):
         error = exc_wrapper(f"No such filter: {str(name_token)!r}")
         try:
@@ -216,6 +244,7 @@ class TagSegmentFilter(TagSegment):
 
     def _get_filter_by_name(self, local_vars, global_vars,
                             name_token, complex=False):
+        # pylint: disable=redefined-builtin
         if not complex:
             filtname = str(name_token)
             filter_func = global_vars[LIQUID_FILTERS_ENVNAME].get(
@@ -257,8 +286,12 @@ class TagSegmentFilter(TagSegment):
 
         return filter_ternary
 
-    def _render_normal(self, local_vars, global_vars,
-                       filter_name, filter_arg, filter_type):
+    def _render_normal(self,  # pylint: disable=too-many-arguments
+                       local_vars,
+                       global_vars,
+                       filter_name,
+                       filter_arg,
+                       filter_type):
         if filter_arg is None:
             filter_args, filter_kwargs = [], {}
         else:
@@ -282,8 +315,12 @@ class TagSegmentFilter(TagSegment):
             return filter_func(*args, **filter_kwargs)
         return filter_function
 
-    def _render_other(self, local_vars, global_vars,
-                      filter_name, filter_arg, filter_type):
+    def _render_other(self,  # pylint: disable=too-many-arguments
+                      local_vars,
+                      global_vars,
+                      filter_name,
+                      filter_arg,
+                      filter_type):
         if filter_arg is None:
             filter_args, filter_kwargs = [], {}
         else:
@@ -302,7 +339,7 @@ class TagSegmentFilter(TagSegment):
                     ) from None
                 return filter_func(*filter_args, **filter_kwargs)
 
-            elif filter_type == 'subscript':
+            if filter_type == 'subscript':
                 try:
                     filter_func = base[filtname]
                 except (KeyError, TypeError) as exc:
@@ -311,21 +348,23 @@ class TagSegmentFilter(TagSegment):
                     ) from None
 
                 return filter_func(*filter_args, **filter_kwargs)
-            else: # start, keyword
-                subtype = 'normal'
-                subname = filter_name
-                if isinstance(filter_name, tuple):
-                    subname, subtype = filter_name
-                filter_func = self._get_filter_by_name(
-                    local_vars, global_vars, subname, subtype == 'complex'
-                )
-                if filter_type == 'star':
-                    return filter_func(*base, *filter_args, **filter_kwargs)
-                return filter_func(*filter_args, **base, **filter_kwargs)
+            # start, keyword
+            subtype = 'normal'
+            subname = filter_name
+            if isinstance(filter_name, tuple):
+                subname, subtype = filter_name
+            filter_func = self._get_filter_by_name(
+                local_vars, global_vars, subname, subtype == 'complex'
+            )
+            if filter_type == 'star':
+                return filter_func(*base, *filter_args, **filter_kwargs)
+            return filter_func(*filter_args, **base, **filter_kwargs)
 
         return filter_function
 
     def render(self, local_vars, global_vars):
+        # type: (dict, dict) -> Any
+        """render the segment"""
         if len(self) == 1: # lambda
             return self._render_lambda(local_vars, global_vars)
 
@@ -340,20 +379,25 @@ class TagSegmentFilter(TagSegment):
                                            filter_name, filter_arg, filter_type)
 
             return self._render_other(local_vars, global_vars,
-                                              filter_name, filter_arg,
-                                              filter_type)
+                                      filter_name, filter_arg,
+                                      filter_type)
 
         return self._render_ternary(local_vars, global_vars)
 
 @v_args(inline=True)
 class TagTransformer(TagTransformerStandard):
     """Transformer for python grammar"""
+    # pylint: disable=no-self-use
+
     def test(self, value, cond=NOTHING, false_value=NOTHING):
+        """The rule test: or_test ("if" or_test "else" test)? | lambdef"""
         if cond is NOTHING and false_value is NOTHING:
             return value
         return TagSegmentIfelse(value, cond, false_value)
 
+    # pylint: disable=signature-differs, arguments-differ
     def comparison(self, expr, *op_and_exprs):
+        """The rule comparison: expr (_comp_op expr)*"""
         ret = expr
         op = ''
         i = 0
@@ -373,6 +417,7 @@ class TagTransformer(TagTransformerStandard):
         return ret
 
     def term(self, one, *more):
+        """The rule term: factor (_mul_op factor)*"""
         if not more:
             return one
         return TagSegmentExpr(
@@ -380,23 +425,29 @@ class TagTransformer(TagTransformerStandard):
         )
 
     def factor(self, factor_op_or_power, factor=NOTHING):
+        """The rule factor: _factor_op factor | power"""
         if factor is NOTHING:
             return factor_op_or_power
 
         return TagSegmentFactor(factor_op_or_power, factor)
 
     def power(self, atom_expr, factor=NOTHING):
+        """The rule power: atom_expr ("**" factor)?"""
         if factor is NOTHING:
             return atom_expr
         return TagSegmentPower(atom_expr, factor)
 
     def dictmarker(self, *tests):
+        """The dictmarker rule:
+        dictmarker: test ":" test ("," test ":" test)* [","]
+        """
         ret = []
         for i in range(0, len(tests), 2):
             ret.append((tests[i], tests[i + 1]))
         return ret
 
     def atom_dict(self, marker=NOTHING):
+        """The rule atom_dict: "{" (dictmarker|testlist_comp)? "}" """
         if marker is NOTHING:
             return {}
 
@@ -405,6 +456,7 @@ class TagTransformer(TagTransformerStandard):
         return TagSegmentSet(*marker)
 
     def atom_string(self, *strings):
+        """The rule atom_string: string+ """
         return ''.join(strings)
 
     def _filter_type(self, var, ftype):

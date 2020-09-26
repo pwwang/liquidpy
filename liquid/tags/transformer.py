@@ -2,7 +2,7 @@
 import ast
 from abc import ABC, abstractmethod
 from functools import partialmethod
-from typing import OrderedDict
+from collections import OrderedDict
 from lark import v_args, Transformer
 from ..config import LIQUID_FILTERS_ENVNAME
 from ..filters import EmptyDrop
@@ -103,33 +103,36 @@ class TagSegmentVar(TagSegment):
         return var
 
 class TagSegmentComparison(TagSegment):
-
+    """Comparison segment"""
     def render(self, local_vars, global_vars):
+        """Render the segment"""
+        # pylint: disable=too-many-return-statements
         left, op, right = self.data
         left = render_segment(left, local_vars, global_vars)
         right = render_segment(right, local_vars, global_vars)
         if op == "<":
             return left < right
-        elif op == ">":
+        if op == ">":
             return left > right
-        elif op == "==":
+        if op == "==":
             return left == right
-        elif op == ">=":
+        if op == ">=":
             return left >= right
-        elif op == "<=":
+        if op == "<=":
             return left <= right
-        elif op in ("<>", "!="):
+        if op in ("<>", "!="):
             return left != right
-        elif op == "in":
+        if op == "in":
             return left in right
-        elif op == "notin":
+        if op == "notin":
             return left not in right
-        elif op == "is":
+        if op == "is":
             return left is right
-        elif op == "isnot":
+        if op == "isnot":
             return left is not right
-        elif op == "contains":
+        if op == "contains":
             return right in left
+        return None # pragma: no cover
 
 class TagSegmentGetItem(TagSegment):
     """segment for `obj[subscript]`"""
@@ -194,8 +197,19 @@ class TagSegmentOutput(TagSegment):
         return base
 
 class TagSegmentArguments(TagSegment):
-
+    """Arguments segment"""
+    # pylint: disable=arguments-differ
     def render(self, local_vars, global_vars, as_is=False):
+        # type: (dict, dict, bool) -> Tuple[List[str], Dict[str, Any]]
+        """Render the segment
+
+        Args:
+            as_is: Whether render the non-keyword arguments as-is or treat
+                them as variables
+
+        Returns:
+            Rendered non-keyword and keyword arguments
+        """
         args = []
         kwargs = OrderedDict()
         for test1, test2 in self.data:
@@ -211,7 +225,7 @@ class TagSegmentArguments(TagSegment):
         return args, kwargs
 
 class TagSegmentLogical(TagSegment):
-
+    """Logical segment"""
     def render(self, local_vars, global_vars):
         test1, and_or, test2 = self.data
         test1 = render_segment(test1, local_vars, global_vars)
@@ -221,7 +235,7 @@ class TagSegmentLogical(TagSegment):
         return test1 or test2
 
 class TagSegmentFilter(TagSegment):
-
+    """Filter segment"""
     def render(self, local_vars, global_vars):
         filter_name, filter_args = self.data
 
@@ -255,6 +269,8 @@ class TagTransformer(Transformer):
     # pylint: disable=no-self-use
 
     def __init__(self, visit_tokens=False):
+        """Change visit_tokens default to False"""
+        # pylint: disable=useless-super-delegation
         super().__init__(visit_tokens)
 
     def range(self, token):
@@ -271,6 +287,7 @@ class TagTransformer(Transformer):
         return TagSegmentRange(start, stop)
 
     def comparison(self, expr, op=None, expr2=None):
+        """rule comparison: comparison: atom (_comp_op atom)?"""
         if op is None:
             return expr
         return TagSegmentComparison(expr, op, expr2)
@@ -280,6 +297,7 @@ class TagTransformer(Transformer):
         return vname
 
     def argvalue(self, test1, test2=NOTHING):
+        """rule argvalue: test ("=" test)?"""
         return (test1, test2)
 
     def _passby(self, *args):

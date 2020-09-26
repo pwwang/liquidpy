@@ -33,20 +33,20 @@ class Node:
         close_tag: The close tag of the node
 
     """
-    # type: Tuple[str]
-    OPEN_TAG = ()
-    # type: Tuple[str]
-    CLOSE_TAG = ()
-    # type: str
-    name = ''
 
-    def __init__(self,
+    OPEN_TAG = ()  # type: Tuple[str]
+    CLOSE_TAG = () # type: Tuple[str]
+    name = '' # type: str
+
+    __slots__ = ('open_compact', 'close_compact', 'context', 'content', '_tag')
+
+    def __init__(self, # pylint:disable=too-many-arguments
                  content,
                  context,
                  parser,
                  open_tag='',
                  close_tag=''):
-        # type: (str, str, str, Optional[Diot], Parser) -> None
+        # type: (str, str, str, Optional[Diot], "Parser") -> None
         self.open_compact = '-' in open_tag
         self.close_compact = '-' in close_tag
         self.context = context
@@ -56,11 +56,12 @@ class Node:
         self._tag = tag
 
     def __init_subclass__(cls, tag_manager=tag_manager):
+        # pylint: disable=redefined-outer-name
         cls.TAG_MANAGER = tag_manager
 
     @property
     def tag(self):
-        # type: () -> Tag
+        # type: () -> "Tag"
         """Get the tag from the node"""
         return self._tag
 
@@ -74,7 +75,7 @@ class Node:
         """Update the context to the start of the content"""
 
     def _get_tag(self, parser):
-        # type: (Parser) -> Tag
+        # type: ("Parser") -> "Tag"
         """Get the tag
 
         Args:
@@ -138,10 +139,9 @@ class NodeTag(Node):
         NodeOutput._update_context(self, open_tag)
         self._tagname_line = self.context.lineno
         self._tagname_column = self.context.colno
-        # type: List[str]
-        splits = self.content.strip().split(maxsplit=1)
-        self.name = splits[0]
-        # type: str
+        splits = self.content.strip().split(maxsplit=1) # type: List[str]
+        self.name = splits[0]                           # type: str
+
         content = splits[1] if len(splits) > 1 else ''
         self.context.colno += len(self.name)
         n_newline, n_spaces = analyze_leading_spaces(
@@ -156,6 +156,7 @@ class NodeTag(Node):
         self.content = content
 
 class NodeScanner:
+    # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """Scanning for the nodes
 
     Attributes:
@@ -178,36 +179,29 @@ class NodeScanner:
         parser: The parser
     """
 
-    # type: NodeLiteral
-    LITERAL = NodeLiteral
-    # type: Tuple[Type[Node]]
-    NODES = (NodeOutput, NodeTag)
-    # type: Set[str]
-    OPEN_CHARS = set(tag[0] for node in NODES for tag in node.OPEN_TAG)
+    __slots__ = ('context', 'open_context', 'hit', 'literal_buffer',
+                 'opentag_buffer', 'content_buffer', 'closetag_buffer',
+                 'escape', 'rawtag', 'parser')
+
+
+    LITERAL = NodeLiteral          # type: NodeLiteral
+    NODES = (NodeOutput, NodeTag)  # type: Tuple[Type[Node]]
+    OPEN_CHARS = set(tag[0] for node in NODES
+                     for tag in node.OPEN_TAG) # type: Set[str]
 
     def __init__(self, context, parser):
-        # type: (Diot, Parser) -> None
+        # type: (Diot, "Parser") -> None
 
-        # type: Diot
-        self.context = context
-        # type: Diot
-        self.open_context = None
-        # type: Optional[Node]
-        self.hit = None
-        # type: str
-        self.literal_buffer = ''
-        # type: str
-        self.opentag_buffer = None
-        # type: str
-        self.closetag_buffer = None
-        # type: str
-        self.content_buffer = None
-        # type: bool
-        self.escape = None
-        # type: Optional[str]
-        self.rawtag = None
-        # type: Parser
-        self.parser = parser
+        self.context = context      # type: Diot
+        self.open_context = None    # type: Diot
+        self.hit = None             # type: Optional[Node]
+        self.literal_buffer = ''    # type: str
+        self.opentag_buffer = None  # type: str
+        self.closetag_buffer = None # type: str
+        self.content_buffer = None  # type: str
+        self.escape = None          # type: bool
+        self.rawtag = None          # type: Optional[str]
+        self.parser = parser        # type: Parser
         self._clear_state()
 
     def _clear_state(self):
@@ -223,10 +217,9 @@ class NodeScanner:
         # we don't have any node hit, summarize the literal
         if not self.hit:
             # context is mutable, have to copy it to keep current context
-            # type: str
             literal = (self.literal_buffer + self.opentag_buffer
                        if end
-                       else self.literal_buffer)
+                       else self.literal_buffer) # type: str
             self.literal_buffer = ''
             if literal:
                 node = self.LITERAL(literal, self.open_context, self.parser)
@@ -274,12 +267,11 @@ class NodeScanner:
                     if not end:
                         return True
 
-            # type: Type[Node]
             node = self.hit(self.content_buffer,
                             self.open_context,
                             self.parser,
                             self.opentag_buffer,
-                            self.closetag_buffer)
+                            self.closetag_buffer) # type: Type[Node]
 
             logger.debug('%s  Found %r',
                          self.context.level * LIQUID_LOG_INDENT,
@@ -307,8 +299,7 @@ class NodeScanner:
                 self.content_buffer):
             return False
 
-        # type: str
-        opentag = self.opentag_buffer + char
+        opentag = self.opentag_buffer + char # type: str
         # See if we already have a hit, see if we hit '-'
         if self.hit:
             return opentag in self.hit.OPEN_TAG
@@ -327,16 +318,16 @@ class NodeScanner:
     def _close_node(self, char):
         # type: (str) -> Optional[bool]
         """Check if a char is closing a node"""
-        # type: str
-        closetag = self.closetag_buffer + char
+
+        closetag = self.closetag_buffer + char # type: str
         if closetag in self.hit.CLOSE_TAG:
             return True
-        elif any(ctag.startswith(closetag) for ctag in self.hit.CLOSE_TAG):
+        if any(ctag.startswith(closetag) for ctag in self.hit.CLOSE_TAG):
             return None
         return False
 
     def _add_to_buffer(self, char):
-        # type: (str) -> Unoin[bool, Type[Node]]
+        # type: (str) -> Union[bool, Type[Node]]
         """Add character to buffer, and decide whether we should do a summary
         on the state"""
         # When should we do a summary:
@@ -348,8 +339,7 @@ class NodeScanner:
             self.escape = False
 
         if not self.hit:
-            # type: Optional[bool]
-            opened = self._open_node(char)
+            opened = self._open_node(char) # type: Optional[bool]
             if opened is True: # pragma: no cover
                 self.opentag_buffer += char
                 ret = self._summarize()
@@ -397,7 +387,7 @@ class NodeScanner:
         return True
 
     def consume(self, stream):
-        # type: (IO) -> Unoin[bool, Type[Node]]
+        # type: (IO) -> Union[bool, Type[Node]]
         """Consume the character of a stream
 
         if it is empty, then we hit the end of the stream.
@@ -412,8 +402,7 @@ class NodeScanner:
             False: we should stop consuming (we hit the end of the stream)
             Node: A complete node hit
         """
-        # type: str
-        char = stream.read(1)
+        char = stream.read(1) # type: str
         if not char:
             return self._summarize(end=True)
 
@@ -421,7 +410,7 @@ class NodeScanner:
             self.context.lineno += 1
             self.context.colno = 0
             return self._add_to_buffer(char)
-        elif char == '\\':
+        if char == '\\':
             self.escape = not self.escape
             self.context.colno += 1
             if not self.escape:

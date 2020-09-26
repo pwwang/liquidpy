@@ -1,3 +1,4 @@
+"""Tags related definitions for python mode"""
 import pkgutil
 from .inherited import Tag, tag_manager
 

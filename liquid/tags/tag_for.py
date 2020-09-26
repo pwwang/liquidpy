@@ -22,7 +22,8 @@ ForLoop = namedtuple( # pylint: disable=invalid-name
 
 @v_args(inline=True)
 class TagForTransformer(TagTransformer):
-
+    """The transformer for tag for"""
+    # pylint: disable=no-self-use
     def for_limit_arg(self, arg):
         """Transformer for for_limit_arg"""
         return ('limit', arg)
@@ -48,6 +49,8 @@ class TagFor(Tag):
         flag_continue: The flag for continue statement
         cycles: The cycle object for cycle tags
     """
+    __slots__ = Tag.__slots__ + ('flag_break', 'flag_continue', 'cycles')
+
     START = 'tag_for'
     GRAMMAR = '''
     tag_for: varname "in" atom for_args*
@@ -60,14 +63,13 @@ class TagFor(Tag):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # type: bool
-        self.flag_break = False
-        # type: bool
-        self.flag_continue = False
-        # type: Dict[str, TagCycle]
-        self.cycles = {}
+        self.flag_break = False      # type: bool
+        self.flag_continue = False   # type: bool
+        self.cycles = {}             # type: Dict[str, TagCycle]
+
 
     def _render(self, local_vars, global_vars):
+        # pylint: disable=too-many-locals
         rendered = ''
 
         varname, atom, args = self.parsed
@@ -118,7 +120,5 @@ class TagFor(Tag):
                 break
 
         if not obj:
-            next_rendered, _ = self.next.render(local_vars, global_vars,
-                                                from_elder=True)
-            rendered += next_rendered
+            rendered += self._render_next(local_vars, global_vars, True)
         return rendered

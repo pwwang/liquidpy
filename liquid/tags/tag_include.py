@@ -15,6 +15,7 @@ from ..exceptions import LiquidSyntaxError
 @v_args(inline=True)
 class TagIncludeTransformer(TagTransformer):
     """The transformer for tag include"""
+    # pylint: disable=no-self-use
     def include_item(self, varname, test):
         """Transform include_item rule"""
         return (str(varname), test)
@@ -36,9 +37,10 @@ class TagInclude(Tag):
     TRANSFORMER = TagIncludeTransformer()
 
     def parse(self, force=False):
+        """Parse the include template"""
         if not super().parse(force):
             return
-        path = self.parsed[0]
+        path = self.parsed[0] # pylint: disable=access-member-before-definition
         path = str(path)
         try:
             include_template = find_template(
@@ -60,15 +62,16 @@ class TagInclude(Tag):
             meta,
             self.parser.config,
             Diot(name=meta.name,
-                 path=meta.path,
                  stream=meta.stream,
-                 lineno=0,
+                 path=meta.path,
                  colno=0,
-                 level=self.context.level+1)
+                 lineno=0,
+                 level=self.context.level + 1)
         )
         inc_parser.parse()
         inc_parser.parent = self.parser
         inc_parser.config.update_logger()
+        # pylint: disable=attribute-defined-outside-init
         self.parsed = inc_parser, self.parsed[1]
 
     def _render(self, local_vars, global_vars):

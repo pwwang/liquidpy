@@ -1,3 +1,4 @@
+"""Tag while"""
 import copy
 from .inherited import tag_manager
 from .tag_if import TagIf
@@ -11,12 +12,13 @@ class TagWhile(TagIf):
         flag_break: The flag for break statement
         flag_continue: The flag for continue statement
     """
+    __slots__ = TagIf.__slots__ + ('flag_break', 'flag_continue')
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # type: bool
-        self.flag_break = False
-        # type: bool
-        self.flag_continue = False
+        self.flag_continue = False # type: bool
+        self.flag_break = False    # type: bool
+
 
     def _render(self, local_vars, global_vars):
         rendered = ''
@@ -36,8 +38,6 @@ class TagWhile(TagIf):
 
             value = render_segment(self.parsed, local_vars_copy, global_vars)
 
-        if self.next and (not value0 or not self.flag_break): # while ... else
-            next_rendered, _ = self.next.render(local_vars, global_vars,
-                                                from_elder=True)
-            rendered += next_rendered
+        if not value0 or not self.flag_break: # while ... else
+            rendered += self._render_next(local_vars, global_vars, True)
         return rendered

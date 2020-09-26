@@ -13,18 +13,13 @@ import logging
 from diot import Diot
 
 # some constants
-# type: str
-LIQUID_LOGGER_NAME = 'LIQUID'
-# type: str
-LIQUID_LOG_INDENT = '  '
-# type: str
-LIQUID_FILTERS_ENVNAME = '__LIQUID_FILTERS__'
-# type: int
-LIQUID_EXC_MAX_STACKS = 5
-# type: int
-LIQUID_EXC_CODE_CONTEXT = 3
 
-# type: Diot
+LIQUID_LOGGER_NAME = 'LIQUID'                  # type: str
+LIQUID_LOG_INDENT = '  '                       # type: str
+LIQUID_FILTERS_ENVNAME = '__LIQUID_FILTERS__'  # type: str
+LIQUID_EXC_MAX_STACKS = 5                      # type: int
+LIQUID_EXC_CODE_CONTEXT = 3                    # type: int
+
 DEFAULT_CONFIG = Diot(
     mode='standard',
     strict=True,
@@ -32,7 +27,7 @@ DEFAULT_CONFIG = Diot(
     cache=False,
     extends_dir=[],
     include_dir=[]
-)
+) # type: Diot
 
 class Config(Diot):
     """The configurations for liquidpy"""

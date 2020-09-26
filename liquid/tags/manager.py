@@ -13,10 +13,9 @@ class TagManager(Singleton):
         INSTANCE: The instance of this singleton class
         tags: The tags database
     """
-    # type: TagManager
-    INSTANCE = None
-    # type: Dict[str, Tag]
-    tags = {}
+    INSTANCE = None # type: TagManager
+    tags = {}       # type: Dict[str, Tag]
+
 
     def register(self, tag_class_or_alias=None, mode='standard'):
         # type: (Union[Type[Tag], str], bool) -> Callable
@@ -100,12 +99,11 @@ class TagManager(Singleton):
         Returns:
             The tag class or None if name does not exist
         """
-        # type: str
-        tagname = name[3:] if name.startswith('end') else name
+        tagname = name[3:] if name.startswith('end') else name  # type: str
 
         if tagname not in self.tags:
             return None
         return self.tags[tagname if tagname == name else 'END']
 
-# type: TagManager
-tag_manager = TagManager()
+# pylint: disable=invalid-name
+tag_manager = TagManager() # type: TagManager

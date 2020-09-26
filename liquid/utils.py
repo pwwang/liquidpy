@@ -17,6 +17,7 @@ TemplateMeta = namedtuple('TemplateMeta',
                           ['name', 'path', 'stream', 'should_close'])
 
 class Nothing:
+    # pylint: disable=too-few-public-methods
     """A unique object to identify a NOTHING other than None
 
     Lark transformers sometimes can pass None or nothing when no
@@ -39,14 +40,15 @@ class RequiredTags(_PositionalTuple):
     """Indicates the arguments are required"""
 
 class Singleton:
+    # pylint: disable=too-few-public-methods
     """An abstract base class for signleton classes
 
     To prevent the __init__ to run again for initialized object from __new__,
     we have a property `_initialized` to inidicate whether the object has been
     initialized already.
     """
-    # type: Optional[Type[Singleton]]
-    INSTANCE = None
+    INSTANCE = None # type: Optional[Type[Singleton]]
+
 
     def __new__(cls, *args, **kwargs): # pylint: disable=unused-argument
         if cls.INSTANCE is None:
@@ -82,8 +84,7 @@ def template_meta(template):
             whether we should close that IO object
     """
     if isinstance(template, str):
-        # type: Optional[Path]
-        path = None
+        path = None # type: Optional[Path]
         try:
             path = Path(template)
             if not path.is_file():
@@ -104,8 +105,7 @@ def template_meta(template):
         return TemplateMeta(template.stem, str(template), template.open(), True)
 
     # IO object
-    # type: str
-    name = '<unknown>'
+    name = '<unknown>' # type: str
     try:
         name = template.name
     except AttributeError: # pragma: no cover

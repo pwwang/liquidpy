@@ -1,10 +1,11 @@
+"""Tag unless"""
 from .inherited import tag_manager
 from .tag_if import TagIf
 from ...tags.transformer import render_segment
 
 @tag_manager.register
 class TagUnless(TagIf, use_parser=True):
-
+    """Tag unless, with no emptydrop stuff"""
     def _render(self, local_vars, global_vars):
         rendered = ''
 
@@ -15,9 +16,5 @@ class TagUnless(TagIf, use_parser=True):
             from_elder = False
             rendered += self._render_children(local_vars, global_vars)
 
-        if self.next:
-            next_rendered, _ = self.next.render(local_vars,
-                                                global_vars,
-                                                from_elder=from_elder)
-            rendered += next_rendered
+        rendered += self._render_next(local_vars, global_vars, from_elder)
         return rendered

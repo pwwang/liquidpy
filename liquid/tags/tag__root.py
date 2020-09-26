@@ -8,11 +8,13 @@ from ..exceptions import LiquidSyntaxError
 @tag_manager.register
 class TagROOT(Tag):
     """The root tag as a container of all child tags"""
-    def parse(self, force=False):
+    def parse(self, force=False): # pylint: disable=unused-argument
+        """Exclude block tags from parsing, until they are replaced"""
         if not self.parser.visitor.has_mother:
             return
 
         root_children = []
+        # pylint: disable=access-member-before-definition
         for child in self.children:
             if child.name in ('LITERAL', 'block'):
                 continue
@@ -26,12 +28,15 @@ class TagROOT(Tag):
                     f'Tag not allowed in a sub-template: {self!r}',
                     child.context, child.parser
                 )
+        # pylint: disable=attribute-defined-outside-init
         self.children = root_children
 
     def _render(self, local_vars, global_vars):
         return self._render_children(local_vars, global_vars)
 
+    # pylint: disable=unused-argument
     def render(self, local_vars, global_vars, from_elder=False):
+        """Render the children of root"""
         logger.debug('%s- RENDERING %r',
                      (self.context.level) * LIQUID_LOG_INDENT,
                      self)

@@ -20,9 +20,10 @@ class Grammar:
 
     def __init__(self, grammar):
         # type: (Union[str, Path]) -> None
-        self.grammar = self._load(grammar)
+        self.grammar = Grammar._load(grammar)
 
-    def _load(self, grammar):
+    @staticmethod
+    def _load(grammar):
         # type: (Union[str, Path]) -> OrderedDiot
         """Load the base grammar in a very simple way.
 

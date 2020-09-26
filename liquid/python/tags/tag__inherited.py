@@ -1,4 +1,5 @@
 """Tags inherited from standard mode"""
+# pylint: disable=relative-beyond-top-level
 from lark import v_args
 from .inherited import tag_manager, Tag, BASE_GRAMMAR
 from .transformer import TagTransformer
@@ -39,35 +40,41 @@ tag_manager.register(TagRaw)
 
 @tag_manager.register
 class TagBreak(TagBreakStandard):
+    """Tag break in python mode"""
     PARENT_TAGS = RequiredTags('for', 'while')
     BASE_GRAMMAR = BASE_GRAMMAR
 
 @tag_manager.register
 class TagContinue(TagContinueStandard):
+    """Tag continue in python mode"""
     PARENT_TAGS = RequiredTags('for', 'while')
     BASE_GRAMMAR = BASE_GRAMMAR
 
 @tag_manager.register
 class TagCOMMENT(Tag):
-    """The output tag"""
+    """The {# ... #} tag"""
     VOID = True
 
     def _render(self, local_vars, global_vars):
+        # pylint: disable=unused-argument
         return ''
 
 @tag_manager.register
 class TagOUTPUT(TagOUTPUTStandard):
+    """The output tag {{ ... }}"""
     TRANSFORMER = TagTransformer()
     BASE_GRAMMAR = BASE_GRAMMAR
 
 @tag_manager.register
 class TagCase(TagOUTPUT, use_parser=True):
+    """The case tag"""
     VOID = False
     __init__ = TagCaseStandard.__init__
     _render = TagCaseStandard._render
 
 @tag_manager.register
 class TagWhen(TagOUTPUT, use_parser=True):
+    """The when tag"""
     VOID = TagWhenStandard.VOID
     PARENT = TagWhenStandard.PARENT_TAGS
     ELDER_TAGS = TagWhenStandard.ELDER_TAGS
@@ -79,7 +86,7 @@ class TagConfigTransformer(TagTransformer, TagConfigTransformerStandard):
 
 @tag_manager.register
 class TagConfig(TagConfigStandard):
-
+    """The tag config"""
     TRANSFORMER = TagConfigTransformer()
     BASE_GRAMMAR = BASE_GRAMMAR
 
@@ -89,9 +96,11 @@ class TagCycleTransformer(TagTransformer, TagCycleTransformerStandard):
 
 @tag_manager.register
 class TagCycle(TagCycleStandard):
+    """The tag cycle"""
     TRANSFORMER = TagCycleTransformer()
     BASE_GRAMMAR = BASE_GRAMMAR
 
 @tag_manager.register('elif, elsif')
 class TagElsif(TagIf):
+    """The elif/elsif tag"""
     ELDER_TAGS = RequiredTags('if', 'unless', 'elsif', 'elif')

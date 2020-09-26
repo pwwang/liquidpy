@@ -9,8 +9,8 @@ class TagLITERAL(Tag):
     """The literal tag"""
     VOID = True
 
+    # pylint: disable=unused-argument
     def _render(self, local_vars, global_vars):
-        # pylint: disable=unused-argument
         content = self.content
         if self.open_compact:
             content = content.lstrip()
@@ -19,6 +19,7 @@ class TagLITERAL(Tag):
         return content
 
     def render(self, local_vars, global_vars, from_elder=False):
+        """Render the literals"""
         logger.debug('[dim italic]%s  Rendering %r[/dim italic]',
                      (self.context.level) * LIQUID_LOG_INDENT,
                      self,

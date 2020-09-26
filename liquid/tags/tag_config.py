@@ -37,6 +37,7 @@ class TagConfig(Tag):
     TRANSFORMER = TagConfigTransformer()
 
     def parse(self, force=False):
+        """Parse the configurations"""
         super().parse(force=force)
         config = self.parser.config.copy()
         # vname is token
@@ -74,5 +75,6 @@ class TagConfig(Tag):
                 config[varname] = value
         self.parser.config = config
 
+    # pylint: disable=unused-argument
     def _render(self, local_vars, global_vars):
         return ''

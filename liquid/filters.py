@@ -15,10 +15,9 @@ class FilterManager(Singleton):
         INSTANCE: The instance of the class, since it's a signleton
         filters: The filters database
     """
-    # type: FilterManager
-    INSTANCE = None
-    # type: Dict[str, Callable]
-    filters = {}
+
+    INSTANCE = None     # type: FilterManager
+    filters = {}        # type: Dict[str, Callable]
 
     def register(self, name_or_filter=None, mode='standard'):
         # type: (Optional[Union[str, Callable]], bool) -> Optional[Callable]
@@ -68,7 +67,7 @@ class FilterManager(Singleton):
         return decorator
 
     def unregister(self, name, mode='standard'):
-        # type: (str) -> Optional[Callable]
+        # type: (str, str) -> Optional[Callable]
         """Unregister a filter
 
         Args:
@@ -93,8 +92,7 @@ class FilterManager(Singleton):
             ) from None
 
 # pylint: disable=invalid-name
-# type: FilterManager
-filter_manager = FilterManager()
+filter_manager = FilterManager() # type: FilterManager
 
 
 class EmptyDrop:

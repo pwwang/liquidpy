@@ -13,8 +13,9 @@ from .transformer import TagTransformer
 @v_args(inline=True)
 class TagAssignTransformer(TagTransformer):
     """The transformer for tag assign"""
+    # pylint: disable=no-self-use
     def tag_assign(self, varname, output):
-        # type: (str, Tree) -> Tuple[str, Tree]
+        # type: (str, "Tree") -> Tuple[str, "Tree"]
         """Transform the tag_assign rule"""
         return str(varname), output
 

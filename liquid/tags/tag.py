@@ -1,6 +1,7 @@
 """Basics for all tags"""
 import re
 from pathlib import Path
+
 from lark import LarkError
 from .grammar import Grammar
 from .transformer import TagTransformer
@@ -9,7 +10,7 @@ from ..utils import shorten, logger, RequiredTags, get_tag_parser
 from ..exceptions import LiquidSyntaxError, LiquidRenderError
 
 
-class Tag:
+class Tag: # pylint: disable=too-many-instance-attributes
     """The base class for all tags.
 
     Subclass should provide `start`, `grammar`, `transformer`, `base_grammar`
@@ -56,6 +57,10 @@ class Tag:
         close_compact: Whether it is compact tag for close tag
         parser: The parser of the tag
     """
+    __slots__ = ('name', 'content', 'context', 'open_compact', 'close_compact',
+                 'parser', 'children', 'parent', 'parsed', 'prev', 'next',
+                 'parsing_self', 'parsing_children')
+
     VOID = False
     ELDER_TAGS = ()
     PARENT_TAGS = ()
@@ -69,17 +74,17 @@ class Tag:
     BASE_GRAMMAR = Grammar(Path(__file__).parent / 'grammar.lark')
 
 
-    parsing_self = True
-    parsing_children = True
+    PARSING_SELF = True
+    PARSING_CHILDREN = True
 
-    def __init__(self,
+    def __init__(self, # pylint: disable=too-many-arguments
                  hitname,
                  content,
                  context,
                  open_compact,
                  close_compact,
                  parser):
-        # type: (str, str, Diot, bool, bool, Parser) -> None
+        # type: (str, str, Diot, bool, bool, "Parser") -> None
         self.name = hitname
         self.content = content
         self.context = context
@@ -90,6 +95,8 @@ class Tag:
         # Parent, previous and next tag object
         self.parent = self.prev = self.next = None
         self.parsed = None
+        self.parsing_self = self.__class__.PARSING_SELF
+        self.parsing_children = self.__class__.PARSING_CHILDREN
 
     def __init_subclass__(cls, use_parser=False):
         # type: (bool) -> None
@@ -109,9 +116,11 @@ class Tag:
                                         cls.TRANSFORMER,
                                         cls.BASE_GRAMMAR)
 
+    # pylint: disable=inconsistent-return-statements
     def parse(self, force=False):
-        # type: () -> Optional[bool]
+        # type: (bool) -> Optional[bool]
         """Parse the content of the tag"""
+
         if self.parsed is not None:
             return
         if not self.PARSER or (not force and not self.parsing_self):
@@ -146,7 +155,7 @@ class Tag:
     def __repr__(self):
         # type: () -> str
         """The representation of the tag"""
-        # type: str
+
         return (f"<{self.__class__.__name__}"
                 f"({shorten(self.content, 30, placeholder=' [...]')!r}, "
                 f"line {self.context.lineno + 1}, "
@@ -262,6 +271,12 @@ class Tag:
             child_rendered, local_vars = child.render(local_vars, global_vars)
             rendered += child_rendered
         return rendered
+
+    def _render_next(self, local_vars, global_vars, from_elder):
+        """Render my next sibling"""
+        if not self.next:
+            return ''
+        return self.next.render(local_vars, global_vars, from_elder)[0]
 
     def render(self, local_vars, global_vars, from_elder=False):
         # type: (dict, dict, bool) -> Tuple[str, dict]
