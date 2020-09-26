@@ -1,19 +1,14 @@
 # liquidpy
 A port of [liquid][1] template engine for python
 
-This is the branch with compatibility to shopify's liquid template language.
-
 [![Pypi][2]][9] [![Github][3]][10] [![PythonVers][4]][9] [![ReadTheDocs building][13]][8] [![Travis building][5]][11] [![Codacy][6]][12] [![Codacy coverage][7]][12]
+
+This is compatible with [standard Liquid][1] template engine. Variations, such as Shopify and Jekyll are not fully supported yet.
 
 ## Install
 ```shell
-pip install git+https://github.com/pwwang/liquidpy@lark
-# or
-pip install git+https://github.com/pwwang/liquidpy@larkone
+pip install liquidpy
 ```
-
-## Full Documentation
-Check shopify's liquid [documentation][1]
 
 ## Baisic usage
 ```python
@@ -29,9 +24,30 @@ ret = liq.render()
 
 # With debug on:
 liq = Liquid('{{a}}', liquid_config={'debug': True})
-# or with more verbosed message
-liq = Liquid('{{a}}', liquid_config={'debug': 'plus'})
 ```
+
+## Python mode
+
+We also support a python mode template engine, which acts more pythonic and powerful.
+```python
+from liquid import Liquid
+# standard liquid doesn't support this
+liq = Liquid('{{a + 1}}', {'mode': 'python'})
+ret = liq.render(a=1)
+# ret == '2'
+```
+
+Both modes can accept a path, a file-like object or a stream for the template:
+```python
+Liquid('/path/to/template')
+# or
+with open('/path/to/template') as f:
+    Liquid(f)
+```
+
+## Full Documentation
+- Liquid's [documentation][1]
+- Liquidpy's [documentation][14]
 
 [1]: https://shopify.github.io/liquid/
 [2]: https://img.shields.io/pypi/v/liquidpy.svg?style=flat-square
@@ -46,3 +62,4 @@ liq = Liquid('{{a}}', liquid_config={'debug': 'plus'})
 [11]: https://travis-ci.org/pwwang/liquidpy
 [12]: https://app.codacy.com/manual/pwwang/liquidpy/dashboard
 [13]: https://img.shields.io/readthedocs/liquidpy?style=flat-square
+[14]: https://pwwang.github.io/liquidpy/

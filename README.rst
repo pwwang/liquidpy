@@ -34,17 +34,14 @@ A port of `liquid <https://shopify.github.io/liquid/>`_ template engine for pyth
    :alt: Codacy coverage
  <https://app.codacy.com/manual/pwwang/liquidpy/dashboard>`_
 
+This is compatible with `standard Liquid <https://shopify.github.io/liquid/>`_ template engine. Variations, such as Shopify and Jekyll are not fully supported yet.
+
 Install
 -------
 
 .. code-block:: shell
 
    pip install liquidpy
-
-Full Documentation
-------------------
-
-`ReadTheDocs <https://liquidpy.readthedocs.io/en/latest/>`_
 
 Baisic usage
 ------------
@@ -53,16 +50,42 @@ Baisic usage
 
    from liquid import Liquid
    liq = Liquid('{{a}}')
-   ret = liq.render(a = 1)
+   ret = liq.render(a=1)
    # ret == '1'
 
-   # load template from a file
-   liq = Liquid('/path/to/template', liquid_from_file=True)
+   # with environments pre-loaded
+   liq = Liquid('{{a}}', a=1)
+   ret = liq.render()
+   # ret == '1'
 
-With environments:
+   # With debug on:
+   liq = Liquid('{{a}}', liquid_config={'debug': True})
+
+Python mode
+-----------
+
+We also support a python mode template engine, which acts more pythonic and powerful.
 
 .. code-block:: python
 
-   liq = Liquid('{{a | os.path.basename}}', os=__import__('os'))
-   ret = liq.render(a="path/to/file.txt")
-   # ret == 'file.txt'
+   from liquid import Liquid
+   # standard liquid doesn't support this
+   liq = Liquid('{{a + 1}}', {'mode': 'python'})
+   ret = liq.render(a=1)
+   # ret == '2'
+
+Both modes can accept a path, a file-like object or a stream for the template:
+
+.. code-block:: python
+
+   Liquid('/path/to/template')
+   # or
+   with open('/path/to/template') as f:
+       Liquid(f)
+
+Full Documentation
+------------------
+
+
+* Liquid's `documentation <https://shopify.github.io/liquid/>`_
+* Liquidpy's `documentation <https://pwwang.github.io/liquidpy/>`_

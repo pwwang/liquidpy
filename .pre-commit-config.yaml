@@ -41,13 +41,6 @@ repos:
         language: system
         files: pyproject.toml
         pass_filenames: false
-    -   id: api
-        name: Generate API documentation
-        entry: bash -c
-        args: ['python api.py > docs/api.md']
-        language: system
-        pass_filenames: false
-        files: ^liquid/.+$
     -   id: pytest
         name: Run pytest
         entry: pytest

@@ -1,26 +1,24 @@
 site_name: liquidpy
 theme:
     name: 'material'
-    font:
-      text: 'Ubuntu'
-      code: 'Ubuntu Mono'
 markdown_extensions:
     - markdown.extensions.admonition
-    - markdown.extensions.extra
     - pymdownx.superfences:
         preserve_tabs: true
     - toc:
         baselevel: 2
+plugins:
+    - search # necessary for search to work
+    - mkapi
 extra_css:
-    - 'extra.css'
+    - style.css
 nav:
     - 'Home': 'index.md'
     - 'Introduction': 'intro.md'
-    - 'White space control': 'wscontrol.md'
-    - 'Debug': 'debug.md'
-    - 'Nodes': 'nodes.md'
-    - 'Inheritance and inclusion': 'extends_include.md'
+    - 'Additional Tags': 'additional_tags.md'
+    - 'Configuration': 'configuration.md'
+    - 'Tags': 'tags.md'
     - 'Filters': 'filters.md'
-    - 'Modifiers': 'modifiers.md'
+    - 'Extending liquidpy': 'extending.md'
+    - 'API': mkapi/api/liquid
     - 'Change log': 'changelog.md'
-    - 'API': 'api.md'
