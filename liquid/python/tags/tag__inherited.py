@@ -56,6 +56,7 @@ class TagCOMMENT(Tag):
     VOID = True
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         # pylint: disable=unused-argument
         return ''
 

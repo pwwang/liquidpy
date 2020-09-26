@@ -29,4 +29,5 @@ class TagBlock(TagCapture, use_parser=True):
                 f"column {self.context.colno + 1})>")
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         return self._render_children(local_vars, global_vars)

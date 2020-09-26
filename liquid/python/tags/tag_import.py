@@ -8,6 +8,7 @@ class TagImport(Tag):
     SECURE = False
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         # pylint: disable=exec-used
         exec(f'import {self.content}', global_vars, local_vars)
         return ''

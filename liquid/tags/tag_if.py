@@ -18,6 +18,7 @@ class TagIf(Tag):
     START = 'test'
 
     def _render_expr(self, local_vars, global_vars):
+        # type: (dict, dict) -> bool
         expr = render_segment(self.parsed, local_vars, global_vars)
         # Strings, even when empty, are truthy.
         # See: https://shopify.github.io/liquid/basics/truthy-and-falsy/#truthy
@@ -29,9 +30,10 @@ class TagIf(Tag):
             expr = True
         elif isinstance(expr, EmptyDrop):
             expr = False
-        return expr
+        return bool(expr)
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         rendered = ''
 
         expr = self._render_expr(local_vars, global_vars)

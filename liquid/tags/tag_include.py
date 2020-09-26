@@ -37,6 +37,7 @@ class TagInclude(Tag):
     TRANSFORMER = TagIncludeTransformer()
 
     def parse(self, force=False):
+        # type: (bool) -> None
         """Parse the include template"""
         if not super().parse(force):
             return
@@ -75,6 +76,7 @@ class TagInclude(Tag):
         self.parsed = inc_parser, self.parsed[1]
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         inc_parser, items = self.parsed
         items = dict(items)
         for varname, value in items.items():

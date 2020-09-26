@@ -24,6 +24,7 @@ class TagPython(Tag):
             self.VOID = True # pylint: disable=invalid-name
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         # pylint: disable=exec-used
         if self.VOID:
             return exec(self.content, global_vars, local_vars) or ''

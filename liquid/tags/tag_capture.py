@@ -14,9 +14,10 @@ from .tag import Tag
 class TagCapture(Tag):
     """The capture tag"""
 
-    START = 'varname'
+    START = 'varname' # type: str
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         var = str(self.parsed)
         child = self._render_children(local_vars, global_vars)
         local_vars[var] = global_vars[var] = child

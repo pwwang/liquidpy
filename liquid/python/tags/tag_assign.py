@@ -21,6 +21,7 @@ class TagAssign(TagAssignStandard):
     TRANSFORMER = TagAssignTransformer()
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         varname, output = self.parsed
         output = output.render(local_vars, global_vars)
         local_vars[varname] = output

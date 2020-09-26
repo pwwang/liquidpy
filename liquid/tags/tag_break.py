@@ -20,6 +20,7 @@ class TagBreak(Tag):
 
     # pylint: disable=unused-argument
     def parse(self, force=False):
+        # type: (bool) -> None
         """Make sure no extra content for this tag"""
         if self.content:
             raise LiquidSyntaxError(
@@ -28,5 +29,6 @@ class TagBreak(Tag):
             )
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         self.closest_parent.flag_break = True
         return ''

@@ -50,6 +50,7 @@ class TagTablerow(Tag):
 
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         # pylint: disable=too-many-locals
         rendered = ''
 

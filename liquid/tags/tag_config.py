@@ -37,6 +37,7 @@ class TagConfig(Tag):
     TRANSFORMER = TagConfigTransformer()
 
     def parse(self, force=False):
+        # type: (bool) -> None
         """Parse the configurations"""
         super().parse(force=force)
         config = self.parser.config.copy()
@@ -77,4 +78,5 @@ class TagConfig(Tag):
 
     # pylint: disable=unused-argument
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         return ''

@@ -25,6 +25,7 @@ class TagWhen(TagOUTPUT, use_parser=True):
     ELDER_TAGS = OptionalTags('when')
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         data = self.PARSER.parse(self.content).render(local_vars, global_vars)
         if data == self.closest_parent.data:
             return self._render_children(local_vars, global_vars)

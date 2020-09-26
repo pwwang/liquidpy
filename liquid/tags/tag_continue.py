@@ -13,5 +13,6 @@ from .tag_break import TagBreak
 class TagContinue(TagBreak):
     """Class for tag continue"""
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         self.closest_parent.flag_continue = True
         return ''

@@ -21,6 +21,7 @@ class TagWhile(TagIf):
 
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         rendered = ''
         value = render_segment(self.parsed, local_vars, global_vars)
         value0 = copy.copy(value)

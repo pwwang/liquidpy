@@ -20,6 +20,7 @@ class TagExtends(Tag):
         self.parser.visitor.has_mother = True
 
     def parse(self, force=False): # pylint: disable=unused-argument
+        # type: (bool) -> None
         if self.parent.name != 'ROOT':
             raise LiquidSyntaxError(
                 f'Must be first-level tag: {self!r}',
@@ -66,13 +67,13 @@ class TagExtends(Tag):
 
 
     def _render(self, local_vars, global_vars):
-
-        # make sure the template is in the format of:
-        # {% extends ... %}
-        # {% block 1 %}...{% endblock %}
-        # {% block 2 %}...{% endblock %}
-        # there are no other tags other than a config/comment tag
-
+        # type: (dict, dict) -> str
+        """make sure the template is in the format of:
+        {% extends ... %}
+        {% block 1 %}...{% endblock %}
+        {% block 2 %}...{% endblock %}
+        there are no other tags other than a config/comment tag
+        """
         # replace mother's blocks with self.parser's
         for blockname, block in self.parser.visitor.blocks.items():
             # block: current_block (replacement)

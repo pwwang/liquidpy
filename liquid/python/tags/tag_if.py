@@ -16,6 +16,7 @@ class TagIf(TagIfStandard):
     BASE_GRAMMAR = BASE_GRAMMAR
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         rendered = ''
 
         expr = render_segment(self.parsed, local_vars, global_vars)

@@ -42,6 +42,7 @@ class TagElse(Tag):
     ELDER_TAGS = RequiredTags('if', 'unless', 'when', 'for', 'elsif')
 
     def parse(self, force=False):
+        # type: (bool) -> None
         """No extra content allowed for standard else tag"""
         if self.content:
             raise LiquidSyntaxError(f"No content allow for tag: {self!r}",
@@ -49,4 +50,5 @@ class TagElse(Tag):
                                     self.parser)
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         return self._render_children(local_vars, global_vars)

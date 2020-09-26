@@ -35,6 +35,7 @@ class TagFor(Tag):
 
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         rendered = ''
 
         varnames, value = self.parsed

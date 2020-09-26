@@ -19,13 +19,14 @@ from ..exceptions import LiquidSyntaxError
 @tag_manager.register
 class TagCase(TagOUTPUT, use_parser=True):
     """The case class"""
-    VOID = False
+    VOID = False # type: str
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = None
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         self.data = self.parsed.render(
             local_vars, global_vars
         )

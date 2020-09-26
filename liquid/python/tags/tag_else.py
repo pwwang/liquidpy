@@ -32,6 +32,7 @@ class TagElse(TagIf):
     TRANSFORMER = TagElseTransformer()
 
     def parse(self, force=False):
+        # type: (bool) -> None
         """Check to see if there is any siblings after a bare {% else %} tag
         """
         if not super().parse(force):
@@ -50,6 +51,7 @@ class TagElse(TagIf):
 
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         if self.parsed is NOTHING:
             return self._render_children(local_vars, global_vars)
 

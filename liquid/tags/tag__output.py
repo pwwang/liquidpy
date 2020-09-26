@@ -14,5 +14,6 @@ class TagOUTPUT(Tag):
     START = 'output'
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         rendered = self.parsed.render(local_vars, global_vars)
         return str(rendered) if rendered is not None else ''

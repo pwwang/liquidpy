@@ -16,6 +16,7 @@ class TagIncrement(TagCapture, use_parser=True):
     VOID = True
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         # Variables created through the increment tag are independent
         # from variables created through assign or capture.
         var = f'__incremental__{self.parsed}'

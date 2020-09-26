@@ -9,6 +9,7 @@ from ..exceptions import LiquidSyntaxError
 class TagROOT(Tag):
     """The root tag as a container of all child tags"""
     def parse(self, force=False): # pylint: disable=unused-argument
+        # type: (bool) -> None
         """Exclude block tags from parsing, until they are replaced"""
         if not self.parser.visitor.has_mother:
             return
@@ -32,10 +33,12 @@ class TagROOT(Tag):
         self.children = root_children
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         return self._render_children(local_vars, global_vars)
 
     # pylint: disable=unused-argument
     def render(self, local_vars, global_vars, from_elder=False):
+        # type: (dict, dict, bool) -> Tuple[str, dict]
         """Render the children of root"""
         logger.debug('%s- RENDERING %r',
                      (self.context.level) * LIQUID_LOG_INDENT,

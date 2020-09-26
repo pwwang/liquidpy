@@ -17,4 +17,5 @@ class TagComment(Tag):
 
     # pylint: disable=unused-argument
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         return ''

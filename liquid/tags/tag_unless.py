@@ -13,6 +13,7 @@ from .tag_if import TagIf
 class TagUnless(TagIf, use_parser=True):
     """The unless tag"""
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         rendered = ''
 
         expr = self._render_expr(local_vars, global_vars)

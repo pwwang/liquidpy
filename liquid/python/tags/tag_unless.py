@@ -7,6 +7,7 @@ from ...tags.transformer import render_segment
 class TagUnless(TagIf, use_parser=True):
     """Tag unless, with no emptydrop stuff"""
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         rendered = ''
 
         expr = render_segment(self.parsed, local_vars, global_vars)

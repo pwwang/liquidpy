@@ -39,6 +39,7 @@ class TagCycle(Tag):
         self._args = None
 
     def group(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         """Get the group of the cycle"""
         if self._group is None:
             self._group = render_segment(
@@ -47,6 +48,7 @@ class TagCycle(Tag):
         return self._group
 
     def args(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         """Get the args of the cycle"""
         if self._args is None:
             args, kwargs = self.parsed[1].render(local_vars, global_vars)
@@ -57,6 +59,7 @@ class TagCycle(Tag):
         return self._args
 
     def get_value(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         """Get current value of the cycle, and
         increment the cursor"""
         args = self.args(local_vars, global_vars)
@@ -67,6 +70,7 @@ class TagCycle(Tag):
         return str(ret)
 
     def _render(self, local_vars, global_vars):
+        # type: (dict, dict) -> str
         parent = self.closest_parent
         group = self.group(local_vars, global_vars)
         args = self.args(local_vars, global_vars)
