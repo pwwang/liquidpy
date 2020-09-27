@@ -1,117 +1,367 @@
+"""The filters used in liquidpy
+
+Attributes:
+    filter_manager: The filter manager
 """
-Built-in filters for liquidpy
-"""
+import math
+import html
+from .utils import Singleton
+from .exceptions import LiquidFilterRegistryException
 
-__all__ = ['LIQUID_FILTERS', 'PYTHON_FILTERS']
+class FilterManager(Singleton):
+    """A manager for filters
 
-def _abs(val):
-    """Return the absolute value of val"""
-    if not isinstance(val, int) and not isinstance(val, float):
-        if val.isdigit() or (val[0] in ['+', '-'] and val[1:].isdigit()):
-            return abs(int(val))
-        return abs(float(val))
-    return abs(val)
+    Attributes:
+        INSTANCE: The instance of the class, since it's a signleton
+        filters: The filters database
+    """
 
-def _date(val, outformat, informat=None):
-    """Convert the date between specified formats"""
+    INSTANCE = None     # type: FilterManager
+    filters = {}        # type: Dict[str, Callable]
+
+    def register(self, name_or_filter=None, mode='standard'):
+        # type: (Optional[Union[str, Callable]], bool) -> Optional[Callable]
+        """Register a filter
+
+        This can be used as a decorator
+        >>> @filter_manager.register
+        >>> def add(a, b):
+        >>>   return a+b
+        >>> # register it with an alias:
+        >>> @filter_manager.register('addfunc')
+        >>> def add(a, b):
+        >>>   return a+b
+
+        Args:
+            name_or_filter: The filter to register
+                if name is given, will be treated as alias
+            mode: Whether do it for given mode
+
+        Returns:
+            The registered function or the decorator
+        """
+        # if mode == 'jekyll':
+        #     from .jekyll.filter_manager import filter_manager as filtermgr
+        #     return filtermgr.register(name_or_filter)
+        if mode == 'python':
+            from .python.filters import filter_manager as filtermgr
+            return filtermgr.register(name_or_filter)
+
+        def decorator(filterfunc):
+            name = filterfunc.__name__
+            name = [name]
+
+            if name_or_filter and name_or_filter is not filterfunc:
+                names = name_or_filter
+                if isinstance(names, str):
+                    names = (nam.strip() for nam in names.split(','))
+                name = names
+            for nam in name:
+                self.__class__.filters[nam] = filterfunc
+
+            return filterfunc
+
+        if callable(name_or_filter):
+            return decorator(name_or_filter)
+
+        return decorator
+
+    def unregister(self, name, mode='standard'):
+        # type: (str, str) -> Optional[Callable]
+        """Unregister a filter
+
+        Args:
+            name: The name of the filter to unregister
+            mode: Whether do it for given mode
+
+        Returns:
+            The unregistered filter or None if name does not exist
+        """
+        # if mode == 'jekyll':
+        #     from .jekyll.filter_manager import filter_manager as filtermgr
+        #     return filtermgr.unregister(name)
+        if mode == 'python':
+            from .python.filters import filter_manager as filtermgr
+            return filtermgr.unregister(name)
+
+        try:
+            return self.__class__.filters.pop(name)
+        except KeyError:
+            raise LiquidFilterRegistryException(
+                f'No such filter: {name!r}'
+            ) from None
+
+# pylint: disable=invalid-name
+filter_manager = FilterManager() # type: FilterManager
+
+
+class EmptyDrop:
+    """The EmptyDrop class borrowed from liquid"""
+    def __init__(self):
+        setattr(self, 'empty?', True)
+
+    def __str__(self):
+        return ''
+
+    def __eq__(self, other):
+        return not bool(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __bool__(self):
+        return False
+
+def _get_prop(obj, prop):
+    """Get the property of the object, allow via getitem"""
+    try:
+        return obj[prop]
+    except (TypeError, KeyError):
+        return getattr(obj, prop)
+
+filter_manager.register(str.capitalize)
+filter_manager.register(abs)
+filter_manager.register(round)
+filter_manager.register('concat')(list.__add__)
+filter_manager.register('at_least')(max)
+filter_manager.register('at_most')(min)
+filter_manager.register('downcase')(str.lower)
+filter_manager.register('upcase')(str.upper)
+filter_manager.register(html.escape)
+filter_manager.register(str.lstrip)
+filter_manager.register(str.rstrip)
+filter_manager.register(str.strip)
+filter_manager.register(str.replace)
+filter_manager.register('size')(len)
+
+@filter_manager.register
+def split(base, sep):
+    """Split a string into a list
+    If the sep is empty, return the list of characters
+    """
+    if not sep:
+        return list(base)
+    return base.split(sep)
+
+@filter_manager.register
+def append(base, suffix):
+    """Append a suffix to a string"""
+    return f"{base}{suffix}"
+
+@filter_manager.register
+def prepend(base, prefix):
+    """Prepend a prefix to a string"""
+    return f"{prefix}{base}"
+
+@filter_manager.register
+def times(base, sep):
+    """Implementation of * """
+    return base * sep
+
+@filter_manager.register
+def minus(base, sep):
+    """Implementation of - """
+    return base - sep
+
+@filter_manager.register
+def plus(base, sep):
+    """Implementation of + """
+    return base + sep
+
+@filter_manager.register
+def modulo(base, sep):
+    """Implementation of % """
+    return base % sep
+
+@filter_manager.register
+def ceil(base):
+    """Get the ceil of a number"""
+    return math.ceil(float(base))
+
+@filter_manager.register
+def floor(base):
+    """Get the floor of a number"""
+    return math.floor(float(base))
+
+@filter_manager.register('date')
+def liquid_date(base, fmt):
+    """Format a date/datetime"""
     from datetime import datetime
-    if val == 'now':
-        return datetime.now().strftime(outformat)
-    if val == 'today':
-        return datetime.today().strftime(outformat)
-    return datetime.strptime(val, informat).strftime(outformat)
+    if base == "now":
+        dtime = datetime.now()
+    elif base == "today":
+        dtime = datetime.today()
+    else:
+        from dateutil import parser
+        dtime = parser.parse(base)
+    return dtime.strftime(fmt)
 
-def _truncatewords(val, length, end='...'):
-    """Truncate a sentence"""
-    words = val.split()
-    if len(words) <= length:
-        return ' '.join(words)
-    return ' '.join(words[:length]) + end
+@filter_manager.register
+def default(base, deft):
+    """Return the deft value if base is not set.
+    Otherwise, return base"""
+    if base == 0.0:
+        return base
+    return base or deft
 
-def _split(val, sep, limit=-1):
-    """Split a string"""
-    if sep:
-        return val.split(sep, limit)
-    if limit < 0 or limit >= len(val):
-        return list(val)
-    if limit == 0:
-        return [val]
-    val = list(val)
-    return val[:limit] + [''.join(val[limit:])]
+@filter_manager.register
+def divided_by(base, dvdby):
+    """Implementation of / or // """
+    if isinstance(dvdby, int):
+        return base // dvdby
+    return base / dvdby
 
-def _url_decode(val):
+@filter_manager.register
+def escape_once(base):
+    """Escapse html characters only once of the string"""
+    return html.escape(html.unescape(base))
+
+@filter_manager.register
+def newline_to_br(base):
+    """Replace newline with `<br />`"""
+    return base.replace('\n', '<br />')
+
+@filter_manager.register
+def remove(base, string):
+    """Remove a substring from a string"""
+    return base.replace(string, '')
+
+@filter_manager.register
+def remove_first(base, string):
+    """Remove the first substring from a string"""
+    return base.replace(string, '', 1)
+
+@filter_manager.register
+def replace_first(base, old, new):
+    """Replace the first substring with new string"""
+    return base.replace(old, new, 1)
+
+@filter_manager.register
+def reverse(base):
+    """Get the reversed list"""
+    if not base:
+        return EmptyDrop()
+    return list(reversed(base))
+
+@filter_manager.register
+def sort(base):
+    """Get the sorted list"""
+    if not base:
+        return EmptyDrop()
+    return list(sorted(base))
+
+@filter_manager.register
+def sort_natural(base):
+    """Get the sorted list in a case-insensitive manner"""
+    if not base:
+        return EmptyDrop()
+    return list(sorted(base, key=str.casefold))
+
+@filter_manager.register('slice')
+def liquid_slice(base, start, length=1):
+    """Slice a list"""
+    if not base:
+        return EmptyDrop()
+    if start < 0:
+        start = len(base) + start
+    return base[start:start+length]
+
+@filter_manager.register
+def strip_html(base):
+    """Strip html tags from a string"""
+    import re
+    # use html parser?
+    return re.sub(r'<[^>]+>', '', base)
+
+@filter_manager.register
+def strip_newlines(base):
+    """Strip newlines from a string"""
+    return base.replace('\n', '')
+
+@filter_manager.register
+def truncate(base, length, ellipsis="..."):
+    """Truncate a string"""
+    lenbase = len(base)
+    if length >= lenbase:
+        return base
+
+    return base[:length - len(ellipsis)] + ellipsis
+
+@filter_manager.register
+def truncatewords(base, length, ellipsis="..."):
+    """Truncate a string by words"""
+    # do we need to preserve the whitespaces?
+    baselist = base.split()
+    lenbase = len(baselist)
+    if length >= lenbase:
+        return base
+
+    # instead of collapsing them into just a single space?
+    return " ".join(baselist[:length]) + ellipsis
+
+@filter_manager.register
+def uniq(base):
+    """Get the unique elements from a list"""
+    if not base:
+        return EmptyDrop()
+    ret = []
+    for bas in base:
+        if not bas in ret:
+            ret.append(bas)
+    return ret
+
+@filter_manager.register
+def url_decode(base):
     """Url-decode a string"""
     try:
         from urllib import unquote
     except ImportError:
         from urllib.parse import unquote
-    return unquote(val)
+    return unquote(base)
 
-def _url_encode(val):
-    """Url-decode a string"""
+@filter_manager.register
+def url_encode(base):
+    """Url-encode a string"""
     try:
         from urllib import urlencode
     except ImportError:
         from urllib.parse import urlencode
-    return urlencode({'': val})[1:]
+    return urlencode({'': base})[1:]
 
-def _map(objs, attr):
-    """Map an attribute to all objects"""
-    try:
-        return [getattr(obj, attr) for obj in objs]
-    except AttributeError:
-        return [obj[attr] for obj in objs]
+@filter_manager.register
+def where(base, prop, value):
+    """Query a list of objects with a given property value"""
+    ret = [bas for bas in base if _get_prop(bas, prop) == value]
+    return ret or EmptyDrop()
 
-LIQUID_FILTERS = dict(
-    abs=_abs,
-    append=lambda x, y: str(x) + str(y),
-    capitalize=lambda x: str(x).capitalize(),
-    prepend=lambda x, y: str(y) + str(x),
-    at_least=min,
-    at_most=max,
-    ceil=lambda x: __import__('math').ceil(float(x)),
-    compact=lambda x: list(filter(None, x)),
-    map=_map,
-    concat=lambda x, y: x + y,
-    split=_split,
-    date=_date,
-    default=lambda x, y: x or y,
-    divided_by=lambda x, y: x / y,
-    times=lambda x, y: x * y,
-    downcase=lambda x: str(x).lower(),
-    escape=lambda x, quote=False: __import__('html').escape(x, quote),
-    floor=lambda x: __import__('math').floor(float(x)),
-    join=lambda x, y: y.join(str(z) for z in x),
-    lstrip=lambda x: str(x).lstrip(),
-    minus=lambda x, y: x - y,
-    modulo=lambda x, y: x % y,
-    mod=lambda x, y: x % y,
-    newline_to_br=lambda x: x.replace('\n', '<br />'),
-    nl2br=lambda x: x.replace('\n', '<br />'),
-    plus=lambda x, y: x + y,
-    remove=lambda x, y, z=-1: str(x).replace(str(y), '', z),
-    remove_first=lambda x, y: str(x).replace(str(y), '', 1),
-    replace=lambda x, y, z, w=-1: str(x).replace(str(y), str(z), w),
-    replace_first=lambda x, y, z: str(x).replace(str(y), str(z), 1),
-    reverse=lambda x: x[::-1],
-    round=lambda x, n=0: round(float(x), n),
-    rstrip=lambda x: str(x).rstrip(),
-    size=len,
-    slice=lambda x, y, z=1: x[y:(z if not z else z - y if y < 0 else z + y)],
-    sort=lambda x: list(sorted(x)),
-    strip=lambda x: str(x).strip(),
-    strip_html=lambda x: __import__('re').sub(r'<.*?>', '', x),
-    strip_newlines=lambda x: x.replace('\n', ''),
-    truncate=lambda x, y, z='...': x \
-        if len(x) + len(z) <= y \
-        else x[:(y - len(z))] + z,
-    truncatewords=_truncatewords,
-    uniq=lambda x: list(set(x)),
-    upcase=lambda x: str(x).upper(),
-    url_encode=_url_encode,
-    url_decode=_url_decode,
-)
+@filter_manager.register('map')
+def liquid_map(base, prop):
+    """Map a property to a list of objects"""
+    return [_get_prop(bas, prop) for bas in base]
 
-PYTHON_FILTERS = dict(
+@filter_manager.register
+def join(base, sep):
+    """Join a list by the sep"""
+    if isinstance(base, EmptyDrop):
+        return ''
+    return sep.join(base)
 
-)
+@filter_manager.register
+def first(base):
+    """Get the first element of the list"""
+    if not base:
+        return EmptyDrop()
+    return base[0]
+
+@filter_manager.register
+def last(base):
+    """Get the last element of the list"""
+    if not base:
+        return EmptyDrop()
+    return base[-1]
+
+@filter_manager.register
+def compact(base):
+    """Remove empties from a list"""
+    ret = [bas for bas in base if bas]
+    return ret or EmptyDrop()

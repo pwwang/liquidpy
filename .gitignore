@@ -111,3 +111,4 @@ poetry.lock
 *.bak
 
 .vscode
+docs/api/

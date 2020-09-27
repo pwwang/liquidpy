@@ -1,3 +1,0 @@
-{% block x %}
-{{x}}
-{% endblock %}

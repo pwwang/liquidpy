@@ -21,7 +21,7 @@ if os.path.exists(readme_path):
 setup(
     long_description=readme,
     name='liquidpy',
-    version='0.5.0',
+    version='0.6.0',
     description='A port of liquid template engine for python',
     python_requires='==3.*,>=3.6.0',
     project_urls={
@@ -31,9 +31,14 @@ setup(
     author='pwwang',
     author_email='pwwang@pwwang.com',
     license='MIT',
-    packages=['liquid'],
+    packages=['liquid', 'liquid.python', 'liquid.python.tags', 'liquid.tags'],
     package_dir={"": "."},
-    package_data={"liquid": ["*.bak"]},
-    install_requires=['attr-property', 'attrs==19.*,>=19.3.0', 'diot'],
-    extras_require={"dev": ["pytest", "pytest-cov"]},
+    package_data={
+        "liquid.python.tags": ["*.lark"],
+        "liquid.tags": ["*.lark"]
+    },
+    install_requires=['diot', 'lark-parser==0.*,>=0.9.0', 'rich==6.*'],
+    extras_require={
+        "dev": ["pytest", "pytest-cov", "python-dateutil==2.*,>=2.0.0"]
+    },
 )

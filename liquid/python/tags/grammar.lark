@@ -1,0 +1,88 @@
+// Part of/Simplified Python 3 grammar
+// Grabbed from https://github.com/lark-parser/lark/blob/master/examples/advanced/python3.lark
+// We are trying to support Python3 single statement here (test)
+
+test: or_test ("if" or_test "else" test)? | lambdef
+output: test ("|" test_filter)*
+
+test_filter: filter_name [":" arguments]
+     | [test_filter] "?" [test_filter | constant] "!" [test_filter | constant]
+     | lambdef
+?filter_name: var
+     | complex_filter
+     | "*" (var | complex_filter) -> star_filter
+     | "**" (var | complex_filter) -> keyword_filter
+     | "." var -> dot_filter
+     | "[" test "]" -> subscript_filter
+complex_filter: "@" atom_expr
+
+lambdef: "lambda" [arguments] ":" test
+
+or_test: and_test ("or" and_test)*
+and_test: not_test ("and" not_test)*
+?not_test: "not" not_test -> not_
+         | comparison
+comparison: expr (_comp_op expr)*
+expr: xor_expr ("||" xor_expr)*
+xor_expr: and_expr ("^" and_expr)*
+and_expr: shift_expr ("&" shift_expr)*
+shift_expr: arith_expr (_shift_op arith_expr)*
+arith_expr: term (_add_op term)*
+term: factor (_mul_op factor)*
+factor: _factor_op factor | power
+
+!_factor_op: "+"|"-"|"~"
+!_add_op: "+"|"-"
+!_shift_op: "<<"|">>"
+!_mul_op: "*"|"@"|"/"|"%"|"//"
+// <> isn't actually a valid comparison operator in Python. It's here for the
+// sake of a __future__ import described in PEP 401 (which really works :-)
+!_comp_op: "<"|">"|"=="|">="|"<="|"<>"|"!="|"in"|"not" "in"|"is"|"is" "not"
+
+power: atom_expr ("**" factor)?
+
+?atom_expr: atom_expr "(" [arguments] ")" -> funccall
+          | atom_expr "[" subscript "]"   -> get_item
+          | atom_expr "." NAME            -> get_attr
+          | atom
+
+?atom: "(" (testlist_comp)? ")"  -> atom_tuple
+     | "[" (testlist_comp)? "]"  -> atom_list
+     | "{" (dictmarker|testlist_comp)? "}" -> atom_dict
+     | var
+     | constant
+     | "(" test ")"
+
+?constant:
+     | number
+     | string+   -> atom_string
+     | ("nil"|"None")     -> const_none
+     | ("true"|"True")    -> const_true
+     | ("false"|"False")  -> const_false
+
+testlist_comp: test ("," test)* [","]
+subscript: test | [test] ":" [test] (":" [test])?
+dictmarker: test ":" test ("," test ":" test)* [","]
+
+arguments: argvalue ("," argvalue)*
+argvalue: test ("=" test)?
+
+// variables, should read value from context
+var: NAME
+
+number: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER | IMAG_NUMBER
+string: STRING | LONG_STRING
+// Tokens
+
+NAME: /[a-zA-Z_]\w*/
+STRING : /[ubf]?r?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
+LONG_STRING: /[ubf]?r?(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+
+DEC_NUMBER: /0|[1-9]\d*/i
+HEX_NUMBER.2: /0x[\da-f]*/i
+OCT_NUMBER.2: /0o[0-7]*/i
+BIN_NUMBER.2 : /0b[0-1]*/i
+FLOAT_NUMBER.2: /((\d+\.\d*|\.\d+)(e[-+]?\d+)?|\d+(e[-+]?\d+))/i
+IMAG_NUMBER.2: /\d+j/i | FLOAT_NUMBER "j"i
+
+%ignore /[\t \f\r\n]+/  // WS

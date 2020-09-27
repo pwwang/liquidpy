@@ -1,5 +1,6 @@
-attr-property
-attrs==19.*,>=19.3.0
 diot
+lark-parser==0.*,>=0.9.0
 pytest
 pytest-cov
+python-dateutil==2.*,>=2.0.0
+rich==6.*

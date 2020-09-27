@@ -1,0 +1,56 @@
+output: test ("|" test_filter)*
+
+test_filter: varname [":" arguments]
+
+arguments: argvalue ("," argvalue)*
+argvalue: test ("=" test)?
+
+?test: comparison | logical_test
+
+comparison: atom (_comp_op atom)?
+
+// make sure right from left
+logical_test: comparison /and|or/ test
+
+?atom: RANGE -> range
+    | atom "[" atom "]"       -> get_item
+    | atom "." ATTRNAME ["?"] -> get_attr
+    | var
+    | "(" test ")" // liquid does not support this
+    | constant
+
+?constant: number
+    | string
+    | ("nil"  | "None")  -> const_none
+    | ("true" | "True")  -> const_true
+    | ("false"| "False") -> const_false
+
+// variables, should read value from context
+var: NAME
+// just the name, will be transformed as str(varname)
+varname: NAME
+number: INT | FLOAT_NUMBER
+string: STRING
+!_comp_op: "<>"|"=="|">="|"<="|"!="|"<"|">"|"contains"
+
+// have to define this as a terminal
+// since 1..a will get translated into getattr
+// (1.).a
+RANGE.3: "(" (INT | NAME) ".." (INT | NAME) ")"
+// note the order here
+STRING: ESCAPED_STRING | ("'" _STRING_ESC_INNER "'")
+// earley does support terminal priorities
+DEC_NUMBER: /[-+]?(0|[1-9]\d*)/
+HEX_NUMBER: /[-+]?0x[\dA-Fa-f]*/
+OCT_NUMBER: /[-+]?0o[0-7]*/
+BIN_NUMBER : /[-+]?0b[0-1]*/
+FLOAT_NUMBER.2: /[-+]?((\d+\.\d*|\.\d+)([Ee][-+]?\d+)?|\d+([Ee][-+]?\d+))/
+INT: DEC_NUMBER | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER
+
+ATTRNAME: /[a-zA-Z_][\w\-]*\??/
+
+%import common.CNAME -> NAME
+%import common.NEWLINE
+%import common (ESCAPED_STRING, _STRING_ESC_INNER, WS_INLINE)
+%ignore WS_INLINE
+%ignore NEWLINE

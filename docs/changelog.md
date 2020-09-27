@@ -1,3 +1,6 @@
+# 0.6.0
+- Remodel the package to use a lexer to scan the nodes first and then lark-parse to parse the tag.
+
 # 0.5.0
 - Extract major model of node to allow `register_node` (#18)
 - Introduce `config` node and deprecate `mode`

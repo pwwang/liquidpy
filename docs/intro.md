@@ -1,22 +1,25 @@
-`liquidpy` basically implements almost all the features supported by `liquid`. However, it has some differences and specific features due to the language feature itself.
+`liquidpy` is compatible with [standard liquid template engine][1]. Variations such as Shopify and Jekyll are not fully supported yet.
 
-!!! note
 
-    The bolded in the documentation is mentioning the differences between `liquid` and `liquidpy`
+Other than that, we have some additional tags supported, including block, include, extends and config.
 
-# Tags
+We also have a python mode to support syntax more close to python.
 
-`liquidpy` supports all tags that `liquid` does: `{{`, `}}`, `{%`, `%}`, and their non-whitespace variants: `{{-`, `-}}`, `{%-` and `-%}`. __Beside these tags, `liquidpy` also recognizes `{#`, `#}` (non-whitespace variants: `{#-`, `-#}` have some comments in the template.__
+To check the documentation for standard liquid template engine, see [here][1]. For additional tags to the standard mode, see [Additional Tags](../additional_tags)
 
-# Nodes
+For documentation for python mode, check the rest of this documentation.
 
-Based on tags, there are 4 different types of nodes:
+Python mode has the exactly same whitespace control as the standard mode does (the standard liquid template engine).
 
-- `Expression nodes`: `{{ ... }}` and its non-whitespace variants
-- `Comment nodes`: `{# ... #}` and its non-whitespace variants
-- `Literal nodes`: Anything that literally exported to the output
-- `Statement nodes`: `{% ... %}` and its non-whitespace variants
+To enable python mode, you can either specify mode to python:
+```python
+from liquid import Liquid
+Liquid(template, liquid_config={'mode': 'python'})
+```
+or use `LiquidPython`
+```python
+from liquid import LiquidPython
+LiquidPython(template)
+```
 
-!!! note
-
-    In this documentation, if undecleared, `nodes` will be referred to `statement nodes`
+[1]: https://shopify.github.io/liquid/
