@@ -7,7 +7,7 @@ This is compatible with [standard Liquid][1] template engine. Variations, such a
 
 ## Install
 ```shell
-pip install liquidpy
+pip install -U liquidpy
 ```
 
 ## Baisic usage
