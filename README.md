@@ -49,6 +49,10 @@ with open('/path/to/template') as f:
 - Liquid's [documentation][1]
 - Liquidpy's [documentation][14]
 
+## Backward compatiblility warning
+
+`v0.6.0+` is a remodeled version to make it compatible with standard liquid engine. If you are using a previous version, stick with it. `0.6.0+` is not fully compatible with previous versions.
+
 [1]: https://shopify.github.io/liquid/
 [2]: https://img.shields.io/pypi/v/liquidpy.svg?style=flat-square
 [3]: https://img.shields.io/github/tag/pwwang/liquidpy.svg?style=flat-square
