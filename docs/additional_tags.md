@@ -87,7 +87,7 @@ Then the template will be compiled as:
     Liquid(..., liquid_config={'strict': False})
     ```
 
-    `strict` if True by default.
+    `strict` is True by default.
 
     See [Configuration](../configuration) for more details.
 

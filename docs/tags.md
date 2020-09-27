@@ -41,7 +41,7 @@ It's equvalent to `{% if not (condition) %}`
 
 Adds more conditions within if/unless block.
 
-`else` also works with `for` and `while` blocks
+`else` also works with [`for`](#for) and [`while`](#while) blocks
 
 `elif` is an alias for `elseif` to make it more like a python syntax
 
@@ -60,7 +60,7 @@ Adds more conditions within if/unless block.
 ### case/when
 
 Creates a switch statement to compare a variable with different values. case initializes the switch statement, and when compares its values.
-
+```liquid
 {% assign handle = "cake" %}
 {% case handle %}
   {% when "cake" %}
@@ -70,7 +70,7 @@ Creates a switch statement to compare a variable with different values. case ini
   {% else %}
      This is not a cake nor a cookie
 {% endcase %}
-
+```
 Filters are also allowed for `case` and `when` tag.
 
 ## Iteration
@@ -113,10 +113,10 @@ Works similar to `for`. Filters are allowed, and with `{% else %}`, it works lik
 ```
 
 ### cycle
-Works the same as it in standard mode.
+Works the same as it in standard mode. See [cycle](https://shopify.github.io/liquid/tags/iteration/#cycle).
 
 ## Raw
-`raw` tag works exactly like it in standard mode
+`raw` tag works exactly like it in standard mode. See [raw](https://shopify.github.io/liquid/tags/raw/)
 
 ## Variable
 
@@ -130,13 +130,13 @@ Filters allowed for the value.
     Variables created by this tag is only available in the same block where it is defined. But the variable it modifies is still available in the block where it is initially defined.
 
 ### capture
-Works the same as it does in standard mode
+Works the same as it does in standard mode. See [capture](https://shopify.github.io/liquid/tags/variable/#capture).
 
 ### increment
-Works the same as it does in standard mode
+Works the same as it does in standard mode. See [increment](https://shopify.github.io/liquid/tags/variable/#increment)
 
 ### decrement
-Works the same as it does in standard mode
+Works the same as it does in standard mode. See [decrement](https://shopify.github.io/liquid/tags/variable/#decrement)
 
 ## Python-related tags
 
