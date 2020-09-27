@@ -25,6 +25,11 @@ To call it with keyword arguments:
 `liquidpy` support all Liquid filters. However, for some of them, there is no EmptyDrop object returned. Instead, it returns the object, which is treated empty in python.
 
 For example:
+```python
+Liquid('{{ x | sort }}').render(x=[])
+# x will be an EmptyDrop object if rendered in standard mode, but
+# still [] if rendered in python mode
+```
 
 ## Simple filters
 These filters are callable object from python builtins or defined in the template with a simple name.
@@ -53,7 +58,7 @@ However, when you have a filter that is not with a simple name, for example, in 
 
 ## Complex filters
 
-They are nothing but just filters with a `@` modifier:
+They are nothing but just filters with a `@` modifier, when the filter needs to be computed (ie, an attribute of an object, an element of a list, etc):
 ```python
 from os import path
 Liquid(

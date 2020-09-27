@@ -137,6 +137,6 @@ One can also define a lambda function in the template to work as a filter:
 
 Same as tag unregister, a function is returned from `filter_manager.unregester` for later re-register.
 
-!!! Warning:
+!!! Warning
 
     Unregistering a filter in python model is only available for the filters registered by `filter_manager` or `filter_manager_python`.
