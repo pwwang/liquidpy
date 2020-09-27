@@ -3,7 +3,7 @@ from pathlib import Path
 from liquid import *
 
 def test_config_error():
-    Liquid('{% config debug strict=false %}', {'strict': False})
+    Liquid('{% config debug%}', {'strict': False})
 
     with pytest.raises(LiquidSyntaxError) as exc:
         Liquid("{% config no_such_item %}")
@@ -13,13 +13,15 @@ def test_config_error():
     with pytest.raises(LiquidRenderError) as exc:
         Liquid("{% config no_such_item %}", {'strict': False})
     with pytest.raises(LiquidRenderError) as exc:
+        Liquid("{% config strict=true %}", {'strict': False})
+    with pytest.raises(LiquidRenderError) as exc:
         Liquid("{% config \nno_such_item %}", {'strict': False})
     with pytest.raises(LiquidRenderError) as exc:
-        Liquid("{% config strict=false\nno_such_item %}", {'strict': False})
+        Liquid("{% config cache=false\nno_such_item %}", {'strict': False})
     with pytest.raises(LiquidRenderError) as exc:
-        Liquid("{% config strict=false\n\ninclude_dir='noadir' %}",
+        Liquid("{% config cache=true\n\ninclude_dir='noadir' %}",
                {'strict': False})
     with pytest.raises(LiquidRenderError) as exc:
-        Liquid("{% config strict=false include_dir='noadir' %}",
+        Liquid("{% config cache=true include_dir='noadir' %}",
                {'strict': False})
 

@@ -1,3 +1,26 @@
+Filters in python mode are more flexible then the ones in standard mode:
+
+- Base value does not have to be the first argument of the filter. One can use `_` as a placeholder for the base value
+- Keyword arguments are allowed to call the filter
+
+```python
+from liquid import filter_manager_python
+
+@filter_manager_python.register('sum')
+def filter_sum(a=1, b=2, c=3):
+    return a + b + c
+```
+
+To call it with base value as second argument:
+```liquid
+{{ 4 | filter_sum: 1, _ }} {% comment %} // 1 + 4 + 3 = 8 {% endcomment %}
+```
+
+To call it with keyword arguments:
+```liquid
+{{ 4 | filter_sum: b=1 }} {% comment %} // 4 + 1 + 3 = 8 {% endcomment %}
+```
+
 ## Liquid filters
 `liquidpy` support all Liquid filters. However, for some of them, there is no EmptyDrop object returned. Instead, it returns the object, which is treated empty in python.
 

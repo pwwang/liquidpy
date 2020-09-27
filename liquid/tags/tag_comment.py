@@ -13,7 +13,6 @@ from .tag import Tag
 @tag_manager.register
 class TagComment(Tag):
     """The comment tag"""
-    RAW = True
 
     # pylint: disable=unused-argument
     def _render(self, local_vars, global_vars):

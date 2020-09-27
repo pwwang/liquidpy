@@ -56,6 +56,13 @@ class TagConfig(Tag):
                     self.context, self.parser
                 )
 
+            if varname == 'strict':
+                raise LiquidRenderError(
+                    "Configuration item 'strict' is not allowed to "
+                    "be modified by 'config' tag.",
+                    self.context, self.parser
+                )
+
             if varname == 'debug':
                 config.debug = value
                 config.update_logger()

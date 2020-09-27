@@ -28,6 +28,69 @@ The arg2 is {{include.arg2}}
 
 ## Tag extends
 
+The extends tag is used to extend a sub-template from a parent one by replacing the content wrapped with the block tag with the ones in the parent.
+
+The full syntax is like:
+
+`parent.liquid`:
+```liquid
+<html>
+    <head>
+        {% block title %}Default title{% endblock %}
+    </head>
+    <body>
+        {% block body %}
+        {% endblock %}
+    </body>
+</html>
+```
+
+`sub.liquid`
+```liquid
+{% extends parent.liquid %}
+
+{% block title %}
+Title of the sub-template
+{% endblock %}
+
+{% block body %}
+Awesome body content of the sub-template
+{% endblock %}
+```
+
+Then the template will be compiled as:
+```liquid
+<html>
+    <head>
+        {% block title %}
+        Title of the sub-template
+        {% endblock %}
+    </head>
+    <body>
+        {% block body %}
+        Awesome body content of the sub-template
+        {% endblock %}
+    </body>
+</html>
+```
+
+!!! Note
+
+    About the paths of `include` and `extends`:
+
+    We support both relative and absolute paths for those two tags. For the relative ones, `liquidpy` will look for the template in the directory specifiied by `Liquid(..., liquid_config={'include_dir': [...]}` and `Liquid(..., liquid_config={'extends_dir': [...]}`, respectively. If nothing found there, it will look for the template in the directory where the one cites them.
+
+    If the template citing them is from a string, it will search in the current working directory (`./`, the directory the main program is running from)
+
+    One can also specify `include_dir` and `extends_dir` by `config` tag when `strict` is off while constructing the Liquid object:
+    ```python
+    Liquid(..., liquid_config={'strict': False})
+    ```
+
+    `strict` if True by default.
+
+    See [Configuration](../configuration) for more details.
+
 
 ## Tag config
 

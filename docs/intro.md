@@ -11,4 +11,15 @@ For documentation for python mode, check the rest of this documentation.
 
 Python mode has the exactly same whitespace control as the standard mode does (the standard liquid template engine).
 
+To enable python mode, you can either specify mode to python:
+```python
+from liquid import Liquid
+Liquid(template, liquid_config={'mode': 'python'})
+```
+or use `LiquidPython`
+```python
+from liquid import LiquidPython
+LiquidPython(template)
+```
+
 [1]: https://shopify.github.io/liquid/
