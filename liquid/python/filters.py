@@ -27,3 +27,17 @@ for filter_name in ('reverse', 'sort', 'sort_natural', 'slice',
 def getitem(base, index):
     """Get an item from the base value"""
     return base[index]
+
+@filter_manager.register
+def render(base, **envs):
+    """Render a template in python mode"""
+    import sys
+    from ..liquid import LiquidPython
+    from ..config import LIQUID_FILTERS_ENVNAME
+    frame = sys._getframe(2)
+    local_vars = frame.f_locals['local_vars']
+    global_vars = frame.f_locals['global_vars'].copy()
+    global_vars.update(local_vars)
+    global_vars.update(envs)
+    del global_vars[LIQUID_FILTERS_ENVNAME]
+    return LiquidPython(base).render(**global_vars)

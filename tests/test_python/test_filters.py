@@ -36,3 +36,13 @@ def test_complex_filters():
     ).render(
         path='/a/b/cde.txt'
     ) == 'c'
+
+def test_render():
+    assert LiquidPython('{{ tpl | render }}').render(
+        tpl="{{x}}",
+        x=1
+    ) == '1'
+    assert LiquidPython('{{ tpl | render: x=2 }}').render(
+        tpl="{{x}}",
+        x=1
+    ) == '2'

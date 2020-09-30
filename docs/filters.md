@@ -56,6 +56,18 @@ Liquid("""
 
 However, when you have a filter that is not with a simple name, for example, in a list, you have to use a complex filter.
 
+### render
+
+This filter allows one to render a template in pythom mode from inside a template:
+```python
+LiquidPython('{{ tpl | render }}').render(
+    tpl="{{x}}", x=1
+) # // '1'
+LiquidPython('{{ tpl | render: x=2 }}').render(
+    tpl="{{x}}", x=1
+) # // '2'
+```
+
 ## Complex filters
 
 They are nothing but just filters with a `@` modifier, when the filter needs to be computed (ie, an attribute of an object, an element of a list, etc):
@@ -119,6 +131,17 @@ Liquid('{{ "foo" | .__len__ }}', {'mode': 'python'}).render()
 # // 3
 ```
 
+!!! Tip
+
+    To get an attribute as a value from an object, you can use `getattr` filter:
+    ```python
+    from pathlib import Path
+    LiquidPython('{{ path | getattr: "stem"}}').render(
+      path=Path('a/b/c.txt')
+    )
+    # // c
+    ```
+
 ## Subscript filters
 
 Similar to dot filters, sometimes, we also want to use the callables that are accessed by subscriptting the base value:
@@ -133,8 +156,15 @@ To get the first element of the list:
 ```python
 Liquid('{{ base | .__getitem__: 0 }}',
        {'mode': 'python'}).render(
-         base: ['Hello']
+         base=['Hello']
        ) # // Hello
+```
+
+Or you can also use the shortcut:
+```python
+LiquidPython('{{ base | getitem: 0 }}').render(
+    base=['Hello']
+) # // Hello
 ```
 
 ## Ternary filters
