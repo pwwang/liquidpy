@@ -7,9 +7,22 @@ from ...tags.transformer import (
     render_segment,
     TagSegment,
     TagSegmentComparison,
+    TagSegmentVar as TagSegmentVarStandard,
     TagTransformer as TagTransformerStandard
 )
 from ...utils import NOTHING
+from ...filters import EmptyDrop
+
+class TagSegmentVar(TagSegmentVarStandard):
+    """Varaible segment in python mode. There will be no EmptyDrop object
+    as rendered"""
+    def render(self, local_vars, global_vars):
+        """Get the value of a variable from envs"""
+        var = super().render(local_vars, global_vars)
+        if isinstance(var, EmptyDrop):
+            varname = str(self.data[0])
+            return local_vars.get(varname, global_vars.get(varname))
+        return var
 
 class TagSegmentIfelse(TagSegment):
     """The ternary operation in python: `A if cond else B`"""
@@ -486,6 +499,7 @@ class TagTransformer(TagTransformerStandard):
     not_ = partialmethod(_passby_segment, segment=TagSegmentNot)
     test_filter = partialmethod(_passby_segment, segment=TagSegmentFilter)
     lambdef = partialmethod(_passby_segment, segment=TagSegmentLambda)
+    var = partialmethod(_passby_segment, segment=TagSegmentVar)
     shift_expr = arith_expr = term
     testlist_comp = _passby
     dot_filter = partialmethod(_filter_type, ftype='dot')

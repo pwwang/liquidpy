@@ -46,3 +46,12 @@ def test_render():
         tpl="{{x}}",
         x=1
     ) == '2'
+    assert LiquidPython('{{ tpl | render: x="foo" }}').render(
+        tpl="{{x | len}}",
+        x=1
+    ) == '3'
+    with pytest.raises(LiquidRenderError):
+        assert LiquidPython('{{ tpl | render: x=2 }}').render(
+            tpl=[],
+            x=1
+        )
