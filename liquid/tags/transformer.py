@@ -67,7 +67,7 @@ class TagSegmentVar(TagSegment):
     __slots__ = ('_data', 'line', 'column')
 
     def __init__(self, *data):
-        # type: (*Any)
+        # type: (Any) -> None
         """Initialize the object
         Args:
             data: The data of the parsed object

@@ -132,7 +132,9 @@ class LiquidPython(Liquid):
     PARSER_CLASS = ParserPython
     FILTER_MANAGER = filter_manager_python
 
-    __new__ = object.__new__
+    # pylint: disable=signature-differs,unused-argument,arguments-differ
+    def __new__(cls, *args, **kwargs):
+        return object.__new__(cls)
 
     def render(self, **context):
         # type: (Any) -> str

@@ -23,3 +23,16 @@ def test_unregister_filter():
 
     with pytest.raises(LiquidFilterRegistryException):
         filter_manager.unregister('incr_no_such', mode='python')
+
+def test_complex_filters():
+    assert LiquidPython(
+        '{{path | @__import__("pathlib").Path | getattr: "stem"}}'
+    ).render(
+        path='/a/b/cde.txt'
+    ) == 'cde'
+
+    assert LiquidPython(
+        '{{path | @__import__("pathlib").Path | getattr: "stem" | getitem: 0}}'
+    ).render(
+        path='/a/b/cde.txt'
+    ) == 'c'

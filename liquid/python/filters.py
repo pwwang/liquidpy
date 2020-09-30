@@ -22,3 +22,8 @@ def _no_emptydrop(name):
 for filter_name in ('reverse', 'sort', 'sort_natural', 'slice',
                     'uniq', 'where', 'first', 'last', 'compact'):
     _no_emptydrop(filter_name)
+
+@filter_manager.register
+def getitem(base, index):
+    """Get an item from the base value"""
+    return base[index]
