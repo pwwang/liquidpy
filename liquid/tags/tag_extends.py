@@ -13,11 +13,14 @@ from ..exceptions import LiquidSyntaxError, LiquidRenderError
 @tag_manager.register
 class TagExtends(Tag):
     """The extends tag"""
+    __slots__ = Tag.__slots__ + ('block_parsed', )
+
     VOID = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.parser.visitor.has_mother = True
+        self.block_parsed = False
 
     def parse(self, force=False): # pylint: disable=unused-argument
         # type: (bool) -> None
@@ -75,28 +78,31 @@ class TagExtends(Tag):
         there are no other tags other than a config/comment tag
         """
         # replace mother's blocks with self.parser's
-        for blockname, block in self.parser.visitor.blocks.items():
-            # block: current_block (replacement)
-            # mother_block: mother's block (to replace)
-            if blockname not in self.parsed.visitor.blocks:
-                raise LiquidRenderError(
-                    f'Block {blockname!r} does not exist in mother template',
-                    block.context, block.parser
-                )
-            mother_blocks = self.parsed.visitor.blocks
-            mother_block = mother_blocks[blockname]
-            # get the children of the block's parent
-            siblings = mother_block.parent.children
-            # get the index of the block in parent's children
-            block_index = siblings.index(mother_block)
-            # use the compacts of mother blocks
-            block.open_compact = mother_block.open_compact
-            block.close_compact = mother_block.close_compact
-            # replace it with current block
-            siblings[block_index] = block
-            mother_blocks[blockname] = block
-            # update the level to align with mother's logging structure
-            block.context.level = mother_block.context.level
+        if not self.block_parsed:
+            for blockname, block in self.parser.visitor.blocks.items():
+                # block: current_block (replacement)
+                # mother_block: mother's block (to replace)
+                if blockname not in self.parsed.visitor.blocks:
+                    raise LiquidRenderError(
+                        f'Block {blockname!r} does not exist '
+                        'in mother template',
+                        block.context, block.parser
+                    )
+                mother_blocks = self.parsed.visitor.blocks
+                mother_block = mother_blocks[blockname]
+                # get the children of the block's parent
+                siblings = mother_block.parent.children
+                # get the index of the block in parent's children
+                block_index = siblings.index(mother_block)
+                # use the compacts of mother blocks
+                block.open_compact = mother_block.open_compact
+                block.close_compact = mother_block.close_compact
+                # replace it with current block
+                siblings[block_index] = block
+                mother_blocks[blockname] = block
+                # update the level to align with mother's logging structure
+                block.context.level = mother_block.context.level
+            self.block_parsed = True
 
         for blockname, block in self.parsed.visitor.blocks.items():
             block.parse_children(base_level=block.context.level)

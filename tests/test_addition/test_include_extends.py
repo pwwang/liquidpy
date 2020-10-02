@@ -53,3 +53,29 @@ def test_include_exception():
     with pytest.raises(LiquidRenderError) as exc:
         Liquid(tpl, {'strict': False, 'debug': True}).render()
     assert '{{ 1 | nosuchfilter }}' in str(exc.value)
+
+def test_block_re_render():
+    """Issue #29"""
+    template = Liquid(HERE.resolve().joinpath('templates/rerender.html'))
+    render1 = template.render(title="Render test")
+    assert render1 == '''<!DOCTYPE html>
+<html>
+  <head>
+    <title>Render test</title>
+  </head>
+  <body>
+    <h1>Render test</h1>
+    <p>Hello, render test!</p>
+  </body>
+</html>'''
+    render2 = template.render(title="Re-render test")
+    assert render2 == '''<!DOCTYPE html>
+<html>
+  <head>
+    <title>Re-render test</title>
+  </head>
+  <body>
+    <h1>Re-render test</h1>
+    <p>Hello, render test!</p>
+  </body>
+</html>'''

@@ -86,7 +86,7 @@ class Liquid:
         try:
             if self.meta.should_close:
                 self.meta.stream.close()
-        except AttributeError:
+        except AttributeError: # pragma: no cover
             pass
 
     def _update_context(self, context):
