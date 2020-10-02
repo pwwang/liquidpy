@@ -83,8 +83,11 @@ class Liquid:
     # pylint: enable=unused-argument
 
     def __del__(self):
-        if self.meta.should_close:
-            self.meta.stream.close()
+        try:
+            if self.meta.should_close:
+                self.meta.stream.close()
+        except AttributeError:
+            pass
 
     def _update_context(self, context):
         # type: (Dict[str, Any]) -> Dict[str, Any]
