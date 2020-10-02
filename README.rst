@@ -17,14 +17,6 @@ A port of `liquid <https://shopify.github.io/liquid/>`_ template engine for pyth
    :target: https://img.shields.io/pypi/pyversions/liquidpy.svg?style=flat-square
    :alt: PythonVers
  <https://pypi.org/project/liquidpy/>`_ `
-.. image:: https://img.shields.io/readthedocs/liquidpy?style=flat-square
-   :target: https://img.shields.io/readthedocs/liquidpy?style=flat-square
-   :alt: ReadTheDocs building
- <https://liquidpy.readthedocs.io/en/latest/>`_ `
-.. image:: https://img.shields.io/travis/pwwang/liquidpy.svg?style=flat-square
-   :target: https://img.shields.io/travis/pwwang/liquidpy.svg?style=flat-square
-   :alt: Travis building
- <https://travis-ci.org/pwwang/liquidpy>`_ `
 .. image:: https://img.shields.io/codacy/grade/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
    :target: https://img.shields.io/codacy/grade/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
    :alt: Codacy
@@ -32,7 +24,15 @@ A port of `liquid <https://shopify.github.io/liquid/>`_ template engine for pyth
 .. image:: https://img.shields.io/codacy/coverage/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
    :target: https://img.shields.io/codacy/coverage/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
    :alt: Codacy coverage
- <https://app.codacy.com/manual/pwwang/liquidpy/dashboard>`_
+ <https://app.codacy.com/manual/pwwang/liquidpy/dashboard>`_ 
+.. image:: https://img.shields.io/github/workflow/status/pwwang/liquidpy/Build%20Docs?label=docs&style=flat-square
+   :target: https://img.shields.io/github/workflow/status/pwwang/liquidpy/Build%20Docs?label=docs&style=flat-square
+   :alt: Docs building
+ 
+.. image:: https://img.shields.io/github/workflow/status/pwwang/liquidpy/Build%20and%20Deploy?style=flat-square
+   :target: https://img.shields.io/github/workflow/status/pwwang/liquidpy/Build%20and%20Deploy?style=flat-square
+   :alt: Building
+
 
 This is compatible with `standard Liquid <https://shopify.github.io/liquid/>`_ template engine. Variations, such as Shopify and Jekyll are not fully supported yet.
 
@@ -41,7 +41,7 @@ Install
 
 .. code-block:: shell
 
-   pip install liquidpy
+   pip install -U liquidpy
 
 Baisic usage
 ------------
@@ -89,3 +89,8 @@ Full Documentation
 
 * Liquid's `documentation <https://shopify.github.io/liquid/>`_
 * Liquidpy's `documentation <https://pwwang.github.io/liquidpy/>`_
+
+Backward compatiblility warning
+-------------------------------
+
+``v0.6.0+`` is a remodeled version to make it compatible with standard liquid engine. If you are using a previous version, stick with it. ``0.6.0+`` is not fully compatible with previous versions.

@@ -1,3 +1,9 @@
+# 0.6.1
+- Fix use of LiquidPython
+- Add getitem and render filter for python mode
+- Fix EmptyDrop for variable segment in python mode
+- Fix re-rendering error for extends tag (#29)
+
 # 0.6.0
 - Remodel the package to use a lexer to scan the nodes first and then lark-parse to parse the tag.
 
