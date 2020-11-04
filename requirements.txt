@@ -1,6 +1,6 @@
 diot
-lark-parser==0.*,>=0.9.0
+lark-parser==0.*
 pytest
 pytest-cov
 python-dateutil==2.*,>=2.0.0
-rich==6.*
+rich==9.*

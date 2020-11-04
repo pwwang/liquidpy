@@ -113,3 +113,5 @@ poetry.lock
 .vscode
 docs/api/
 docs/index.md
+
+.history/

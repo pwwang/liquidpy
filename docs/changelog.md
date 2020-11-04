@@ -1,3 +1,6 @@
+# 0.6.2
+- Update dependency versions
+
 # 0.6.1
 - Fix use of LiquidPython
 - Add getitem and render filter for python mode

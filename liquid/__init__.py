@@ -16,4 +16,4 @@ from .liquid import LiquidPython
 from .python.tags import tag_manager as tag_manager_python, Tag as TagPython
 from .python.filters import filter_manager as filter_manager_python
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
