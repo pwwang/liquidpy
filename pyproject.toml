@@ -19,7 +19,7 @@ include = "liquid"
 python = "^3.6"
 diot = "*"
 lark-parser = "^0.8"
-python-varname = "*"
+varname = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
