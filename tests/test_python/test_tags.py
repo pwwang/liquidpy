@@ -230,6 +230,12 @@ def test_for():
         {%- endfor -%}
     ''', {'mode': 'python'}).render() == '0'
 
+    assert Liquid('''{% for i in 3 | range -%}
+        {{i}}{% break %}
+        {%- else -%}x
+        {%- endfor -%}
+    ''', {'mode': 'python'}).render() == '0'
+
 def test_while():
 
     assert Liquid('''
