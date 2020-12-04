@@ -302,11 +302,12 @@ class Tag: # pylint: disable=too-many-instance-attributes
         except Exception as exc:
             import traceback
             if hasattr(exc, 'lineno'):
+                colno = getattr(exc, 'colno', 1)
                 if exc.lineno > 1:
                     self.context.lineno += exc.lineno - 1
-                    self.context.colno = exc.colno - 1
+                    self.context.colno = colno - 1
                 else:
-                    self.context.colno += exc.colno - 1
+                    self.context.colno += colno - 1
 
             raise LiquidRenderError(
                 '\n\n' + '>>> Original Tracebacks:' +

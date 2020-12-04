@@ -165,7 +165,13 @@ def _exc_stack_code(context):
     console = Console(file=StringIO())
     console.print(f"{context.path!r}, line {context.lineno + 1}, "
                   f"column {context.colno + 1}")
-    if not hasattr(context.stream, 'seekable') or not context.stream.seekable():
+
+    try:
+        seekable = context.stream.seekable()
+    except (AttributeError, ValueError, IOError):
+        seekable = False
+
+    if not seekable:
         console.print("  [Stream not seekable]") # pragma: no cover
     else:
         context.stream.seek(0)
@@ -193,7 +199,7 @@ def excmsg_with_context(msg, context, parser):
         The assembled exception message
     """
     config = parser.config if parser else None
-    if not context or not config or not config.debug:
+    if not context or not config: # or not config.debug:
         return msg
 
     stacks = [context]
