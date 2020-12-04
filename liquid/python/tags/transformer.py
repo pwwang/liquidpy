@@ -77,8 +77,11 @@ class TagSegmentGetAttr(TagSegment):
         except AttributeError as exc:
             try:
                 return obj[self.data[1]]
-            except KeyError:
-                raise exc from exc
+            except (KeyError, TypeError):
+                raise AttributeError(
+                    f'{type(obj).__name__!r} object has '
+                    f'no attribute {self.data[1]!r}'
+                ).with_traceback(exc.__traceback__) from None
 
 class TagSegmentGetItem(TagSegment):
     """Getitem operation in python"""

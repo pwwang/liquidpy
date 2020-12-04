@@ -300,7 +300,6 @@ class Tag: # pylint: disable=too-many-instance-attributes
         try:
             rendered = self._render(local_vars, global_vars)
         except Exception as exc:
-            import traceback
             if hasattr(exc, 'lineno'):
                 colno = getattr(exc, 'colno', 1)
                 if exc.lineno > 1:
@@ -310,11 +309,9 @@ class Tag: # pylint: disable=too-many-instance-attributes
                     self.context.colno += colno - 1
 
             raise LiquidRenderError(
-                '\n\n' + '>>> Original Tracebacks:' +
-                '\n'   + '-----------------------\n' +
-                traceback.format_exc(),
+                str(exc),
                 self.context,
                 self.parser
-            ) from None
+            ).with_traceback(exc.__traceback__) from None
         else:
             return str(rendered), local_vars

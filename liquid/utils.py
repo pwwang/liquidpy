@@ -166,20 +166,32 @@ def _exc_stack_code(context):
     console.print(f"{context.path!r}, line {context.lineno + 1}, "
                   f"column {context.colno + 1}")
 
-    try:
-        seekable = context.stream.seekable()
-    except (AttributeError, ValueError, IOError):
-        seekable = False
+    stream = context.stream
+    seekable = False
+    if stream.closed:
+        try:
+            if isinstance(stream, StringIO):
+                stream = StringIO(stream.getvalue())
+            else:
+                stream = open(stream.name)
+            seekable = stream.seekable()
+        except (AttributeError, FileNotFoundError, IOError, ValueError):
+            seekable = False
+    else:
+        try:
+            seekable = stream.seekable()
+        except (AttributeError, ValueError, IOError):
+            seekable = False
 
     if not seekable:
         console.print("  [Stream not seekable]") # pragma: no cover
     else:
-        context.stream.seek(0)
+        stream.seek(0)
         line_range = (
             max(0, context.lineno - LIQUID_EXC_CODE_CONTEXT) + 1,
             context.lineno + LIQUID_EXC_CODE_CONTEXT + 1
         )
-        code = Syntax(context.stream.read(),
+        code = Syntax(stream.read(),
                       lexer_name='liquid',
                       line_numbers=True,
                       line_range=line_range,

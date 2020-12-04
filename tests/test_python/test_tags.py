@@ -236,6 +236,11 @@ def test_for():
         {%- endfor -%}
     ''', {'mode': 'python'}).render() == '0'
 
+    assert Liquid('''{% for key, val in d.items() -%}
+        {{key}}-{{val}}{% break %}
+        {%- endfor -%}
+    ''', {'mode': 'python'}, d={'a': 1}).render().strip() == 'a-1'
+
 def test_while():
 
     assert Liquid('''
