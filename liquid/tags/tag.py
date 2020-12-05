@@ -309,7 +309,7 @@ class Tag: # pylint: disable=too-many-instance-attributes
                     self.context.colno += colno - 1
 
             raise LiquidRenderError(
-                str(exc),
+                f'KeyError: {exc}' if isinstance(exc, KeyError) else str(exc),
                 self.context,
                 self.parser
             ).with_traceback(exc.__traceback__) from None
