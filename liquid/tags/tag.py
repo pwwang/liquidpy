@@ -300,20 +300,18 @@ class Tag: # pylint: disable=too-many-instance-attributes
         try:
             rendered = self._render(local_vars, global_vars)
         except Exception as exc:
-            import traceback
             if hasattr(exc, 'lineno'):
+                colno = getattr(exc, 'colno', 1)
                 if exc.lineno > 1:
                     self.context.lineno += exc.lineno - 1
-                    self.context.colno = exc.colno - 1
+                    self.context.colno = colno - 1
                 else:
-                    self.context.colno += exc.colno - 1
+                    self.context.colno += colno - 1
 
             raise LiquidRenderError(
-                '\n\n' + '>>> Original Tracebacks:' +
-                '\n'   + '-----------------------\n' +
-                traceback.format_exc(),
+                f'KeyError: {exc}' if isinstance(exc, KeyError) else str(exc),
                 self.context,
                 self.parser
-            ) from None
+            ).with_traceback(exc.__traceback__) from None
         else:
             return str(rendered), local_vars

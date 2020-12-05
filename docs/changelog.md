@@ -1,3 +1,10 @@
+# 0.6.3
+- Allow tag for to have output(test | filter) in python mode.
+- Fix stacks not print in some cases.
+- Avoid closing stream after parsing
+- Add better error message for attribute error while rendering
+- Print 'KeyError' for render error if it is a KeyError.
+
 # 0.6.2
 - Update dependency versions
 

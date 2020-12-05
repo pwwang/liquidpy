@@ -76,9 +76,6 @@ class Liquid:
         be specified, objects are cached there
         """
         parsed = self.PARSER_CLASS(self.meta, self.config).parse()
-        # debug mode needs stream to print stack details
-        if self.meta.should_close and not self.config.debug:
-            self.meta.stream.close()
         return parsed
     # pylint: enable=unused-argument
 
@@ -96,6 +93,15 @@ class Liquid:
         envs = self.envs.copy() # type: Dict[str, Any]
         envs.update(context)
         return envs
+
+    def _render(self, local_vars: dict, global_vars: dict) -> str:
+        # render and return
+        try:
+            return self.parsed.render(local_vars, global_vars)[0]
+        finally:
+            # debug mode needs stream to print stack details
+            if self.meta.should_close:
+                self.meta.stream.close()
 
     def render(self, **context):
         # type: (Any) -> str
@@ -115,7 +121,7 @@ class Liquid:
         ] = self.FILTER_MANAGER.filters
         # liquid's EmptyDrop object
         global_context['empty'] = EmptyDrop()
-        return self.parsed.render(context, global_context)[0]
+        return self._render(context, global_context)
 
 # class LiquidJekyll(Liquid):
 #     """Support for extended mode of liquidpy"""
@@ -157,4 +163,4 @@ class LiquidPython(Liquid):
         global_context[
             LIQUID_FILTERS_ENVNAME
         ] = self.FILTER_MANAGER.filters
-        return self.parsed.render(context, global_context)[0]
+        return self._render(context, global_context)

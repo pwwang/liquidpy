@@ -25,7 +25,7 @@ class TagFor(Tag):
     __slots__ = Tag.__slots__ + ('flag_break', 'flag_continue')
 
     START = 'tag_for'
-    GRAMMAR = 'tag_for: var ("," var)* "in" test'
+    GRAMMAR = 'tag_for: var ("," var)* "in" output'
     TRANSFORMER = TagForTransformer()
 
     def __init__(self, *args, **kwargs):
