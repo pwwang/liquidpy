@@ -11,7 +11,7 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/pwwang/liquidpy"
 repository = "https://github.com/pwwang/liquidpy"
-include = ["liquid/tags/grammar.lark", "liquid/python/tags/grammar.lark"]
+include = ["liquid/tags/grammar.lark", "liquid/python/tags/grammar.lark", "tests/"]
 
 [[tool.poetry.packages]]
 include = "liquid"
