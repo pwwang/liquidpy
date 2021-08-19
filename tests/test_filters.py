@@ -130,6 +130,18 @@ from liquid import Liquid
     ("ants, bugs, bees, bugs, ants",
      'split: ", " | uniq | join: ", "',
      "ants, bugs, bees"),
+    ("And the people bowed and prayed To the neon god they made",
+     'regex_replace: "the", "a"',
+     "And a people bowed and prayed To a neon god ay made"),
+    ("And the people bowed and prayed To the neon god they made",
+     'regex_replace: "THE ", "some "',
+     "And some people bowed and prayed To some neon god they made",),
+    ("And the people bowed and prayed To the neon god they made",
+     'regex_replace: regex="the", replace="some", count=1',
+     "And some people bowed and prayed To the neon god they made"),
+    (123412,
+     'regex_replace: "bar", "foo"',
+     123412),
 ])
 def test_single_filter(base, filter, result):
     tpl = f"{{{{ {base!r} | {filter} }}}}"
@@ -251,3 +263,25 @@ def test_dot():
     assert Liquid(
         "{{a | where: 'a-b', 1 | map: 'a-b' | first}}"
     ).render(a=[a, b]) == '1'
+
+def test_regex():
+    # Test case sensitivity
+    assert (
+        Liquid(
+            '{{ "And the people bowed and prayed To the neon god they made" | regex_replace: regex="and", replace="AND", case_sensitive=True }}'
+        ).render()
+        == "And the people bowed AND prayed To the neon god they made"
+    )
+    # Test capture groups
+    assert (
+        Liquid(
+            '{{ "And the people bowed and prayed To the neon god they made" | regex_replace: regex="([^ ]+ed) and ([^ ]+ed)", replace=repl }}'
+        ).render(repl=r"\2 and \1")
+        == "And the people prayed and bowed To the neon god they made"
+    )
+    assert (
+        Liquid(
+            '{{ "And the people bowed and prayed To the neon god they made" | regex_replace: regex=regex, replace=repl }}'
+        ).render(regex=r"(\w+ed) and (\w+ed)", repl="\\2 and \\1")
+        == "And the people prayed and bowed To the neon god they made"
+    )
