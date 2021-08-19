@@ -232,6 +232,30 @@ def remove_first(base, string):
     return base.replace(string, '', 1)
 
 @filter_manager.register
+def regex_replace(base, regex, replace="", case_sensitive=False, count=0):
+    # type: (str, str, str, bool, int) -> str
+    """Replace matching regex pattern"""
+    import re
+
+    if not isinstance(base, str):
+        return base
+    if case_sensitive:
+        return re.sub(
+            pattern=regex,
+            repl=replace,
+            string=base,
+            count=count,
+        )
+    return re.sub(
+        pattern=regex,
+        repl=replace,
+        string=base,
+        count=count,
+        flags=re.IGNORECASE,
+    )
+
+
+@filter_manager.register
 def replace_first(base, old, new):
     """Replace the first substring with new string"""
     return base.replace(old, new, 1)
