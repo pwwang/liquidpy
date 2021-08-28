@@ -2,7 +2,7 @@
 liquidpy
 ========
 
-A port of `liquid <https://shopify.github.io/liquid/>`_ template engine for python
+A port of `liquid <https://shopify.github.io/liquid/>`_ template engine for python on the shoulders of `jinja2 <https://jinja.palletsprojects.com/>`_
 
 `
 .. image:: https://img.shields.io/pypi/v/liquidpy.svg?style=flat-square
@@ -20,7 +20,7 @@ A port of `liquid <https://shopify.github.io/liquid/>`_ template engine for pyth
 .. image:: https://img.shields.io/readthedocs/liquidpy?style=flat-square
    :target: https://img.shields.io/readthedocs/liquidpy?style=flat-square
    :alt: ReadTheDocs building
- <https://liquidpy.readthedocs.io/en/latest/>`_ `
+ <https://pwwang.github.io/liquidpy>`_ `
 .. image:: https://img.shields.io/travis/pwwang/liquidpy.svg?style=flat-square
    :target: https://img.shields.io/travis/pwwang/liquidpy.svg?style=flat-square
    :alt: Travis building
@@ -41,28 +41,64 @@ Install
 
    pip install liquidpy
 
-Full Documentation
-------------------
-
-`ReadTheDocs <https://liquidpy.readthedocs.io/en/latest/>`_
-
 Baisic usage
 ------------
+
+Load a template
+^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
    from liquid import Liquid
-   liq = Liquid('{{a}}')
+   liq = Liquid('{{a}}', from_file=False)
    ret = liq.render(a = 1)
    # ret == '1'
 
    # load template from a file
-   liq = Liquid('/path/to/template', liquid_from_file=True)
+   liq = Liquid('/path/to/template.html')
 
-With environments:
+Using jinja's environment
 
 .. code-block:: python
 
-   liq = Liquid('{{a | os.path.basename}}', os=__import__('os'))
-   ret = liq.render(a="path/to/file.txt")
-   # ret == 'file.txt'
+   from jinja2 import Environment, FileSystemLoader
+   env = Environment(loader=FileSystemLoader('./'), ...)
+
+   liq = Liquid.from_env("/path/to/template.html", env)
+
+Switch to a different mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   liq = Liquid(
+       """
+       {% python %}
+       from os import path
+       filename = path.join("a", "b")
+       {% endpython %}
+       {{filename}}
+       """,
+       mode="wild" # supported: standard(default), jekyll, shopify, wild
+   )
+   liq.render()
+   # 'a/b'
+
+Change default options
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from liquid import defaults, Liquid
+   defaults.FROM_FILE = False
+   defaults.MODE = 'wild'
+
+   # no need to pass from_file and mode anymore
+   liq = Liquid('{% from_ os import path %}{{path.basename("a/b.txt")}}')
+   liq.render()
+   # 'b.txt'
+
+Full Documentation
+------------------
+
+`https://pwwang.github.io/liquidpy <https://pwwang.github.io/liquidpy>`_

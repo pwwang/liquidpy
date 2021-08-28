@@ -16,10 +16,18 @@ include = "liquid/*.py"
 
 [tool.poetry.dependencies]
 python = "^3.6"
-diot = "*"
-attrs = "^19.3"
-attr_property = "*"
+jinja2 = "2.*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
 pytest-cov = "*"
+
+[tool.black]
+line-length = 80
+target-version = ['py37', 'py38', 'py39']
+include = '\.pyi?$'
+
+[tool.pytest.ini_options]
+addopts = "-vv --cov-config=.coveragerc --cov=liquid --cov-report xml:.coverage.xml --cov-report term-missing"
+console_output_style = "progress"
+junit_family = "xunit1"

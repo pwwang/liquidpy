@@ -1,5 +1,3 @@
-attr-property
-attrs==19.*,>=19.3.0
-diot
+jinja2==2.*
 pytest
 pytest-cov
