@@ -1,5 +1,5 @@
 # liquidpy
-A port of [liquid][19] template engine for python on the shoulders of [jinja2][17]
+A port of [liquid][19] template engine for python, on the shoulder of [jinja2][17]
 
 [![Pypi][2]][9] [![Github][3]][10] [![PythonVers][4]][9] [![Docs building][13]][11] [![Travis building][5]][11] [![Codacy][6]][12] [![Codacy coverage][7]][12]
 
