@@ -3,19 +3,20 @@
 `liquidpy` supports 4 modes:
 
 - standard
-  - try to be compatible with standard liquid template engine
-  - See: https://shopify.github.io/liquid/
+    - try to be compatible with standard liquid template engine
+    - See: https://shopify.github.io/liquid/
 - jekyll
-  - try to be compatible with jekyll liquid template engine
-  - See: https://jekyllrb.com/docs/liquid/
+    - try to be compatible with jekyll liquid template engine
+    - See: https://jekyllrb.com/docs/liquid/
 - shopify
-  - try to be compatible with shopify-extended liquid template engine
-  - See: https://shopify.dev/api/liquid
+    - try to be compatible with shopify-extended liquid template engine
+    - See: https://shopify.dev/api/liquid
 - wild
-  - With some wild features supported (i.e. executing python code inside the template)
-  - See: https://pwwang.github.io/liquidpy/wild
+    - With some wild features supported (i.e. executing python code inside the template)
+    - See: https://pwwang.github.io/liquidpy/wild
 
 See also an introduction about liquid template engine variants:
+
 - https://shopify.github.io/liquid/basics/variations/
 
 By default, `liquidpy` uses the `standard` mode. But you can specify a mode using the `mode` argument of `Liquid` constructor or `Liquid.from_env()` method.
@@ -88,6 +89,7 @@ We could say that the implementations of `liquid` and its variants are super set
 ## Whitespace control
 
 The whitespace control behaves the same as it describes here:
+
 - https://shopify.github.io/liquid/basics/whitespace/
 
 ## Compatibilies
@@ -103,4 +105,5 @@ See the compatiblity issues for truthy/falsy, tags, and other aspects on pages:
 You can do arbitrary things with the wild mode, like executing python code and adding custom filters inside the template.
 
 See details on:
+
 - https://pwwang.github.com/liquidpy/wild

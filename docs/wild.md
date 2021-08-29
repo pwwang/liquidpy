@@ -2,7 +2,7 @@ Wild mode tries to introduce more flexiblities for the template. It's very arbit
 
 !!! Warning
 
-    Do not trust any template in wild mode with `liquidpy`
+    Do not trust any templates in wild mode with `liquidpy`
 
 Below are some features it supports.
 
@@ -25,6 +25,8 @@ Below are some features it supports.
 ## Tests
 
 All jinja tests are supported
+
+See: https://jinja.palletsprojects.com/en/3.0.x/templates/#builtin-tests
 
 ## Tags
 

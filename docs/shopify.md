@@ -6,3 +6,5 @@ You may checkout the documentation for shopfiy liquid:
 The compatibility issues list on:
 
 - https://pwwang.github.com/liquidpy/standard
+
+also applied in shopify mode.

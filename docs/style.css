@@ -1,4 +1,7 @@
-
+.md-main {
+    max-width: 95%;
+    margin: 0 auto;
+}
 
 .md-typeset .admonition, .md-typeset details {
     font-size: .7rem !important;
