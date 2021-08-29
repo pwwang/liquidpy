@@ -1,166 +1,226 @@
-"""Provides Liquid, LiquidPython and LiquidJekyll classes"""
-from .config import Config, LIQUID_FILTERS_ENVNAME
-from .utils import template_meta, check_name
-from .parser import Parser
-from .filters import filter_manager, EmptyDrop
-# from .jekyll.parser import Parser as ParserJekyll
-# from .jekyll.filters import filter_manager as filter_manager_jekyll
-from .python.parser import Parser as ParserPython
-from .python.filters import filter_manager as filter_manager_python
+import builtins
+from os import PathLike
+from typing import Any, Callable, Mapping, Sequence, Union
+from jinja2 import (
+    Environment,
+    ChoiceLoader,
+    FileSystemLoader,
+)
+
+from .filters.standard import standard_filter_manager
 
 class Liquid:
-    """The main class for external use
-
-    One could provide a config says `liquid_config['extended'] = True` to
-    switch this object to be initialized as a LiquidPython object.
+    """The entrance for the package
 
     Examples:
-        >>> liq1 = Liquid("{{a}}")
-        >>> liq1.__class__ # -> Liquid
-        >>> liq2 = Liquid("{{a}}", {'mode': 'python'})
-        >>> liq2.__class__ # -> LiquidPython
-        >>> isinstance(liq2, Liquid) # -> True
-
-    Attributes:
-        PARSER_CLASS: The root parser class
-        FILTER_MANAGER: The filter manager
+        >>> Liquid('{{a}}', from_file=False)
+        >>> Liquid('template.html')
 
     Args:
-        liquid_template: The template that can be rendered.
-            It could be a string template, a path to a file contains the
-            template or an IO object with the template
-        liquid_config: The configuration for this liquid object
-            - extended: Whether use the extended mode
-            -
-        **envs: Other environment variables for template rendering.
+        template: The template string or path of the template file
+        env: The jinja environment
+        from_file: Whether `template` is a file path. If True, a
+            `FileSystemLoader` will be used in the `env`.
+        mode: The mode of the engine.
+            - standard: Most compatibility with the standard liquid engine
+            - jekyll: The jekyll-compatible mode
+            - shopify: The shopify-compatible mode
+            - wild: The liquid- and jinja-compatible mode
+        filter_with_colon: Whether enable to use colon to separate filter and
+            its arguments (i.e. `{{a | filter: arg}}`). If False, will
+            fallback to use parentheses (`{{a | filter(arg)}}`)
+        search_paths: The search paths for the template files.
+            This only supports specification of paths. If you need so specify
+            `encoding` and/or `followlinks`, you should use jinja's
+            `FileSystemLoader`
+        globals: Additional global values to be used to render the template
+        filters: Additional filters be to used to render the template
+        **kwargs: Other arguments for an jinja Environment construction and
+            configurations for extensions
     """
-    PARSER_CLASS = Parser
-    FILTER_MANAGER = filter_manager
 
-    # pylint: disable=unused-argument
-    def __new__(cls, liquid_template, liquid_config=None, **envs):
-        # type: (Union[str, Path, IO], Optional[Dict[str, Any]], Any) -> Liquid
-        """Works as a router to determine returning a Liquid or LiquidPython
-        object according to liquid_config['extended']
+    __slots__ = ("env", "template")
+
+    def __init__(
+        self,
+        template: PathLike,
+        from_file: bool = None,
+        mode: str = None,
+        env: Environment = None,
+        filter_with_colon: bool = None,
+        search_paths: Union[PathLike, Sequence[PathLike]] = None,
+        globals: Mapping[str, Any] = None,
+        filters: Mapping[str, Callable] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Constructor"""
+        # default values
+        # fetch at runtime, so that they can be configured at importing
+        from .defaults import (
+            FROM_FILE,
+            MODE,
+            FILTER_WITH_COLON,
+            SEARCH_PATHS,
+            ENV_ARGS,
+            SHARED_GLOBALS,
+        )
+
+        if from_file is None:
+            from_file = FROM_FILE
+        if mode is None:
+            mode = MODE
+        if filter_with_colon is None:
+            filter_with_colon = FILTER_WITH_COLON
+        if search_paths is None:
+            search_paths = SEARCH_PATHS
+
+        # split kwargs into arguments for Environment constructor and
+        # configurations for extensions
+        env_args = {}
+        ext_conf = {}
+        for key, val in kwargs.items():
+            if key in ENV_ARGS:
+                env_args[key] = val
+            else:
+                ext_conf[key] = val
+
+        loader = env_args.pop("loader", None)
+        fsloader = FileSystemLoader(search_paths)
+        if loader:
+            loader = ChoiceLoader([loader, fsloader])
+        else:
+            loader = fsloader
+
+        self.env = env = Environment(**env_args, loader=loader)
+        env.extend(**ext_conf)
+        env.globals.update(SHARED_GLOBALS)
+
+        standard_filter_manager.update_to_env(env)
+        env.add_extension("jinja2.ext.loopcontrols")
+        if filter_with_colon:
+            from .exts.filter_colon import FilterColonExtension
+
+            env.add_extension(FilterColonExtension)
+
+        if mode == "wild":
+            from .exts.wild import LiquidWildExtension
+            from .filters.wild import wild_filter_manager
+
+            env.add_extension("jinja2.ext.debug")
+            env.add_extension(LiquidWildExtension)
+
+            bfilters = {
+                key: getattr(builtins, key)
+                for key in dir(builtins)
+                if not key.startswith("_")
+                and callable(getattr(builtins, key))
+                and key
+                not in (
+                    "copyright",
+                    "credits",
+                    "input",
+                    "help",
+                    "globals",
+                    "license",
+                    "locals",
+                    "memoryview",
+                    "object",
+                    "property",
+                    "staticmethod",
+                    "super",
+                )
+                and not any(key_c.isupper() for key_c in key)
+            }
+            env.filters.update(bfilters)
+            wild_filter_manager.update_to_env(env)
+            env.globals.update(
+                {
+                    key: val
+                    for key, val in __builtins__.items()
+                    if not key.startswith("_")
+                }
+            )
+
+        elif mode == "jekyll":
+            from .exts.front_matter import FrontMatterExtension
+            from .exts.jekyll import LiquidJekyllExtension
+            from .filters.jekyll import jekyll_filter_manager
+
+            jekyll_filter_manager.update_to_env(env)
+            env.add_extension(FrontMatterExtension)
+            env.add_extension(LiquidJekyllExtension)
+
+        elif mode == "shopify":
+            from .exts.shopify import LiquidShopifyExtension
+            from .filters.shopify import shopify_filter_manager
+
+            shopify_filter_manager.update_to_env(env)
+            env.add_extension(LiquidShopifyExtension)
+
+        else:  # standard
+            from .exts.standard import LiquidStandardExtension
+
+            env.add_extension(LiquidStandardExtension)
+
+        if filters:
+            env.filters.update(filters)
+        if globals:
+            env.globals.update(globals)
+
+        if from_file:
+            self.template = env.get_template(template)
+        else:
+            self.template = env.from_string(template)
+
+    def render(self, *args, **kwargs) -> Any:
+        """Render the template.
+
+        You can either pass the values using `tpl.render(a=1)` or
+        `tpl.render({'a': 1})`
         """
+        return self.template.render(*args, **kwargs)
 
-        mode = (liquid_config.get('mode')
-                if liquid_config
-                else None) # type: str
-        # if mode == 'jekyll':
-        #     return LiquidJekyll.__new__(LiquidJekyll)
-        if mode == 'python':
-            return LiquidPython.__new__(LiquidPython)
-        return super().__new__(cls)
-    # pylint: enable=unused-argument
+    async def render_async(self, *args, **kwargs) -> Any:
+        """Asynchronously render the template"""
+        return await self.template.render_async(*args, **kwargs)
 
-    def __init__(self, liquid_template, liquid_config=None, **envs):
-        # type: (Union[str, Path, IO], Optional[Dict[str, Any]], Any) -> None
-        # since __new__ returns an object anyway is a Liquid object
-        # we will need to pass handling to LiquidPython itself
+    @classmethod
+    def from_env(
+        cls,
+        template: PathLike,
+        env: Environment,
+        from_file: bool = None,
+        filter_with_colon: bool = None,
+        mode: str = None,
+    ) -> "Liquid":
+        """Initiate a template from a jinja environment
 
-        check_name(envs)
-        self.envs = envs
-        self.config = Config(liquid_config or {})
-        self.config.update_logger()
-        self.meta = template_meta(liquid_template)
-        self.parsed = self._from_cache(liquid_template)
+        You should not specify any liquid-related extensions here. They will
+        be added automatically.
 
-    # pylint: disable=unused-argument
-    def _from_cache(self, liquid_template):
-        #  (Union[str, Path, IO]) -> Type[Parser]
-        """Try to the parsed object from the cache
+        No search path is allow to be passed here. Instead, use jinja2's loaders
+        or use the constructor to initialize a template.
 
-        // Todo: When config.cache is False, don't cache
-        When True, try to cache it in memory, otherwise a directory should
-        be specified, objects are cached there
+        @Args:
+            template: The template string or path of the template file
+            env: The jinja environment
+            from_file: Whether `template` is a file path. If True, a
+                `FileSystemLoader` will be used in the `env`.
+            filter_with_colon: Whether enable to use colon to separate filter and
+                its arguments (i.e. `{{a | filter: arg}}`). If False, will
+                fallback to use parentheses (`{{a | filter(arg)}}`)
+            mode: The mode of the engine.
+                - standard: Most compatibility with the standard liquid engine
+                - wild: The liquid- and jinja-compatible mode
+                - jekyll: The jekyll-compatible mode
+
+        @Returns:
+            A `Liquid` object
         """
-        parsed = self.PARSER_CLASS(self.meta, self.config).parse()
-        return parsed
-    # pylint: enable=unused-argument
-
-    def __del__(self):
-        try:
-            if self.meta.should_close:
-                self.meta.stream.close()
-        except AttributeError: # pragma: no cover
-            pass
-
-    def _update_context(self, context):
-        # type: (Dict[str, Any]) -> Dict[str, Any]
-        """Update the given context based on pre-set envs"""
-        check_name(context)
-        envs = self.envs.copy() # type: Dict[str, Any]
-        envs.update(context)
-        return envs
-
-    def _render(self, local_vars: dict, global_vars: dict) -> str:
-        # render and return
-        try:
-            return self.parsed.render(local_vars, global_vars)[0]
-        finally:
-            # debug mode needs stream to print stack details
-            if self.meta.should_close:
-                self.meta.stream.close()
-
-    def render(self, **context):
-        # type: (Any) -> str
-        """Render the template with given context
-        The parsed is a TagRoot object, whose render gives a string
-
-        Args:
-            context: The context used to render the template
-
-        Returns:
-            The rendered content
-        """
-        context = self._update_context(context)
-        global_context = context.copy()
-        global_context[
-            LIQUID_FILTERS_ENVNAME
-        ] = self.FILTER_MANAGER.filters
-        # liquid's EmptyDrop object
-        global_context['empty'] = EmptyDrop()
-        return self._render(context, global_context)
-
-# class LiquidJekyll(Liquid):
-#     """Support for extended mode of liquidpy"""
-#     PARSER_CLASS = ParserJekyll
-#     FILTER_MANAGER = filter_manager_jekyll
-
-#     __new__ = object.__new__
-
-#     def __init__(self, liquid_template, liquid_config=None, **envs):
-#         # type: (Union[str, Path, IO], Optional[Dict[str, Any]], Any) -> None
-#         # pylint: disable=super-init-not-called
-#         self._init(liquid_template, liquid_config, **envs)
-
-class LiquidPython(Liquid):
-    # pylint: disable=too-few-public-methods
-    """Support for extended mode of liquidpy"""
-    PARSER_CLASS = ParserPython
-    FILTER_MANAGER = filter_manager_python
-
-    # pylint: disable=signature-differs,unused-argument,arguments-differ
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls)
-
-    def render(self, **context):
-        # type: (Any) -> str
-        """Render the template with given context
-        The parsed is a TagRoot object, whose render gives a string
-
-        Args:
-            context: The context used to render the template
-
-        Returns:
-            The rendered content
-        """
-        context = self._update_context(context)
-        global_context = __builtins__.copy()
-        global_context.update(context)
-
-        global_context[
-            LIQUID_FILTERS_ENVNAME
-        ] = self.FILTER_MANAGER.filters
-        return self._render(context, global_context)
+        return cls(
+            template,
+            env=env,
+            from_file=from_file,
+            filter_with_colon=filter_with_colon,
+            mode=mode,
+        )

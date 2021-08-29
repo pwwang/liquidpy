@@ -1,109 +1,134 @@
-"""The tag manager
+"""Provide tag manager"""
+import re
+from base64 import b64decode
+from typing import Callable, Set, Union
 
-Attributes:
-    tag_manager: The tag manager
-"""
-from ..utils import Singleton
-from ..exceptions import LiquidTagRegistryException
+from jinja2 import nodes
+from jinja2.environment import Environment
+from jinja2.exceptions import TemplateSyntaxError
+from jinja2.lexer import Token
+from jinja2.parser import Parser
 
-class TagManager(Singleton):
-    """The tag manager
+from ..exts.ext import ENCODING_ID
+
+ENCODED_PATTERN = re.compile(fr"\$\${ENCODING_ID}\$([\w=+/]+)\$\$")
+
+
+def decode_raw(body: str) -> str:
+    """Decode the encoded string in body
+
+    The start string in body is encoded so that they won't be recognized
+    as variable/comment/block by jinja. This way, we can protect the body
+    from being tokenized.
+
+    Args:
+        body: The body
+
+    Returns:
+        The decoded string.
+    """
+    return ENCODED_PATTERN.sub(
+        lambda m: b64decode(m.group(1)).decode(),
+        body,
+    )
+
+
+class TagManager:
+    """A manager for tags
 
     Attributes:
-        INSTANCE: The instance of this singleton class
-        tags: The tags database
+        tags: a mapping of tag names and parser functions
+        envs: a mapping of tag names and whether environment should be passed
+            to the parser functions
+        raws: a mapping of tag names and whether the tag body should be
+            kept raw.
     """
-    INSTANCE = None # type: TagManager
-    tags = {}       # type: Dict[str, Tag]
+    __slots__ = ("tags", "envs", "raws")
 
+    def __init__(self) -> None:
+        """Constructor"""
+        self.tags = {}
+        self.envs = {}
+        self.raws = {}
 
-    def register(self, tag_class_or_alias=None, mode='standard'):
-        # type: (Union[Type[Tag], str], bool) -> Callable
-        """Register a tag
+    def register(
+        self,
+        name_or_tagparser: Union[str, Callable] = None,
+        env: bool = False,
+        raw: bool = False,
+    ) -> Callable:
+        """Register a filter
 
-        This can be worked as a decorator
+        This can be used as a decorator
+
+        Examples:
+            >>> @tag_manager.register
+            >>> def comment(token, parser):
+            >>>     from jinja2 import nodes
+            >>>     return nodes.Const("")
 
         Args:
-            tag_class_or_alias: The tag class or the alias for the tag class
-                to decorate
-            mode: Whether do it for given mode
+            name_or_tagparser: The tag parser to register
+                if name is given, will be treated as alias
+            env: Whether we should pass environment to the parser
+            raw: Whether we should keep the body of the tag raw
 
         Returns:
-            The decorator or the decorated class
+            The registered parser for the tag or a decorator
         """
-        # if mode == 'jekyll':
-        #     from .jekyll.tags import tag_manager as tmgr
-        #     return tmgr.register(tag_class_or_alias)
-        if mode == 'python':
-            from ..python.tags import tag_manager as tmgr
-            return tmgr.register(tag_class_or_alias)
 
-        def decorator(tag_class):
-            """The decorator for the tag class"""
-            name = tag_class.__name__
-            if name.startswith('Tag'):
-                name = name[3:]
-                # keep all-uppercase names, they are special tags
-                # like LITERAL, COMMENT, OUTPUT
-                if not name.isupper():
-                    name = name.lower()
+        def decorator(tagparser: Callable) -> Callable:
+            name = tagparser.__name__
             name = [name]
 
-            if tag_class_or_alias and tag_class is not tag_class_or_alias:
-                names = tag_class_or_alias
+            if name_or_tagparser and name_or_tagparser is not tagparser:
+                names = name_or_tagparser
                 if isinstance(names, str):
-                    names = (alias.strip() for alias in names.split(','))
+                    names = (nam.strip() for nam in names.split(","))
                 name = names
 
             for nam in name:
-                self.__class__.tags[nam] = tag_class
-            return tag_class
+                self.tags[nam] = tagparser
+                self.envs[nam] = env
+                self.raws[nam] = raw
 
-        if callable(tag_class_or_alias):
-            return decorator(tag_class_or_alias)
+            return tagparser
+
+        if callable(name_or_tagparser):
+            return decorator(name_or_tagparser)
 
         return decorator
 
-    def unregister(self, tagname, mode='standard'):
-        # type: (str, bool) -> Type[Tag]
-        """Unregister a tag
+    @property
+    def names(self) -> Set[str]:
+        """Get a set of the tag names"""
+        return set(self.tags)
+
+    @property
+    def names_raw(self) -> Set[str]:
+        """Get a set of names of tags whose body will be kept raw"""
+        return set(raw for raw in self.raws if self.raws[raw])
+
+    def parse(
+        self, env: Environment, token: Token, parser: Parser
+    ) -> nodes.Node:
+        """Calling the parser functions to parse the tags
 
         Args:
-            tagname: The name of the tag to unregister
-            mode: Whether do it for given mode
+            env: The environment
+            token: The token matches the tag name
+            parser: The parser
 
         Returns:
-            The tag class unregistered. It can be used to be re-registered
+            The parsed node
         """
-        # if mode == 'jekyll':
-        #     from .jekyll.tags import tag_manager as tmgr
-        #     return tmgr.unregister(tagname)
-        if mode == 'python':
-            from ..python.tags import tag_manager as tmgr
-            return tmgr.unregister(tagname)
-
-        try:
-            return self.tags.pop(tagname)
-        except KeyError:
-            raise LiquidTagRegistryException(
-                f'No such tag: {tagname}'
-            ) from None
-
-    def get(self, name):
-        # type: (str) -> Optional[Tag]
-        """Get the tag class
-
-        Args:
-            name: The name of the tag
-
-        Returns:
-            The tag class or None if name does not exist
-        """
-        tagname = name[3:] if name.startswith('end') else name  # type: str
-
+        tagname = token.value
         if tagname not in self.tags:
-            return None
-        return self.tags[tagname if tagname == name else 'END']
+            raise TemplateSyntaxError(
+                f"Encountered unknown tag '{tagname}'.",
+                token.lineno,
+            )
 
-# pylint: disable=invalid-name
-tag_manager = TagManager() # type: TagManager
+        if self.envs.get(tagname, False):
+            return self.tags[tagname](env, token, parser)
+        return self.tags[tagname](token, parser)

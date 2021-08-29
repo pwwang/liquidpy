@@ -2,7 +2,7 @@
 liquidpy
 ========
 
-A port of `liquid <https://shopify.github.io/liquid/>`_ template engine for python
+A port of `liquid <https://shopify.github.io/liquid/>`_ template engine for python on the shoulders of `jinja2 <https://jinja.palletsprojects.com/>`_
 
 `
 .. image:: https://img.shields.io/pypi/v/liquidpy.svg?style=flat-square
@@ -17,24 +17,22 @@ A port of `liquid <https://shopify.github.io/liquid/>`_ template engine for pyth
    :target: https://img.shields.io/pypi/pyversions/liquidpy.svg?style=flat-square
    :alt: PythonVers
  <https://pypi.org/project/liquidpy/>`_ `
+.. image:: https://img.shields.io/github/workflow/status/pwwang/liquidpy/docs?style=flat-square
+   :target: https://img.shields.io/github/workflow/status/pwwang/liquidpy/docs?style=flat-square
+   :alt: Docs building
+ <https://github.com/pwwang/liquidpy/actions>`_ `
+.. image:: https://img.shields.io/github/workflow/status/pwwang/liquidpy/building?style=flat-square
+   :target: https://img.shields.io/github/workflow/status/pwwang/liquidpy/building?style=flat-square
+   :alt: Travis building
+ <https://github.com/pwwang/liquidpy/actions>`_ `
 .. image:: https://img.shields.io/codacy/grade/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
    :target: https://img.shields.io/codacy/grade/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
    :alt: Codacy
- <https://app.codacy.com/manual/pwwang/liquidpy/dashboard>`_ `
+ <https://app.codacy.com/gh/pwwang/liquidpy/dashboard>`_ `
 .. image:: https://img.shields.io/codacy/coverage/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
    :target: https://img.shields.io/codacy/coverage/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
    :alt: Codacy coverage
- <https://app.codacy.com/manual/pwwang/liquidpy/dashboard>`_ 
-.. image:: https://img.shields.io/github/workflow/status/pwwang/liquidpy/Build%20Docs?label=docs&style=flat-square
-   :target: https://img.shields.io/github/workflow/status/pwwang/liquidpy/Build%20Docs?label=docs&style=flat-square
-   :alt: Docs building
- 
-.. image:: https://img.shields.io/github/workflow/status/pwwang/liquidpy/Build%20and%20Deploy?style=flat-square
-   :target: https://img.shields.io/github/workflow/status/pwwang/liquidpy/Build%20and%20Deploy?style=flat-square
-   :alt: Building
-
-
-This is compatible with `standard Liquid <https://shopify.github.io/liquid/>`_ template engine. Variations, such as Shopify and Jekyll are not fully supported yet.
+ <https://app.codacy.com/gh/pwwang/liquidpy/dashboard>`_
 
 Install
 -------
@@ -46,51 +44,65 @@ Install
 Baisic usage
 ------------
 
-.. code-block:: python
-
-   from liquid import Liquid
-   liq = Liquid('{{a}}')
-   ret = liq.render(a=1)
-   # ret == '1'
-
-   # with environments pre-loaded
-   liq = Liquid('{{a}}', a=1)
-   ret = liq.render()
-   # ret == '1'
-
-   # With debug on:
-   liq = Liquid('{{a}}', liquid_config={'debug': True})
-
-Python mode
------------
-
-We also support a python mode template engine, which acts more pythonic and powerful.
+Loading a template
+^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
    from liquid import Liquid
-   # standard liquid doesn't support this
-   liq = Liquid('{{a + 1}}', {'mode': 'python'})
-   ret = liq.render(a=1)
-   # ret == '2'
+   liq = Liquid('{{a}}', from_file=False)
+   ret = liq.render(a = 1)
+   # ret == '1'
 
-Both modes can accept a path, a file-like object or a stream for the template:
+   # load template from a file
+   liq = Liquid('/path/to/template.html')
+
+Using jinja's environment
 
 .. code-block:: python
 
-   Liquid('/path/to/template')
-   # or
-   with open('/path/to/template') as f:
-       Liquid(f)
+   from jinja2 import Environment, FileSystemLoader
+   env = Environment(loader=FileSystemLoader('./'), ...)
 
-Full Documentation
-------------------
+   liq = Liquid.from_env("/path/to/template.html", env)
+
+Switching to a different mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   liq = Liquid(
+       """
+       {% python %}
+       from os import path
+       filename = path.join("a", "b")
+       {% endpython %}
+       {{filename}}
+       """,
+       mode="wild" # supported: standard(default), jekyll, shopify, wild
+   )
+   liq.render()
+   # 'a/b'
+
+Changing default options
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   from liquid import defaults, Liquid
+   defaults.FROM_FILE = False
+   defaults.MODE = 'wild'
+
+   # no need to pass from_file and mode anymore
+   liq = Liquid('{% from_ os import path %}{{path.basename("a/b.txt")}}')
+   liq.render()
+   # 'b.txt'
+
+Documentation
+-------------
 
 
-* Liquid's `documentation <https://shopify.github.io/liquid/>`_
-* Liquidpy's `documentation <https://pwwang.github.io/liquidpy/>`_
-
-Backward compatiblility warning
--------------------------------
-
-``v0.6.0+`` is a remodeled version to make it compatible with standard liquid engine. If you are using a previous version, stick with it. ``0.6.0+`` is not fully compatible with previous versions.
+* `Liquidpy's documentation <https://pwwang.github.io/liquidpy>`_
+* `Liquid documentation (standard) <https://shopify.github.io/liquid/>`_
+* `Liquid documentation (jekyll) <https://jekyllrb.com/docs/liquid/>`_
+* `Liquid documentation (shopify-extended) <https://shopify.dev/api/liquid>`_

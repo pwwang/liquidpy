@@ -1,6 +1,17 @@
 site_name: liquidpy
+repo_url: https://github.com/pwwang/liquidpy
+repo_name: pwwang/liquidpy
 theme:
+    favicon: favicon.png
+    logo: favicon.png
+    icon:
+        repo: fontawesome/brands/github
     name: 'material'
+    font:
+        text: 'Ubuntu'
+        code: 'Ubuntu Mono'
+    features:
+        - navigation.top
 markdown_extensions:
     - markdown.extensions.admonition
     - pymdownx.superfences:
@@ -14,11 +25,10 @@ extra_css:
     - style.css
 nav:
     - 'Home': 'index.md'
-    - 'Introduction': 'intro.md'
-    - 'Additional Tags': 'additional_tags.md'
-    - 'Configuration': 'configuration.md'
-    - 'Tags': 'tags.md'
-    - 'Filters': 'filters.md'
-    - 'Extending liquidpy': 'extending.md'
-    - 'API': mkapi/api/liquid
+    - 'Basics': 'basics.md'
+    - 'Compatibility with standard liquid': 'standard.md'
+    - 'Compatibility with jekyll liquid': 'jekyll.md'
+    - 'Compatibility with shopify-extended liquid': 'shopify.md'
+    - 'Wild mode': 'wild.md'
     - 'Change log': 'changelog.md'
+    - 'API': 'mkapi/api/liquid'

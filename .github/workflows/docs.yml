@@ -1,13 +1,14 @@
-name: Build Docs
+name: docs
 
 on: [push]
 
 jobs:
   docs:
     runs-on: ubuntu-latest
+    # if: github.ref == 'refs/heads/master'
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python # Set Python version
@@ -18,23 +19,28 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install poetry
+          poetry config virtualenvs.create false
           poetry install -v
-      - name: Update docs
+      - name: Build docs
         run: |
-          poetry run python -m pip install mkdocs
-          poetry run python -m pip install -r docs/requirements.txt
+          python -m pip install -r docs/requirements.txt
           cd docs
           cp ../README.md index.md
           cd ..
-          poetry run mkdocs gh-deploy --clean --force
-        if: success()
+          mkdocs build
+        if : success()
+      - name: Deploy docs
+        run: |
+          mkdocs gh-deploy --clean --force
+        if: success() && github.ref == 'refs/heads/master'
 
   fix-index:
     needs: docs
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
     steps:
       - uses: actions/checkout@v2
         with:
