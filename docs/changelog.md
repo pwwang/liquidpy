@@ -1,3 +1,6 @@
+# 0.7.0
+- Reimplement using jinja2
+
 # 0.6.3
 - Allow tag for to have output(test | filter) in python mode.
 - Fix stacks not print in some cases.
