@@ -28,6 +28,6 @@ target-version = ['py37', 'py38', 'py39']
 include = '\.pyi?$'
 
 [tool.pytest.ini_options]
-addopts = "-vv --cov-config=.coveragerc --cov=liquid --cov-report xml:.coverage.xml --cov-report term-missing"
+addopts = "-vv --cov-config=.coveragerc --cov=liquid --cov-report xml:cov.xml --cov-report term-missing"
 console_output_style = "progress"
 junit_family = "xunit1"
