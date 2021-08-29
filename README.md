@@ -66,6 +66,7 @@ liq.render()
 - [Liquid documentation (standard)][19]
 - [Liquid documentation (jekyll)][18]
 - [Liquid documentation (shopify-extended)][1]
+- [Jinja2's documentation][20]
 
 
 [1]: https://shopify.dev/api/liquid
@@ -87,3 +88,4 @@ liq.render()
 [17]: https://jinja.palletsprojects.com/
 [18]: https://jekyllrb.com/docs/liquid/
 [19]: https://shopify.github.io/liquid/
+[20]: https://jinja.palletsprojects.com/
