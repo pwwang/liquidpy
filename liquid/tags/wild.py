@@ -1,10 +1,18 @@
 """Provides tags for wild mode"""
 import textwrap
+from contextlib import redirect_stdout
+from io import StringIO
 
 from jinja2 import nodes
 from jinja2.environment import Environment
+from jinja2.exceptions import TemplateSyntaxError
 from jinja2.lexer import TOKEN_BLOCK_END, Token
 from jinja2.parser import Parser
+
+try:
+    from jinja2 import pass_environment
+except ImportError:
+    from jinja2 import environmentfilter as pass_environment
 
 from .manager import TagManager, decode_raw
 from .standard import assign, capture, case, comment, cycle
@@ -56,8 +64,10 @@ def python(env: Environment, token: Token, parser: Parser) -> nodes.Node:
         body = " ".join(pieces)
 
     code = compile(body, "<liquid-python-tag>", mode="exec")
-    exec(code, env.globals)
-    return nodes.Output([], lineno=token.lineno)
+    out = StringIO()
+    with redirect_stdout(out):
+        exec(code, env.globals)
+    return nodes.Output([nodes.Const(out.getvalue())], lineno=token.lineno)
 
 
 @wild_tags.register(env=True)
@@ -111,4 +121,53 @@ def from_(env: Environment, token: Token, parser: Parser) -> nodes.Node:
     body = " ".join(pieces)
     code = compile(body, "<liquid-from_-tag>", mode="exec")
     exec(code, env.globals)
+    return nodes.Output([], lineno=token.lineno)
+
+
+@wild_tags.register(env=True, raw=True)
+def addfilter(env: Environment, token: Token, parser: Parser) -> nodes.Node:
+    """The addfilter tag {% addfilter name ... %} ... {% endaddfilter %}
+
+    This allows one to use the python code inside the body to add a filter or
+    replace an existing filter
+
+    Args:
+        env: The environment
+        token: The token matches tag name
+        parser: The parser
+
+    Returns:
+        The parsed node
+    """
+    token = parser.stream.expect("name")
+    filtername = token.value
+
+    if parser.stream.current.type is TOKEN_BLOCK_END:
+        # no pass_environment
+        pass_env = False
+    else:
+        pass_env = parser.stream.expect("name:pass_env")
+
+    body = parser.parse_statements(("name:endaddfilter",), drop_needle=True)
+    body = decode_raw(body[0].nodes[0].data)
+    body_parts = body.split("\n", 1)
+    if not body_parts[0]:
+        body = "" if len(body_parts) < 2 else body_parts[1]
+    body = textwrap.dedent(body)
+
+    globs = env.globals.copy()
+    code = compile(body, "<liquid-addfilter-tag>", mode="exec")
+    exec(code, globs)
+    try:
+        filterfunc = globs[filtername]
+    except KeyError:
+        raise TemplateSyntaxError(
+            f"No such filter defined in 'addfilter': {filtername}",
+            token.lineno,
+        ) from None
+
+    if pass_env:
+        filterfunc = pass_environment(filterfunc)
+    env.filters[filtername] = filterfunc
+
     return nodes.Output([], lineno=token.lineno)

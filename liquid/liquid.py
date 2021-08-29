@@ -7,9 +7,7 @@ from jinja2 import (
     FileSystemLoader,
 )
 
-from . import patching as _
 from .filters.standard import standard_filter_manager
-
 
 class Liquid:
     """The entrance for the package
@@ -40,6 +38,8 @@ class Liquid:
         **kwargs: Other arguments for an jinja Environment construction and
             configurations for extensions
     """
+
+    __slots__ = ("env", "template")
 
     def __init__(
         self,
@@ -91,7 +91,7 @@ class Liquid:
         else:
             loader = fsloader
 
-        env = Environment(**env_args, loader=loader)
+        self.env = env = Environment(**env_args, loader=loader)
         env.extend(**ext_conf)
         env.globals.update(SHARED_GLOBALS)
 
@@ -114,13 +114,32 @@ class Liquid:
                 for key in dir(builtins)
                 if not key.startswith("_")
                 and callable(getattr(builtins, key))
-                and key not in ("copyright", "credits", "input", "help")
-                and not key.endswith("Warning")
-                and not key.endswith("Error")
+                and key
+                not in (
+                    "copyright",
+                    "credits",
+                    "input",
+                    "help",
+                    "globals",
+                    "license",
+                    "locals",
+                    "memoryview",
+                    "object",
+                    "property",
+                    "staticmethod",
+                    "super",
+                )
+                and not any(key_c.isupper() for key_c in key)
             }
             env.filters.update(bfilters)
             wild_filter_manager.update_to_env(env)
-            env.globals.update(builtins.globals())
+            env.globals.update(
+                {
+                    key: val
+                    for key, val in __builtins__.items()
+                    if not key.startswith("_")
+                }
+            )
 
         elif mode == "jekyll":
             from .exts.front_matter import FrontMatterExtension

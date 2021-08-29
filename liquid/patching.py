@@ -16,11 +16,6 @@ from .utils import parse_tag_args
 
 # patching Parser.parse_if to allow elsif in addition to elif
 # -----------------------------------------------------------
-
-nodes.If.fields += ("elsif",)
-nodes.If.elsif = None
-
-
 def parse_if(self) -> nodes.Node:
     node = result = nodes.If(lineno=self.stream.expect("name:if").lineno)
     while True:
@@ -42,9 +37,8 @@ def parse_if(self) -> nodes.Node:
         break
     return result
 
-
-Parser.parse_if = parse_if
-
+jinja_nodes_if_fields = nodes.If.fields
+jinja_parse_if = Parser.parse_if
 
 # patching LoopContext to allow rindex and rindex0
 # Also add liquid_cycle method to allow cycle to have a name
@@ -59,15 +53,8 @@ def cycle(self, *args: Any, name: Any = None) -> Any:
     cycler[1] += 1
     return cycler[0][cycler[1] % len(cycler[0])]
 
-
-LoopContext.rindex = LoopContext.revindex
-LoopContext.rindex0 = LoopContext.revindex0
-LoopContext.liquid_cycle = cycle
-
-
 # patching Parser.parse_for to allow arguments
 # -----------------------------------------------------------
-
 
 def parse_for(self) -> nodes.Node:
     lineno = self.stream.expect("name:for").lineno
@@ -103,5 +90,29 @@ def parse_for(self) -> nodes.Node:
         else_ = self.parse_statements(("name:endfor",), drop_needle=True)
     return nodes.For(target, iter, body, else_, test, recursive, lineno=lineno)
 
+jinja_parse_for = Parser.parse_for
 
-Parser.parse_for = parse_for
+
+def patch_jinja():
+    """Monkey-patch jinja"""
+    nodes.If.fields = jinja_nodes_if_fields + ("elsif",)
+    nodes.If.elsif = None
+    Parser.parse_if = parse_if
+
+    LoopContext.rindex = LoopContext.revindex
+    LoopContext.rindex0 = LoopContext.revindex0
+    LoopContext.liquid_cycle = cycle
+
+    Parser.parse_for = parse_for
+
+def unpatch_jinja():
+    """Restore the patches to jinja"""
+    nodes.If.fields = jinja_nodes_if_fields
+    del nodes.If.elsif
+
+    Parser.parse_if = jinja_parse_if
+    del LoopContext.rindex
+    del LoopContext.rindex0
+    del LoopContext.liquid_cycle
+
+    Parser.parse_for = jinja_parse_for

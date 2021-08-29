@@ -3,9 +3,8 @@ https://shopify.github.io/liquid/basics
 """
 import pytest
 
-from liquid import defaults, Liquid
+from liquid import defaults, Liquid, unpatch_jinja
 defaults.FROM_FILE = False
-
 
 def test_introduction():
     assert (

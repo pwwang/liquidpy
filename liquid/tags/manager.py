@@ -43,6 +43,7 @@ class TagManager:
         raws: a mapping of tag names and whether the tag body should be
             kept raw.
     """
+    __slots__ = ("tags", "envs", "raws")
 
     def __init__(self) -> None:
         """Constructor"""

@@ -34,6 +34,6 @@ setup(
     packages=['liquid', 'liquid.exts', 'liquid.filters', 'liquid.tags'],
     package_dir={"": "."},
     package_data={},
-    install_requires=['jinja2==2.*'],
+    install_requires=['jinja2==2.*,==3.*,>=2.5.0'],
     extras_require={"dev": ["pytest", "pytest-cov"]},
 )

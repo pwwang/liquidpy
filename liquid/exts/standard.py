@@ -64,7 +64,10 @@ class LiquidStandardExtension(LiquidExtension):
                     yield token
 
             # (a..b) => range(a, b + 1)
-            elif token.type is TOKEN_LPAREN:
+            elif token.type is TOKEN_LPAREN and stream.current.type in (
+                TOKEN_NAME,
+                TOKEN_INTEGER,
+            ):
                 tokens_ahead = peek_tokens(stream, 5)
                 # print(tokens_ahead)
                 if (

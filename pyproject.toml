@@ -16,7 +16,7 @@ include = "liquid/*.py"
 
 [tool.poetry.dependencies]
 python = "^3.6"
-jinja2 = "2.*"
+jinja2 = "^2.5, 3.*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

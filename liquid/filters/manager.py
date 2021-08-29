@@ -3,12 +3,15 @@ from typing import Callable, Union
 
 from jinja2 import Environment
 
+
 class FilterManager:
     """A manager for filters
 
     Attributes:
         filters: a mapping of filter names to filters
     """
+
+    __slots__ = ("filters",)
 
     def __init__(self) -> None:
         """Constructor"""
