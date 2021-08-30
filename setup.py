@@ -34,6 +34,6 @@ setup(
     packages=['liquid', 'liquid.python', 'liquid.python.tags', 'liquid.tags'],
     package_dir={"": "."},
     package_data={"liquid.python.tags": ["*.lark"], "liquid.tags": ["*.lark"]},
-    install_requires=['diot', 'lark-parser==0.*', 'rich==9.*'],
+    install_requires=['diot', 'lark-parser==0.*', 'rich'],
     extras_require={"dev": ["pytest", "pytest-cov", "python-dateutil==2.*,>=2.0.0"]},
 )
