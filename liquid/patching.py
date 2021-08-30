@@ -14,6 +14,8 @@ from jinja2.runtime import LoopContext
 
 from .utils import parse_tag_args
 
+# pylint: skip-file
+
 # patching Parser.parse_if to allow elsif in addition to elif
 # -----------------------------------------------------------
 def parse_if(self) -> nodes.Node:

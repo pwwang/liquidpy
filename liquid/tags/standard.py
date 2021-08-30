@@ -9,8 +9,9 @@ from jinja2.parser import Parser
 from ..utils import peek_tokens, parse_tag_args
 from .manager import TagManager, decode_raw
 
-standard_tags = TagManager()
+# pylint: disable=invalid-name
 
+standard_tags = TagManager()
 
 @standard_tags.register(raw=True)
 def comment(token: Token, parser: Parser) -> nodes.Node:
@@ -108,7 +109,7 @@ def unless(token: Token, parser: Parser) -> nodes.Node:
             node = nodes.If(lineno=parser.stream.current.lineno)
             result.elif_.append(node)
             continue
-        elif token.test("name:else"):
+        if token.test("name:else"):
             result.else_ = parser.parse_statements(
                 ("name:endunless",), drop_needle=True
             )
@@ -173,7 +174,7 @@ def case(token: Token, parser: Parser) -> nodes.Node:
             node = nodes.If(lineno=parser.stream.current.lineno)
             result.elif_.append(node)
             continue
-        elif token.test("name:else"):
+        if token.test("name:else"):
             result.else_ = parser.parse_statements(
                 ("name:endcase",), drop_needle=True
             )

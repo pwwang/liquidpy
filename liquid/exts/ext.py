@@ -6,6 +6,7 @@ from jinja2 import nodes
 from jinja2.ext import Extension
 from jinja2.parser import Parser
 
+# pylint: disable=invalid-name
 re_e = re.escape
 re_c = lambda rex: re.compile(rex, re.M | re.S)
 
@@ -21,6 +22,7 @@ class LiquidExtension(Extension):
         cls.tags = cls.tag_manager.names
         cls.raw_tags = cls.tag_manager.names_raw
 
+    # pylint: disable=signature-differs
     def preprocess(self, source: str, name: str, filename: str) -> str:
         """Try to keep the tag body raw by encode the variable/comment/block
         start strings ('{{', '{#', '{%') so that the body won't be tokenized

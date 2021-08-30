@@ -1,3 +1,4 @@
+"""Provides Liquid class"""
 import builtins
 from os import PathLike
 from typing import Any, Callable, Mapping, Sequence, Union
@@ -49,11 +50,13 @@ class Liquid:
         env: Environment = None,
         filter_with_colon: bool = None,
         search_paths: Union[PathLike, Sequence[PathLike]] = None,
+        # pylint: disable=redefined-builtin
         globals: Mapping[str, Any] = None,
         filters: Mapping[str, Callable] = None,
         **kwargs: Any,
     ) -> None:
         """Constructor"""
+        # pylint: disable=too-many-statements,too-many-branches
         # default values
         # fetch at runtime, so that they can be configured at importing
         from .defaults import (
@@ -206,8 +209,8 @@ class Liquid:
             env: The jinja environment
             from_file: Whether `template` is a file path. If True, a
                 `FileSystemLoader` will be used in the `env`.
-            filter_with_colon: Whether enable to use colon to separate filter and
-                its arguments (i.e. `{{a | filter: arg}}`). If False, will
+            filter_with_colon: Whether enable to use colon to separate filter
+                and its arguments (i.e. `{{a | filter: arg}}`). If False, will
                 fallback to use parentheses (`{{a | filter(arg)}}`)
             mode: The mode of the engine.
                 - standard: Most compatibility with the standard liquid engine

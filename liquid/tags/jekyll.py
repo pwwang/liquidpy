@@ -18,6 +18,8 @@ from .standard import (
 				unless
 )
 
+# pylint: disable=invalid-name
+
 jekyll_tags = TagManager()
 
 jekyll_tags.register(comment, raw=True)
@@ -35,6 +37,7 @@ jekyll_tags.register(cycle)
 # https://stackoverflow.com/a/9405157/5088165
 @jekyll_tags.register
 def include_relative(token: Token, parser: Parser) -> nodes.Node:
+    """The {% include_relative ... %} tag"""
     node = nodes.Include(lineno=token.lineno)
     path = parser.parse_expression()
     if parser.stream.filename:

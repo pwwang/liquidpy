@@ -10,6 +10,9 @@ from typing import Any
 
 from jinja2.environment import Environment
 
+# pylint: disable=unused-argument
+# pylint: disable=invalid-name
+
 # environmentfilter deprecated
 try:
     from jinja2 import pass_environment
@@ -41,6 +44,7 @@ jekyll_filter_manager.register("inspect")(repr)
 @jekyll_filter_manager.register
 @pass_environment
 def relative_url(env, value):
+    """Get relative url based on site.baseurl"""
     baseurl = _get_global_var(env, "site", "baseurl")
     parts = urllib.parse.urlparse(baseurl)
     return os.path.join(parts.path, value)
@@ -49,6 +53,7 @@ def relative_url(env, value):
 @jekyll_filter_manager.register
 @pass_environment
 def absolute_url(env, value):
+    """Get absolute url based on site.baseurl"""
     baseurl = _get_global_var(env, "site", "baseurl")
     return urllib.parse.urljoin(baseurl, value)
 
@@ -56,6 +61,7 @@ def absolute_url(env, value):
 @jekyll_filter_manager.register
 @pass_environment
 def date_to_xmlschema(env, value: datetime.datetime):
+    """Convert date to xml schema format"""
     return value.isoformat()
 
 
@@ -65,12 +71,14 @@ def date_to_xmlschema(env, value: datetime.datetime):
 @jekyll_filter_manager.register
 @pass_environment
 def where_exp(env, value, item, expr):
+    """Where using expression"""
     compiled = env.compile_expression(expr)
     return [itm for itm in value if compiled(**{item: itm})]
 
 
 @jekyll_filter_manager.register
 def find(value, attr, query):
+    """Find elements from array using attribute value"""
     for item in value:
         try:
             if getattr(item, attr) == query:
@@ -83,6 +91,7 @@ def find(value, attr, query):
 @jekyll_filter_manager.register
 @pass_environment
 def find_exp(env, value, item, expr):
+    """Find elements using expression"""
     compiled = env.compile_expression(expr)
     for itm in value:
         try:
@@ -97,6 +106,7 @@ def find_exp(env, value, item, expr):
 @jekyll_filter_manager.register
 @pass_environment
 def group_by_expr(env, value, item, expr):
+    """Group by data using expression"""
     compiled = env.compile_expression(expr)
     out = {}
     for itm in value:
@@ -114,6 +124,7 @@ def group_by_expr(env, value, item, expr):
 
 @jekyll_filter_manager.register
 def normalize_whitespace(value):
+    """Replace multiple spaces into one"""
     return re.sub(r"\s+", " ", value)
 
 
@@ -122,4 +133,5 @@ def normalize_whitespace(value):
 
 @jekyll_filter_manager.register
 def sample(value, n: int = 1):
+    """Sample elements from array"""
     return random.sample(value, k=n)

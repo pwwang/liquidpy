@@ -1,10 +1,13 @@
 """Provides standard liquid filters"""
+import re
 import math
 import html
 
 from jinja2.filters import FILTERS
 
 from .manager import FilterManager
+
+# pylint: disable=invalid-name
 
 standard_filter_manager = FilterManager()
 
@@ -214,8 +217,6 @@ def liquid_slice(base, start, length=1):
 @standard_filter_manager.register
 def strip_html(base):
     """Strip html tags from a string"""
-    import re
-
     # use html parser?
     return re.sub(r"<[^>]+>", "", base)
 
@@ -321,3 +322,28 @@ def compact(base):
     """Remove empties from a list"""
     ret = [bas for bas in base if bas]
     return ret or EmptyDrop()
+
+
+@standard_filter_manager.register
+def regex_replace(
+    base: str,
+    regex: str,
+    replace: str = "",
+    case_sensitive: bool = False,
+    count: int = 0,
+) -> str:
+    """Replace matching regex pattern"""
+    if not isinstance(base, str):
+        # Raise an error instead?
+        return base
+
+    args = {
+        "pattern": regex, # re.escape
+        "repl": replace,
+        "string": base,
+        "count": count,
+    }
+    if case_sensitive:
+        args["flags"] = re.IGNORECASE
+
+    return re.sub(**args)

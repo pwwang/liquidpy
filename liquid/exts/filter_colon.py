@@ -22,6 +22,7 @@ class FilterColonExtension(Extension):
     """This extension allows colon to be used to separate
     the filter and arguments, so that we can write django/liquid-style filters
     """
+    # pylint: disable=abstract-method
 
     def filter_stream(self, stream: TokenStream) -> Iterable[Token]:
         """Modify the colon to lparen and rparen tokens"""

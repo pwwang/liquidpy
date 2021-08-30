@@ -70,7 +70,7 @@ class LiquidStandardExtension(LiquidExtension):
             ):
                 tokens_ahead = peek_tokens(stream, 5)
                 # print(tokens_ahead)
-                if (
+                if (  # pylint: disable=too-many-boolean-expressions
                     len(tokens_ahead) < 5
                     or tokens_ahead[0].type not in (TOKEN_INTEGER, TOKEN_NAME)
                     or tokens_ahead[1].type is not TOKEN_DOT

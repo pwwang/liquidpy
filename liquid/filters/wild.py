@@ -9,6 +9,8 @@ from typing import Any
 from jinja2.environment import Environment
 from .manager import FilterManager
 
+# pylint: disable=invalid-name
+
 wild_filter_manager = FilterManager()
 
 

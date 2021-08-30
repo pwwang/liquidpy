@@ -1,5 +1,0 @@
-jinja2==3.*,>=3.0.0
-pytest
-pytest-cov
-python-dateutil==2.*,>=2.0.0
-rich==9.*

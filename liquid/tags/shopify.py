@@ -15,6 +15,8 @@ from .standard import (
     cycle,
 )
 
+# pylint: disable=invalid-name
+
 shopify_tags = TagManager()
 
 shopify_tags.register(comment, raw=True)

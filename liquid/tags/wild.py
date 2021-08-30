@@ -17,6 +17,9 @@ except ImportError:
 from .manager import TagManager, decode_raw
 from .standard import assign, capture, case, comment, cycle
 
+# pylint: disable=exec-used
+# pylint: disable=invalid-name
+
 wild_tags = TagManager()
 
 wild_tags.register(comment, raw=True)
@@ -24,7 +27,6 @@ wild_tags.register(case)
 wild_tags.register(capture)
 wild_tags.register(assign)
 wild_tags.register(cycle)
-
 
 @wild_tags.register(raw=True, env=True)
 def python(env: Environment, token: Token, parser: Parser) -> nodes.Node:

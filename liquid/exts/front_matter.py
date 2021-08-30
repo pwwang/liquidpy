@@ -8,11 +8,15 @@ from ..defaults import FRONT_MATTER_LANG
 class FrontMatterExtension(Extension):
     """This extension allows to have front matter"""
 
+    # pylint: disable=abstract-method
+
     def __init__(self, environment: Environment) -> None:
         super().__init__(environment)
         environment.extend(front_matter_lang=FRONT_MATTER_LANG)
 
+    # pylint: disable=unused-argument
     def preprocess(self, source: str, name: str, filename: str = None) -> str:
+        """Preprocess sourcee to extract front matter"""
         import frontmatter
 
         if self.environment.front_matter_lang.lower() == "toml":

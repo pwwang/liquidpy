@@ -6,5 +6,5 @@ from .ext import LiquidExtension
 
 
 class LiquidWildExtension(LiquidExtension):
-
+    """Extension for wild mode"""
     tag_manager = wild_tags
