@@ -4,6 +4,7 @@ from jinja2 import nodes
 from jinja2.lexer import TOKEN_INTEGER, TOKEN_NAME, Token, TokenStream
 from jinja2.exceptions import TemplateSyntaxError
 
+# pylint: disable=invalid-name
 
 def peek_tokens(stream: TokenStream, n: int = 1) -> List[Token]:
     """Peek ahead 'n' tokens in the token stream, but don't move the cursor

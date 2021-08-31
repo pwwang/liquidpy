@@ -19,7 +19,7 @@ repos:
         always_run: true
         language: system
 -   repo: https://github.com/pre-commit/mirrors-pylint
-    rev: v2.4.4
+    rev: v2.7.4
     hooks:
     -   id: pylint
         files: ^liquid/.+$
@@ -33,7 +33,7 @@ repos:
         # need to pass name directly to setup() for github
         # to track dependents
         entry: |
-            bash -c "poetry build --format sdist | tail -1 | sed 's|.\+varname|cat dist/varname|' | bash | tar --wildcards --no-anchored '*/setup.py' -O -zxf - | sed \"s/'name': /# 'name': /\" | sed \"s/setup(/setup(name='varname', /\"  > setup.py"
+            bash -c "poetry build --format sdist | tail -1 | sed 's|.\+liquid|cat dist/liquid|' | bash | tar --wildcards --no-anchored '*/setup.py' -O -zxf - | sed \"s/'name': /# 'name': /\" | sed \"s/setup(/setup(name='liquidpy', /\"  > setup.py"
         language: system
         files: pyproject.toml
         pass_filenames: false
