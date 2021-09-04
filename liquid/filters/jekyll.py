@@ -9,6 +9,7 @@ import urllib.parse
 from typing import Any
 
 from jinja2.environment import Environment
+from markdown import markdown
 
 # pylint: disable=unused-argument
 # pylint: disable=invalid-name
@@ -118,8 +119,14 @@ def group_by_expr(env, value, item, expr):
 # TODO: xml_escape, cgi_escape, uri_escape
 # TODO: number_of_words
 # TODO: array_to_sentence_string
-# TODO: markdownify, smartify, sassify, scssify
+# TODO: smartify, sassify, scssify
 # TODO: slugify, jsonify
+
+
+@jekyll_filter_manager.register
+def markdownify(value):
+    """Convert markdown to HTML"""
+    return markdown(value)
 
 
 @jekyll_filter_manager.register
