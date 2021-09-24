@@ -1,3 +1,9 @@
+# 0.7.1
+- ✨ Add `regex_replace` filter
+- ✨ Allow absolute path and pathlib.Path passed as template files
+- ✨ Allow `+/-` to work with date filter (#38)
+- ✨ Add `filters_as_globals` for wild mode (defaults to `True`)
+
 # 0.7.0
 - Reimplement using jinja2
 
