@@ -171,7 +171,8 @@ class Liquid:
             env.globals.update(globals)
 
         if from_file:
-            self.template = env.get_template(template)
+            # in case template is a PathLike
+            self.template = env.get_template(str(template))
         else:
             self.template = env.from_string(template)
 

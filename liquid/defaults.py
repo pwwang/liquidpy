@@ -17,7 +17,8 @@ FROM_FILE: bool = True
 FILTER_WITH_COLON = True
 
 # The default search paths for templates
-SEARCH_PATHS = "./"
+# support absolute paths
+SEARCH_PATHS = ["/", "./"]
 
 # The default format/language for the front matter
 # Should be one of yaml, toml or json
