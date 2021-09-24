@@ -2,12 +2,11 @@
 import textwrap
 from contextlib import redirect_stdout
 from io import StringIO
+from typing import TYPE_CHECKING, List
 
 from jinja2 import nodes
-from jinja2.environment import Environment
 from jinja2.exceptions import TemplateSyntaxError
-from jinja2.lexer import TOKEN_BLOCK_END, Token
-from jinja2.parser import Parser
+from jinja2.lexer import TOKEN_BLOCK_END
 
 try:
     from jinja2 import pass_environment
@@ -17,8 +16,11 @@ except ImportError:
 from .manager import TagManager, decode_raw
 from .standard import assign, capture, case, comment, cycle
 
-# pylint: disable=exec-used
-# pylint: disable=invalid-name
+if TYPE_CHECKING:
+    from jinja2.lexer import Token
+    from jinja2.parser import Parser
+    from jinja2.environment import Environment
+
 
 wild_tags = TagManager()
 
@@ -28,8 +30,9 @@ wild_tags.register(capture)
 wild_tags.register(assign)
 wild_tags.register(cycle)
 
+
 @wild_tags.register(raw=True, env=True)
-def python(env: Environment, token: Token, parser: Parser) -> nodes.Node:
+def python(env: "Environment", token: "Token", parser: "Parser") -> nodes.Node:
     """The python tag
 
     {% python %} ... {% endpython %} or
@@ -55,7 +58,7 @@ def python(env: Environment, token: Token, parser: Parser) -> nodes.Node:
             body = "" if len(body_parts) < 2 else body_parts[1]
         body = textwrap.dedent(body)
     else:
-        pieces = []
+        pieces: List[str] = []
         pieces_append = pieces.append
         while True:
             token = next(parser.stream)
@@ -73,7 +76,9 @@ def python(env: Environment, token: Token, parser: Parser) -> nodes.Node:
 
 
 @wild_tags.register(env=True)
-def import_(env: Environment, token: Token, parser: Parser) -> nodes.Node:
+def import_(
+    env: "Environment", token: "Token", parser: "Parser"
+) -> nodes.Node:
     """The import_ tag {% import_ ... %}
 
     Name it 'import_' so the 'import' tag from jinja can still work
@@ -100,7 +105,7 @@ def import_(env: Environment, token: Token, parser: Parser) -> nodes.Node:
 
 
 @wild_tags.register(env=True)
-def from_(env: Environment, token: Token, parser: Parser) -> nodes.Node:
+def from_(env: "Environment", token: "Token", parser: "Parser") -> nodes.Node:
     """The from_ tag {% from_ ... %}
 
     Name it 'from_' so the 'from_' tag from jinja can still work
@@ -127,7 +132,9 @@ def from_(env: Environment, token: Token, parser: Parser) -> nodes.Node:
 
 
 @wild_tags.register(env=True, raw=True)
-def addfilter(env: Environment, token: Token, parser: Parser) -> nodes.Node:
+def addfilter(
+    env: "Environment", token: "Token", parser: "Parser"
+) -> nodes.Node:
     """The addfilter tag {% addfilter name ... %} ... {% endaddfilter %}
 
     This allows one to use the python code inside the body to add a filter or

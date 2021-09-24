@@ -1,7 +1,6 @@
 """Provides Liquid class"""
 import builtins
-from os import PathLike
-from typing import Any, Callable, Mapping, Sequence, Union
+from typing import Any, Callable, Mapping
 from jinja2 import (
     Environment,
     ChoiceLoader,
@@ -9,6 +8,8 @@ from jinja2 import (
 )
 
 from .filters.standard import standard_filter_manager
+from .utils import PathType, PathTypeOrIter
+
 
 class Liquid:
     """The entrance for the package
@@ -44,19 +45,17 @@ class Liquid:
 
     def __init__(
         self,
-        template: PathLike,
+        template: PathType,
         from_file: bool = None,
         mode: str = None,
         env: Environment = None,
         filter_with_colon: bool = None,
-        search_paths: Union[PathLike, Sequence[PathLike]] = None,
-        # pylint: disable=redefined-builtin
+        search_paths: PathTypeOrIter = None,
         globals: Mapping[str, Any] = None,
         filters: Mapping[str, Callable] = None,
         **kwargs: Any,
     ) -> None:
         """Constructor"""
-        # pylint: disable=too-many-statements,too-many-branches
         # default values
         # fetch at runtime, so that they can be configured at importing
         from .defaults import (
@@ -191,7 +190,7 @@ class Liquid:
     @classmethod
     def from_env(
         cls,
-        template: PathLike,
+        template: PathType,
         env: Environment,
         from_file: bool = None,
         filter_with_colon: bool = None,
@@ -202,8 +201,8 @@ class Liquid:
         You should not specify any liquid-related extensions here. They will
         be added automatically.
 
-        No search path is allow to be passed here. Instead, use jinja2's loaders
-        or use the constructor to initialize a template.
+        No search path is allow to be passed here. Instead, use jinja2's
+        loaders or use the constructor to initialize a template.
 
         @Args:
             template: The template string or path of the template file

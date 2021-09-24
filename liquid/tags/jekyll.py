@@ -7,18 +7,17 @@ from jinja2.parser import Parser
 
 from .manager import TagManager
 from .standard import (
-				assign,
-				capture,
-				case,
-				comment,
-				cycle,
-				decrement,
-				increment,
-				tablerow,
-				unless
+    assign,
+    capture,
+    case,
+    comment,
+    cycle,
+    decrement,
+    increment,
+    tablerow,
+    unless,
 )
 
-# pylint: disable=invalid-name
 
 jekyll_tags = TagManager()
 
@@ -31,6 +30,7 @@ jekyll_tags.register(tablerow)
 jekyll_tags.register(increment)
 jekyll_tags.register(decrement)
 jekyll_tags.register(cycle)
+
 
 # to specify certain named arguments
 # use jinja's with

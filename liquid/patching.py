@@ -14,7 +14,6 @@ from jinja2.runtime import LoopContext
 
 from .utils import parse_tag_args
 
-# pylint: skip-file
 
 # patching Parser.parse_if to allow elsif in addition to elif
 # -----------------------------------------------------------
@@ -39,8 +38,10 @@ def parse_if(self) -> nodes.Node:
         break
     return result
 
+
 jinja_nodes_if_fields = nodes.If.fields
 jinja_parse_if = Parser.parse_if
+
 
 # patching LoopContext to allow rindex and rindex0
 # Also add liquid_cycle method to allow cycle to have a name
@@ -55,9 +56,9 @@ def cycle(self, *args: Any, name: Any = None) -> Any:
     cycler[1] += 1
     return cycler[0][cycler[1] % len(cycler[0])]
 
+
 # patching Parser.parse_for to allow arguments
 # -----------------------------------------------------------
-
 def parse_for(self) -> nodes.Node:
     lineno = self.stream.expect("name:for").lineno
     target = self.parse_assign_target(extra_end_rules=("name:in",))
@@ -92,6 +93,7 @@ def parse_for(self) -> nodes.Node:
         else_ = self.parse_statements(("name:endfor",), drop_needle=True)
     return nodes.For(target, iter, body, else_, test, recursive, lineno=lineno)
 
+
 jinja_parse_for = Parser.parse_for
 
 
@@ -106,6 +108,7 @@ def patch_jinja():
     LoopContext.liquid_cycle = cycle
 
     Parser.parse_for = parse_for
+
 
 def unpatch_jinja():
     """Restore the patches to jinja"""

@@ -1,10 +1,15 @@
 """Provide default settings/values"""
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from .utils import PathTypeOrIter
 
 # The default mode to initialize a Liquid object
 # - standard: Compatible with standard liquid engine
 # - wild: liquid- and jinja-compatible engine
 # - jekyll: jekyll-compatible engine
-MODE: bool = "standard"
+MODE: str = "standard"
 
 # Whether the template provided is a file path by default
 FROM_FILE: bool = True
@@ -18,7 +23,7 @@ FILTER_WITH_COLON = True
 
 # The default search paths for templates
 # support absolute paths
-SEARCH_PATHS = ["/", "./"]
+SEARCH_PATHS: "PathTypeOrIter" = ["/", "./"]
 
 # The default format/language for the front matter
 # Should be one of yaml, toml or json

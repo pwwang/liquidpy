@@ -1,5 +1,6 @@
 """Provides an extension to implment features for standard liquid"""
 
+from typing import TYPE_CHECKING, Generator
 from jinja2.lexer import (
     TOKEN_ADD,
     TOKEN_COMMA,
@@ -9,13 +10,15 @@ from jinja2.lexer import (
     TOKEN_RPAREN,
     TOKEN_DOT,
     Token,
-    TokenStream,
 )
 
 from ..utils import peek_tokens
 from ..tags.standard import standard_tags
 
 from .ext import LiquidExtension
+
+if TYPE_CHECKING:
+    from jinja2.lexer import TokenStream
 
 
 class LiquidStandardExtension(LiquidExtension):
@@ -33,9 +36,11 @@ class LiquidStandardExtension(LiquidExtension):
 
     def __init__(self, environment):
         super().__init__(environment)
-        environment.tests["contains"] = lambda cont, elm: cont.__contains__(elm)
+        environment.tests["contains"] = lambda cont, elm: cont.__contains__(
+            elm
+        )
 
-    def filter_stream(self, stream: TokenStream) -> Token:
+    def filter_stream(self, stream: "TokenStream") -> Generator:
         """Supports for liquid features"""
         for token in stream:
             # .size => .__len__()
@@ -70,7 +75,7 @@ class LiquidStandardExtension(LiquidExtension):
             ):
                 tokens_ahead = peek_tokens(stream, 5)
                 # print(tokens_ahead)
-                if (  # pylint: disable=too-many-boolean-expressions
+                if (
                     len(tokens_ahead) < 5
                     or tokens_ahead[0].type not in (TOKEN_INTEGER, TOKEN_NAME)
                     or tokens_ahead[1].type is not TOKEN_DOT

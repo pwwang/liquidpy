@@ -6,12 +6,11 @@ import os
 import random
 import re
 import urllib.parse
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from jinja2.environment import Environment
+if TYPE_CHECKING:
+    from jinja2.environment import Environment
 
-# pylint: disable=unused-argument
-# pylint: disable=invalid-name
 
 # environmentfilter deprecated
 try:
@@ -25,7 +24,8 @@ from .manager import FilterManager
 
 jekyll_filter_manager = FilterManager()
 
-def _get_global_var(env: Environment, name: str, attr: str = None) -> Any:
+
+def _get_global_var(env: "Environment", name: str, attr: str = None) -> Any:
     if name not in env.globals:
         raise ValueError(f"Global variables has not been set: {name}")
 

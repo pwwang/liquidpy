@@ -7,7 +7,6 @@ from jinja2.filters import FILTERS
 
 from .manager import FilterManager
 
-# pylint: disable=invalid-name
 
 standard_filter_manager = FilterManager()
 
@@ -126,7 +125,7 @@ def liquid_date(base, fmt):
     elif base == "today":
         dtime = datetime.today()
     else:
-        from dateutil import parser
+        from dateutil import parser    # type: ignore
 
         dtime = parser.parse(base)
     return dtime.strftime(fmt)
@@ -257,7 +256,7 @@ def uniq(base):
         return EmptyDrop()
     ret = []
     for bas in base:
-        if not bas in ret:
+        if bas not in ret:
             ret.append(bas)
     return ret
 
@@ -338,7 +337,7 @@ def regex_replace(
         return base
 
     args = {
-        "pattern": regex, # re.escape
+        "pattern": regex,  # re.escape
         "repl": replace,
         "string": base,
         "count": count,
@@ -346,4 +345,4 @@ def regex_replace(
     if case_sensitive:
         args["flags"] = re.IGNORECASE
 
-    return re.sub(**args)
+    return re.sub(**args)    # type: ignore
