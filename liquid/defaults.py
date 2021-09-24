@@ -57,3 +57,7 @@ ENV_ARGS = [
 
 # In case some one wants to use nil
 SHARED_GLOBALS = {"nil": None}
+
+# Whether treat filters as globals
+# Only works in wild mode
+FILTERS_AS_GLOBALS = True

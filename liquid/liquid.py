@@ -37,6 +37,8 @@ class Liquid:
             `FileSystemLoader`
         globals: Additional global values to be used to render the template
         filters: Additional filters be to used to render the template
+        filters_as_globals: Whether also use filters as globals
+            Only works in wild mode
         **kwargs: Other arguments for an jinja Environment construction and
             configurations for extensions
     """
@@ -53,6 +55,7 @@ class Liquid:
         search_paths: PathTypeOrIter = None,
         globals: Mapping[str, Any] = None,
         filters: Mapping[str, Callable] = None,
+        filters_as_globals: bool = None,
         **kwargs: Any,
     ) -> None:
         """Constructor"""
@@ -65,6 +68,7 @@ class Liquid:
             SEARCH_PATHS,
             ENV_ARGS,
             SHARED_GLOBALS,
+            FILTERS_AS_GLOBALS,
         )
 
         if from_file is None:
@@ -75,6 +79,8 @@ class Liquid:
             filter_with_colon = FILTER_WITH_COLON
         if search_paths is None:
             search_paths = SEARCH_PATHS
+        if filters_as_globals is None:
+            filters_as_globals = FILTERS_AS_GLOBALS
 
         # split kwargs into arguments for Environment constructor and
         # configurations for extensions
@@ -142,6 +148,9 @@ class Liquid:
                     if not key.startswith("_")
                 }
             )
+            if filters_as_globals:
+                env.globals.update(standard_filter_manager.filters)
+                env.globals.update(wild_filter_manager.filters)
 
         elif mode == "jekyll":
             from .exts.front_matter import FrontMatterExtension
@@ -194,6 +203,7 @@ class Liquid:
         env: Environment,
         from_file: bool = None,
         filter_with_colon: bool = None,
+        filters_as_globals: bool = None,
         mode: str = None,
     ) -> "Liquid":
         """Initiate a template from a jinja environment
@@ -212,6 +222,8 @@ class Liquid:
             filter_with_colon: Whether enable to use colon to separate filter
                 and its arguments (i.e. `{{a | filter: arg}}`). If False, will
                 fallback to use parentheses (`{{a | filter(arg)}}`)
+            filters_as_globals: Whether also use filters as globals
+                Only works in wild mode
             mode: The mode of the engine.
                 - standard: Most compatibility with the standard liquid engine
                 - wild: The liquid- and jinja-compatible mode
@@ -225,5 +237,6 @@ class Liquid:
             env=env,
             from_file=from_file,
             filter_with_colon=filter_with_colon,
+            filters_as_globals=filters_as_globals,
             mode=mode,
         )
