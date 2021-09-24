@@ -26,5 +26,11 @@ def test_from_env(set_default_standard):
 def test_async_render(set_default_standard):
     import asyncio
     tpl = Liquid('{{ a }}', enable_async=True)
-    assert asyncio.run(tpl.render_async(a = 1)) == "1"
 
+    try:
+        run = asyncio.run
+    except AttributeError:
+        loop = asyncio.get_event_loop()
+        run = loop.run_until_complete
+
+    assert run(tpl.render_async(a = 1)) == "1"
