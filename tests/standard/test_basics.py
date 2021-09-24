@@ -3,17 +3,17 @@ https://shopify.github.io/liquid/basics
 """
 import pytest
 
-from liquid import defaults, Liquid, unpatch_jinja
-defaults.FROM_FILE = False
+from liquid import Liquid, unpatch_jinja
 
-def test_introduction():
+
+def test_introduction(set_default_standard):
     assert (
         Liquid("{{page.title}}").render(page={"title": "Introduction"})
         == "Introduction"
     )
 
 
-def test_tags():
+def test_tags(set_default_standard):
     assert (
         Liquid(
             """
@@ -26,7 +26,7 @@ def test_tags():
     )
 
 
-def test_filters():
+def test_filters(set_default_standard):
     assert Liquid('{{ "/my/fancy/url" | append: ".html" }}').render() == (
         "/my/fancy/url.html"
     )
@@ -40,7 +40,7 @@ def test_filters():
     ).render() == ("Adam!")
 
 
-def test_operators():
+def test_operators(set_default_standard):
     tpl = """
     {%- if product.title == "Awesome Shoes" -%}
       These shoes are awesome!
@@ -78,7 +78,7 @@ def test_operators():
     )
 
 
-def test_or_and():
+def test_or_and(set_default_standard):
     tpl = """
     {%- if true or false and false -%}
       This evaluates to true, since the `and` condition is checked first.
@@ -89,7 +89,7 @@ def test_or_and():
     )
 
 # This is a different behavior than in standard liquid
-def test_multiple_and_or():
+def test_multiple_and_or(set_default_standard):
     # tpl = """
     # {%- if true and false and false or true %}
     # This evaluates to false, since the tags are checked like this:
@@ -115,7 +115,7 @@ def test_multiple_and_or():
     assert Liquid(tpl).render() == ""
 
 
-def test_truthy_falsy():
+def test_truthy_falsy(set_default_standard):
     tpl = """
     {% assign tobi = "Tobi" %}
 
@@ -137,7 +137,7 @@ def test_truthy_falsy():
     )
 
 
-def test_types():
+def test_types(set_default_standard):
     tpl = "The current user is {{ user.name }}"
     assert Liquid(tpl).render(user={}) == "The current user is "
 
@@ -157,7 +157,7 @@ def test_types():
     )
 
 
-def test_wscontrol():
+def test_wscontrol(set_default_standard):
     tpl = """
 {% assign my_variable = "tomato" %}
 {{ my_variable }}"""

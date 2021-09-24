@@ -35,7 +35,7 @@ class LiquidExtension(Extension):
         start strings ('{{', '{#', '{%') so that the body won't be tokenized
         by jinjia.
         """
-        if not self.__class__.raw_tags:
+        if not self.__class__.raw_tags:  # pragma: no cover
             return super().preprocess(source, name, filename=filename)
 
         block_start_re = re_e(self.environment.block_start_string)

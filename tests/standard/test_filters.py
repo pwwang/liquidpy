@@ -4,9 +4,7 @@ https://shopify.github.io/liquid/filters/abs/
 import pytest
 from datetime import datetime
 
-from liquid import defaults, Liquid
-
-defaults.FROM_FILE = False
+from liquid import Liquid
 
 
 @pytest.mark.parametrize(
@@ -202,12 +200,12 @@ defaults.FROM_FILE = False
         ),
     ],
 )
-def test_single_filter(base, filter, result):
+def test_single_filter(base, filter, result, set_default_standard):
     tpl = f"{{{{ {base!r} | {filter} }}}}"
     assert Liquid(tpl).render() == str(result)
 
 
-def test_newline_filters():
+def test_newline_filters(set_default_standard):
     assert Liquid("{{ x | newline_to_br }}").render(x="apple\nwatch") == (
         "apple<br />watch"
     )
@@ -216,7 +214,7 @@ def test_newline_filters():
     )
 
 
-def test_filter_var_args():
+def test_filter_var_args(set_default_standard):
     tpl = """
     {% assign filename = "/index.html" %}
     {{ "website.com" | append: filename }}
@@ -224,7 +222,7 @@ def test_filter_var_args():
     assert Liquid(tpl).render().strip() == "website.com/index.html"
 
 
-def test_compact():
+def test_compact(set_default_standard):
     tpl = """
     {%- assign site_categories = site.pages | map: "category" -%}
     {%- for category in site_categories %}
@@ -288,7 +286,7 @@ def test_compact():
     )
 
 
-def test_concat():
+def test_concat(set_default_standard):
     tpl = """
     {%- assign fruits = "apples, oranges, peaches" | split: ", " -%}
     {%- assign vegetables = "carrots, turnips, potatoes" | split: ", " -%}
@@ -335,7 +333,7 @@ def test_concat():
 
 
 # for coverage
-def test_dot():
+def test_dot(set_default_standard):
     a = lambda: None
     setattr(a, "a-b", 1)
     b = lambda: None
@@ -354,7 +352,7 @@ def test_dot():
         ("%Y-%m-%d %H:%M", -86400),
     ],
 )
-def test_date_plus_minus(fmt, delta):
+def test_date_plus_minus(fmt, delta, set_default_standard):
     from datetime import timedelta, datetime
 
     # add
@@ -368,3 +366,29 @@ def test_date_plus_minus(fmt, delta):
     # minus
     out = Liquid(f'{{{{"now" | date: "{fmt}" | minus: {delta} }}}}').render()
     assert out == (datetime.now() - timedelta(seconds=delta)).strftime(fmt)
+
+
+def test_emptydrop(set_default_standard):
+    assert Liquid("{{ obj | sort_natural}}").render(obj=[]) == ""
+    assert (
+        Liquid("{{ obj | sort | bool}}", mode="wild").render(obj=[]) == "False"
+    )
+    assert (
+        Liquid("{{ slice(obj, 0) == False}}", mode="wild").render(obj=[])
+        == "True"
+    )
+    assert (
+        Liquid("{{ uniq(obj) != False}}", mode="wild").render(obj=[])
+        == "False"
+    )
+
+
+def test_regex_replace(set_default_standard):
+    assert Liquid('{{1 | regex_replace: "a"}}').render() == "1"
+    assert Liquid('{{"abc" | regex_replace: "a", "b"}}').render() == "bbc"
+    assert (
+        Liquid(
+            '{{"abc" | regex_replace: "A", "b", case_sensitive=False}}'
+        ).render()
+        == "bbc"
+    )

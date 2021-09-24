@@ -372,7 +372,7 @@ def regex_replace(
         "string": base,
         "count": count,
     }
-    if case_sensitive:
+    if not case_sensitive:
         args["flags"] = re.IGNORECASE
 
     return re.sub(**args)    # type: ignore

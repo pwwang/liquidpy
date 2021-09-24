@@ -85,7 +85,9 @@ class TagManager:
             name = tagparser.__name__
             name = [name]  # type: ignore
 
-            if name_or_tagparser and name_or_tagparser is not tagparser:
+            if (
+                name_or_tagparser and name_or_tagparser is not tagparser
+            ):  # pragma: no cover
                 names = name_or_tagparser
                 if isinstance(names, str):
                     names = (
@@ -129,7 +131,7 @@ class TagManager:
             The parsed node
         """
         tagname = token.value
-        if tagname not in self.tags:
+        if tagname not in self.tags:  # pragma: no cover
             raise TemplateSyntaxError(
                 f"Encountered unknown tag '{tagname}'.",
                 token.lineno,

@@ -130,7 +130,7 @@ def case(token: "Token", parser: "Parser") -> nodes.Node:
     lhs = parser.parse_tuple(with_condexpr=False)
     # %}
     if not parser.stream.skip_if("block_end"):
-        raise TemplateSyntaxError(
+        raise TemplateSyntaxError(  # pragma: no cover
             "Expected 'end of statement block'",
             token.lineno,
         )
