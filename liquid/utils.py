@@ -1,11 +1,18 @@
 """Some utils"""
-from typing import List
+from os import PathLike
+from typing import TYPE_CHECKING, Iterable, List, Union
 from jinja2 import nodes
-from jinja2.lexer import TOKEN_INTEGER, TOKEN_NAME, Token, TokenStream
+from jinja2.lexer import TOKEN_INTEGER, TOKEN_NAME
 from jinja2.exceptions import TemplateSyntaxError
 
+if TYPE_CHECKING:
+    from jinja2.lexer import TokenStream, Token
 
-def peek_tokens(stream: TokenStream, n: int = 1) -> List[Token]:
+PathType = Union[PathLike, str]
+PathTypeOrIter = Union[PathType, Iterable[PathType]]
+
+
+def peek_tokens(stream: "TokenStream", n: int = 1) -> List["Token"]:
     """Peek ahead 'n' tokens in the token stream, but don't move the cursor
 
     Args:
@@ -27,7 +34,9 @@ def peek_tokens(stream: TokenStream, n: int = 1) -> List[Token]:
     return out
 
 
-def parse_tag_args(stream: TokenStream, name: str, lineno: int) -> nodes.Node:
+def parse_tag_args(
+    stream: "TokenStream", name: str, lineno: int
+) -> nodes.Node:
     """Parse arguments for a tag.
 
     Only integer and name are allowed as values
@@ -52,9 +61,7 @@ def parse_tag_args(stream: TokenStream, name: str, lineno: int) -> nodes.Node:
 
     stream.expect("colon")
     # tokens_ahead = peek_tokens(stream)
-    if not stream.current.test_any(
-        TOKEN_INTEGER, TOKEN_NAME
-    ):
+    if not stream.current.test_any(TOKEN_INTEGER, TOKEN_NAME):
         raise TemplateSyntaxError(
             f"Expected an integer or a variable as argument for '{name}'.",
             lineno,

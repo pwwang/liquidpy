@@ -1,7 +1,8 @@
 """Provides filter manager"""
-from typing import Callable, Union
+from typing import TYPE_CHECKING, Callable, Dict, Union
 
-from jinja2 import Environment
+if TYPE_CHECKING:
+    from jinja2 import Environment
 
 
 class FilterManager:
@@ -15,9 +16,11 @@ class FilterManager:
 
     def __init__(self) -> None:
         """Constructor"""
-        self.filters = {}
+        self.filters: Dict[str, Callable] = {}
 
-    def register(self, name_or_filter: Union[str, Callable] = None) -> Callable:
+    def register(
+        self, name_or_filter: Union[str, Callable] = None
+    ) -> Callable:
         """Register a filter
 
         This can be used as a decorator
@@ -41,13 +44,15 @@ class FilterManager:
 
         def decorator(filterfunc: Callable) -> Callable:
             name = filterfunc.__name__
-            name = [name]
+            name = [name]  # type: ignore
 
             if name_or_filter and name_or_filter is not filterfunc:
                 names = name_or_filter
                 if isinstance(names, str):
-                    names = (nam.strip() for nam in names.split(","))
-                name = names
+                    names = (
+                        nam.strip() for nam in names.split(",")
+                    )  # type: ignore
+                name = names  # type: ignore
             for nam in name:
                 self.filters[nam] = filterfunc
 
@@ -58,7 +63,9 @@ class FilterManager:
 
         return decorator
 
-    def update_to_env(self, env: Environment, overwrite: bool = True) -> None:
+    def update_to_env(
+        self, env: "Environment", overwrite: bool = True
+    ) -> None:
         """Update the filters to environment
 
         Args:

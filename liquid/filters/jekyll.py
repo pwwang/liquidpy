@@ -6,12 +6,11 @@ import os
 import random
 import re
 import urllib.parse
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from jinja2.environment import Environment
+if TYPE_CHECKING:
+    from jinja2.environment import Environment
 
-# pylint: disable=unused-argument
-# pylint: disable=invalid-name
 
 # environmentfilter deprecated
 try:
@@ -25,15 +24,24 @@ from .manager import FilterManager
 
 jekyll_filter_manager = FilterManager()
 
-def _get_global_var(env: Environment, name: str, attr: str = None) -> Any:
+
+def _getattr(obj: Any, attr: str) -> Any:
+    """Get attribute of an object, if fails, try get item"""
+    try:
+        return getattr(obj, attr)
+    except AttributeError:
+        return obj[attr]
+
+
+def _get_global_var(env: "Environment", name: str, attr: str = None) -> Any:
     if name not in env.globals:
         raise ValueError(f"Global variables has not been set: {name}")
 
     out = env.globals[name]
-    if attr is None:
+    if attr is None:  # pragma: no cover
         return out
 
-    return getattr(out, attr)
+    return _getattr(out, attr)
 
 
 jekyll_filter_manager.register("group_by")(FILTERS["groupby"])
@@ -81,9 +89,9 @@ def find(value, attr, query):
     """Find elements from array using attribute value"""
     for item in value:
         try:
-            if getattr(item, attr) == query:
+            if _getattr(item, attr) == query:
                 return item
-        except AttributeError:
+        except (KeyError, AttributeError):
             continue
     return None
 

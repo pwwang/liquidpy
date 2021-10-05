@@ -12,44 +12,24 @@ repos:
     -   id: check-added-large-files
 -   repo: local
     hooks:
-    -   id: masterpylintrc
-        name: Overwrite local .pylintrc by master one
-        entry: cp ../.pylintrc ./.pylintrc
-        pass_filenames: false
-        always_run: true
+    -   id: versionchecker
+        name: Check version agreement in pyproject and __version__
+        entry: bash -c
         language: system
--   repo: https://github.com/pre-commit/mirrors-pylint
-    rev: v2.4.4
-    hooks:
-    -   id: pylint
-        files: ^liquid/.+$
+        args:
+            - get_ver() { echo $(egrep "^__version|^version" $1 | cut -d= -f2 | sed 's/\"\| //g'); };
+              v1=`get_ver pyproject.toml`;
+              v2=`get_ver liquid/__init__.py`;
+              if [[ $v1 == $v2 ]]; then exit 0; else exit 1; fi
         pass_filenames: false
-        types: [python]
+        files: ^pyproject\.toml|liquid/__init__\.py$
+    -   id: flake8
+        name: Run flake8
+        entry: flake8
+        language: system
         args: [liquid]
--   repo: local
-    hooks:
-    -   id: poetry2setuppy
-        name: Convert pyproject.toml to setup.py
-        # need to pass name directly to setup() for github
-        # to track dependents
-        entry: |
-            bash -c "poetry build --format sdist | tail -1 | sed 's|.\+varname|cat dist/varname|' | bash | tar --wildcards --no-anchored '*/setup.py' -O -zxf - | sed \"s/'name': /# 'name': /\" | sed \"s/setup(/setup(name='varname', /\"  > setup.py"
-        language: system
-        files: pyproject.toml
         pass_filenames: false
-    # -   id: poetry2requirements
-    #     name: Convert pyproject.toml to requirements.txt
-    #     entry: dephell deps convert --from=poetry --to=requirements.txt
-    #     language: system
-    #     files: pyproject.toml
-    #     pass_filenames: false
-    # -   id: api
-    #     name: Generate API documentation
-    #     entry: bash -c
-    #     args: ['python api.py > docs/api.md']
-    #     language: system
-    #     pass_filenames: false
-    #     files: ^liquid/.+$
+        files: ^liquid/.+$
     -   id: pytest
         name: Run pytest
         entry: pytest
@@ -57,3 +37,10 @@ repos:
         args: [tests/]
         pass_filenames: false
         files: ^tests/.+$|^liquid/.+$
+    -   id: mypy
+        name: Run mypy type check
+        entry: mypy
+        language: system
+        args: ["-p", "liquid"]
+        pass_filenames: false
+        files: ^liquid/.+$

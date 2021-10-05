@@ -2,7 +2,6 @@
 
 from .manager import FilterManager
 
-# pylint: disable=invalid-name
 
 shopify_filter_manager = FilterManager()
 

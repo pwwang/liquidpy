@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "liquidpy"
-version = "0.7.0"
+version = "0.7.1"
 description = "A port of liquid template engine for python"
 authors = [ "pwwang <pwwang@pwwang.com>",]
 license = "MIT"
@@ -18,13 +18,14 @@ include = "liquid"
 [tool.poetry.dependencies]
 python = "^3.6"
 jinja2 = "^3"
+python-frontmatter = {version = "^1.0.0", optional = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
 pytest-cov = "*"
 
 [tool.black]
-line-length = 80
+line-length = 79
 target-version = ['py37', 'py38', 'py39']
 include = '\.pyi?$'
 
@@ -32,3 +33,10 @@ include = '\.pyi?$'
 addopts = "-vv --cov-config=.coveragerc --cov=liquid --cov-report xml:cov.xml --cov-report term-missing"
 console_output_style = "progress"
 junit_family = "xunit1"
+
+[tool.mypy]
+ignore_missing_imports = true
+allow_redefinition = true
+disable_error_code = ["attr-defined", "no-redef", "union-attr"]
+show_error_codes = true
+strict_optional = false

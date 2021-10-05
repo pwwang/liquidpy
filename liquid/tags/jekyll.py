@@ -7,18 +7,17 @@ from jinja2.parser import Parser
 
 from .manager import TagManager
 from .standard import (
-				assign,
-				capture,
-				case,
-				comment,
-				cycle,
-				decrement,
-				increment,
-				tablerow,
-				unless
+    assign,
+    capture,
+    case,
+    comment,
+    cycle,
+    decrement,
+    increment,
+    tablerow,
+    unless,
 )
 
-# pylint: disable=invalid-name
 
 jekyll_tags = TagManager()
 
@@ -32,6 +31,7 @@ jekyll_tags.register(increment)
 jekyll_tags.register(decrement)
 jekyll_tags.register(cycle)
 
+
 # to specify certain named arguments
 # use jinja's with
 # https://stackoverflow.com/a/9405157/5088165
@@ -41,10 +41,15 @@ def include_relative(token: Token, parser: Parser) -> nodes.Node:
     node = nodes.Include(lineno=token.lineno)
     path = parser.parse_expression()
     if parser.stream.filename:
-        node.template = os.path.join(
-            os.path.dirname(parser.stream.filename), path
+        node.template = nodes.Add(
+            nodes.Add(
+                nodes.Const(os.path.dirname(parser.stream.filename)),
+                nodes.Const(os.path.sep),
+            ),
+            path,
         )
     else:
         node.template = path
+
     node.ignore_missing = False
     return parser.parse_import_context(node, True)

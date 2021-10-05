@@ -5,11 +5,11 @@ try:
 except ImportError:
     from jinja2 import environmentfilter as pass_environment
 
-from typing import Any
-from jinja2.environment import Environment
+from typing import TYPE_CHECKING, Any
 from .manager import FilterManager
 
-# pylint: disable=invalid-name
+if TYPE_CHECKING:
+    from jinja2.environment import Environment
 
 wild_filter_manager = FilterManager()
 
@@ -17,7 +17,7 @@ wild_filter_manager = FilterManager()
 @wild_filter_manager.register("ifelse, if_else")
 @pass_environment
 def ifelse(
-    env: Environment,
+    env: "Environment",
     value: Any,
     test: Any,
     test_args: Any = (),

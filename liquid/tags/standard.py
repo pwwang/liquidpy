@@ -1,20 +1,22 @@
-
 """Provides standard liquid tags"""
-from typing import List
+from typing import TYPE_CHECKING, List, Union
 from jinja2 import nodes
 from jinja2.exceptions import TemplateSyntaxError
-from jinja2.lexer import TOKEN_BLOCK_END, TOKEN_COLON, TOKEN_STRING, Token
-from jinja2.parser import Parser
+from jinja2.lexer import TOKEN_BLOCK_END, TOKEN_COLON, TOKEN_STRING
 
 from ..utils import peek_tokens, parse_tag_args
 from .manager import TagManager, decode_raw
 
-# pylint: disable=invalid-name
+if TYPE_CHECKING:
+    from jinja2.parser import Parser
+    from jinja2.lexer import Token
+
 
 standard_tags = TagManager()
 
+
 @standard_tags.register(raw=True)
-def comment(token: Token, parser: Parser) -> nodes.Node:
+def comment(token: "Token", parser: "Parser") -> nodes.Node:
     """The comment tag {% comment %} ... {% endcomment %}
 
     This tag accepts an argument, which is the prefix to be used for each line
@@ -41,15 +43,12 @@ def comment(token: Token, parser: Parser) -> nodes.Node:
     if not body_parts[0]:
         body = "" if len(body_parts) < 2 else body_parts[1]
 
-    out = [
-        nodes.Const(f"{args.value} {line}\n")
-        for line in body.splitlines()
-    ]
+    out = [nodes.Const(f"{args.value} {line}\n") for line in body.splitlines()]
     return nodes.Output(out, lineno=token.lineno)
 
 
 @standard_tags.register
-def capture(token: Token, parser: Parser) -> nodes.Node:
+def capture(token: "Token", parser: "Parser") -> nodes.Node:
     """The capture tag {% capture var %}...{% endcapture %}
 
     Args:
@@ -66,7 +65,7 @@ def capture(token: Token, parser: Parser) -> nodes.Node:
 
 
 @standard_tags.register
-def assign(token: Token, parser: Parser) -> nodes.Node:
+def assign(token: "Token", parser: "Parser") -> nodes.Node:
     """The assign tag {% assign x = ... %}
 
     Args:
@@ -83,7 +82,7 @@ def assign(token: Token, parser: Parser) -> nodes.Node:
 
 
 @standard_tags.register
-def unless(token: Token, parser: Parser) -> nodes.Node:
+def unless(token: "Token", parser: "Parser") -> nodes.Node:
     """The unless tag {% unless ... %} ... {% endunless %}
 
     Args:
@@ -118,7 +117,7 @@ def unless(token: Token, parser: Parser) -> nodes.Node:
 
 
 @standard_tags.register
-def case(token: Token, parser: Parser) -> nodes.Node:
+def case(token: "Token", parser: "Parser") -> nodes.Node:
     """The case-when tag {% case x %}{% when y %} ... {% endcase %}
 
     Args:
@@ -131,7 +130,7 @@ def case(token: Token, parser: Parser) -> nodes.Node:
     lhs = parser.parse_tuple(with_condexpr=False)
     # %}
     if not parser.stream.skip_if("block_end"):
-        raise TemplateSyntaxError(
+        raise TemplateSyntaxError(  # pragma: no cover
             "Expected 'end of statement block'",
             token.lineno,
         )
@@ -183,7 +182,9 @@ def case(token: Token, parser: Parser) -> nodes.Node:
 
 
 @standard_tags.register
-def tablerow(token: Token, parser: Parser) -> nodes.Node:
+def tablerow(
+    token: "Token", parser: "Parser"
+) -> Union[nodes.Node, List[nodes.Node]]:
     """The tablerow tag {% tablerow ... %} ... {% endtablerow %}
 
     Args:
@@ -262,7 +263,8 @@ def tablerow(token: Token, parser: Parser) -> nodes.Node:
 
     # implement ceil, as jinja's ceil is implemented as round(..., "ceil")
     # while liquid has a ceil filter
-    # iter_length_int if iter_length == iter_length_int else iter_length_int + 1
+    # iter_length_int if iter_length == iter_length_int
+    # else iter_length_int + 1
     iter_length = nodes.CondExpr(
         nodes.Compare(iter_length, [nodes.Operand("eq", iter_length_int)]),
         iter_length_int,
@@ -281,7 +283,7 @@ def tablerow(token: Token, parser: Parser) -> nodes.Node:
 
 
 @standard_tags.register
-def increment(token: Token, parser: Parser) -> List[nodes.Node]:
+def increment(token: "Token", parser: "Parser") -> List[nodes.Node]:
     """The increment tag {% increment x %}
 
     Args:
@@ -310,7 +312,7 @@ def increment(token: Token, parser: Parser) -> List[nodes.Node]:
 
 
 @standard_tags.register
-def decrement(token: Token, parser: Parser) -> nodes.Node:
+def decrement(token: "Token", parser: "Parser") -> List[nodes.Node]:
     """The decrement tag {% decrement x %}
 
     Args:
@@ -339,7 +341,7 @@ def decrement(token: Token, parser: Parser) -> nodes.Node:
 
 
 @standard_tags.register
-def cycle(token: Token, parser: Parser) -> nodes.Node:
+def cycle(token: "Token", parser: "Parser") -> nodes.Node:
     """The cycle tag {% cycle ... %}
 
     With name: {% cycle "name": "one", "two", "three" %}
@@ -377,7 +379,7 @@ def cycle(token: Token, parser: Parser) -> nodes.Node:
                 [nodes.Keyword("name", nodes.Const(cycler_name))],
                 None,
                 None,
-                lineno=token.lineno
+                lineno=token.lineno,
             )
         ]
     )

@@ -33,6 +33,7 @@ jobs:
           # reinstall pandas to specific version
           pip install $JINJA2
           pip install python-dateutil
+          pip install python-frontmatter
         env:
           JINJA2: ${{ matrix.jinja2 }}
       - name: Test with pytest
@@ -46,7 +47,7 @@ jobs:
         if: ${{ always() }}
       - name: Run codacy-coverage-reporter
         uses: codacy/codacy-coverage-reporter-action@master
-        if: matrix.python-version == 3.8
+        if: matrix.python-version == 3.9
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           coverage-reports: cov.xml

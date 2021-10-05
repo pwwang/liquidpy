@@ -2,7 +2,7 @@
 
 Jinja uses `{{a | filter(arg)}}`, but liquid uses `{{a | filter: arg}}`
 """
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 from jinja2.ext import Extension
 from jinja2.lexer import (
     TOKEN_ASSIGN,
@@ -14,17 +14,18 @@ from jinja2.lexer import (
     TOKEN_RPAREN,
     TOKEN_VARIABLE_END,
     Token,
-    TokenStream,
 )
+
+if TYPE_CHECKING:
+    from jinja2.lexer import TokenStream
 
 
 class FilterColonExtension(Extension):
     """This extension allows colon to be used to separate
     the filter and arguments, so that we can write django/liquid-style filters
     """
-    # pylint: disable=abstract-method
 
-    def filter_stream(self, stream: TokenStream) -> Iterable[Token]:
+    def filter_stream(self, stream: "TokenStream") -> Iterable[Token]:
         """Modify the colon to lparen and rparen tokens"""
         # expect a colon
         # 0: don't expect to change any {{a | filter: arg}}

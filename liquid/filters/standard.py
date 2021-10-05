@@ -2,14 +2,44 @@
 import re
 import math
 import html
+from datetime import datetime, timedelta
 
 from jinja2.filters import FILTERS
 
 from .manager import FilterManager
 
-# pylint: disable=invalid-name
 
 standard_filter_manager = FilterManager()
+
+
+class DateTime:
+    """Date time allows plus/minus operation"""
+    def __init__(self, dt: datetime, fmt: str) -> None:
+        self.dt = dt
+        self.fmt = fmt
+
+    def __str__(self) -> str:
+        """How it is rendered"""
+        return self.dt.strftime(self.fmt)
+
+    def __add__(self, other: int) -> "DateTime":
+        """Add seconds"""
+        return self.__class__(
+            self.dt + timedelta(seconds=other),
+            self.fmt
+        )
+
+    def __sub__(self, other: int) -> "DateTime":
+        """Minus seconds"""
+        return self.__class__(
+            self.dt - timedelta(seconds=other),
+            self.fmt
+        )
+
+    def __radd__(self, other: int) -> "DateTime":
+        return self + other
+
+    # cannot do rminus, 86400 - now doesn't make sense
 
 
 class EmptyDrop:
@@ -119,17 +149,16 @@ def floor(base):
 @standard_filter_manager.register("date")
 def liquid_date(base, fmt):
     """Format a date/datetime"""
-    from datetime import datetime
 
     if base == "now":
         dtime = datetime.now()
     elif base == "today":
         dtime = datetime.today()
     else:
-        from dateutil import parser
+        from dateutil import parser    # type: ignore
 
         dtime = parser.parse(base)
-    return dtime.strftime(fmt)
+    return DateTime(dtime, fmt)
 
 
 @standard_filter_manager.register
@@ -257,7 +286,7 @@ def uniq(base):
         return EmptyDrop()
     ret = []
     for bas in base:
-        if not bas in ret:
+        if bas not in ret:
             ret.append(bas)
     return ret
 
@@ -338,12 +367,12 @@ def regex_replace(
         return base
 
     args = {
-        "pattern": regex, # re.escape
+        "pattern": regex,  # re.escape
         "repl": replace,
         "string": base,
         "count": count,
     }
-    if case_sensitive:
+    if not case_sensitive:
         args["flags"] = re.IGNORECASE
 
-    return re.sub(**args)
+    return re.sub(**args)    # type: ignore

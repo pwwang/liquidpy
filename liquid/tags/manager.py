@@ -1,13 +1,16 @@
 """Provide tag manager"""
 import re
 from base64 import b64decode
-from typing import Callable, Set, Union
+from typing import TYPE_CHECKING, Callable, Dict, Set, Union
 
 from jinja2 import nodes
-from jinja2.environment import Environment
 from jinja2.exceptions import TemplateSyntaxError
-from jinja2.lexer import Token
-from jinja2.parser import Parser
+
+if TYPE_CHECKING:
+    from jinja2.lexer import Token
+    from jinja2.parser import Parser
+    from jinja2.environment import Environment
+
 
 from ..exts.ext import ENCODING_ID
 
@@ -43,13 +46,14 @@ class TagManager:
         raws: a mapping of tag names and whether the tag body should be
             kept raw.
     """
+
     __slots__ = ("tags", "envs", "raws")
 
     def __init__(self) -> None:
         """Constructor"""
-        self.tags = {}
-        self.envs = {}
-        self.raws = {}
+        self.tags: Dict[str, Callable] = {}
+        self.envs: Dict[str, bool] = {}
+        self.raws: Dict[str, bool] = {}
 
     def register(
         self,
@@ -79,13 +83,17 @@ class TagManager:
 
         def decorator(tagparser: Callable) -> Callable:
             name = tagparser.__name__
-            name = [name]
+            name = [name]  # type: ignore
 
-            if name_or_tagparser and name_or_tagparser is not tagparser:
+            if (
+                name_or_tagparser and name_or_tagparser is not tagparser
+            ):  # pragma: no cover
                 names = name_or_tagparser
                 if isinstance(names, str):
-                    names = (nam.strip() for nam in names.split(","))
-                name = names
+                    names = (
+                        nam.strip() for nam in names.split(",")
+                    )  # type: ignore
+                name = names  # type: ignore
 
             for nam in name:
                 self.tags[nam] = tagparser
@@ -110,7 +118,7 @@ class TagManager:
         return set(raw for raw in self.raws if self.raws[raw])
 
     def parse(
-        self, env: Environment, token: Token, parser: Parser
+        self, env: "Environment", token: "Token", parser: "Parser"
     ) -> nodes.Node:
         """Calling the parser functions to parse the tags
 
@@ -123,7 +131,7 @@ class TagManager:
             The parsed node
         """
         tagname = token.value
-        if tagname not in self.tags:
+        if tagname not in self.tags:  # pragma: no cover
             raise TemplateSyntaxError(
                 f"Encountered unknown tag '{tagname}'.",
                 token.lineno,

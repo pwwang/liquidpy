@@ -1,12 +1,15 @@
 """Provides a base extension class"""
 import re
 from base64 import b64encode
+from typing import TYPE_CHECKING
 
 from jinja2 import nodes
 from jinja2.ext import Extension
-from jinja2.parser import Parser
 
-# pylint: disable=invalid-name
+if TYPE_CHECKING:
+    from jinja2.parser import Parser
+
+
 re_e = re.escape
 re_c = lambda rex: re.compile(rex, re.M | re.S)
 
@@ -22,13 +25,17 @@ class LiquidExtension(Extension):
         cls.tags = cls.tag_manager.names
         cls.raw_tags = cls.tag_manager.names_raw
 
-    # pylint: disable=signature-differs
-    def preprocess(self, source: str, name: str, filename: str) -> str:
+    def preprocess(  # type: ignore
+        self,
+        source: str,
+        name: str,
+        filename: str,
+    ) -> str:
         """Try to keep the tag body raw by encode the variable/comment/block
         start strings ('{{', '{#', '{%') so that the body won't be tokenized
         by jinjia.
         """
-        if not self.__class__.raw_tags:
+        if not self.__class__.raw_tags:  # pragma: no cover
             return super().preprocess(source, name, filename=filename)
 
         block_start_re = re_e(self.environment.block_start_string)
@@ -64,7 +71,9 @@ class LiquidExtension(Extension):
             source = tag_re.sub(encode_raw, source)
         return source
 
-    def parse(self, parser: Parser) -> nodes.Node:
+    def parse(self, parser: "Parser") -> nodes.Node:
         """Let tag manager to parse the tags that are being listened to"""
         token = next(parser.stream)
-        return self.__class__.tag_manager.parse(self.environment, token, parser)
+        return self.__class__.tag_manager.parse(
+            self.environment, token, parser
+        )
