@@ -39,3 +39,6 @@ def test_sample(set_default_jekyll):
         "2",
         "3",
     ]
+
+def test_markdownify(set_default_jekyll):
+    assert Liquid("{{ '# a' | markdownify }}").render() == '<h1>a</h1>'
