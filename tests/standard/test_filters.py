@@ -384,3 +384,13 @@ def test_regex_replace(set_default_standard):
         ).render()
         == "bbc"
     )
+
+def test_basic_typecasting(set_default_standard):
+    assert Liquid('{{ "1" | int | plus: 1 }}').render() == "2"
+    assert Liquid('{{ "1" | float | plus: 1 }}').render() == "2.0"
+    assert Liquid('{{ 1 | str | append: "1" }}').render() == "11"
+    assert Liquid('{{ 1 | bool }}').render() == "True"
+    assert Liquid('{{ int("1") | plus: 1 }}').render() == "2"
+    assert Liquid('{{ float("1") | plus: 1 }}').render() == "2.0"
+    assert Liquid('{{ str(1) | append: "1" }}').render() == "11"
+    assert Liquid('{{ bool(1) }}').render() == "True"

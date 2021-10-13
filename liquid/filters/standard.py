@@ -109,6 +109,10 @@ standard_filter_manager.register(str.rstrip)
 standard_filter_manager.register(str.strip)
 standard_filter_manager.register(str.replace)
 standard_filter_manager.register("size")(len)
+standard_filter_manager.register(int)
+standard_filter_manager.register(float)
+standard_filter_manager.register(str)
+standard_filter_manager.register(bool)
 
 
 @standard_filter_manager.register

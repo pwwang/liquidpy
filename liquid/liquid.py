@@ -175,8 +175,16 @@ class Liquid:
 
         if filters:
             env.filters.update(filters)
+
+        builtin_globals = {
+            "int": int,
+            "float": float,
+            "str": str,
+            "bool": bool
+        }
         if globals:
-            env.globals.update(globals)
+            builtin_globals.update(globals)
+        env.globals.update(builtin_globals)
 
         if from_file:
             # in case template is a PathLike
