@@ -2,6 +2,7 @@
 
 - 🐛 Fix `date` filter issues (#38, #40)
 - ✨ Add `markdownify` for jekyll (#36, #37)
+- ✨ Add `int`, `float`, `str` and `bool` as both filters and globals for all modes (#40)
 
 
 # 0.7.1
