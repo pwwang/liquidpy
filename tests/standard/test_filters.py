@@ -348,7 +348,7 @@ def test_dot(set_default_standard):
     "tpl,out",
     [
         ('{{ 0 | date: "%s"  | plus: 86400 }}', "86400"),
-        ('{{ 0 | date: "%Y"  | plus: 1 }}', "1970"),
+        ('{{ "now" | date: "%Y"  | plus: 1 }}', str(datetime.today().year + 1)),
         ('{{ 0 | date: "%s"  | minus: 86400 }}', "-86400"),
         ('{{ 0 | date: "%s"  | times: 86400 }}', "0"),
         ('{{ 1 | date: "%s"  | times: 86400 }}', "86400"),
