@@ -49,17 +49,17 @@ def test_markdownify(set_default_jekyll):
 @pytest.mark.parametrize(
     "sen,mode,out",
     [
-        ('Hello world!', None, 2),
-        ('hello world and taoky strong!', "cjk", 5),
-        ('hello world and taoky strong!', "auto", 5),
-        ('こんにちは、世界！안녕하세요 세상!', "cjk", 17),
-        ('こんにちは、世界！안녕하세요 세상!', "auto", 17),
-        ('你好hello世界world', None, 1),
-        ('你好hello世界world', "cjk", 6),
-        ('你好hello世界world', "auto", 6),
-    ]
+        ("Hello world!", None, 2),
+        ("hello world and taoky strong!", "cjk", 5),
+        ("hello world and taoky strong!", "auto", 5),
+        ("こんにちは、世界！안녕하세요 세상!", "cjk", 17),
+        ("こんにちは、世界！안녕하세요 세상!", "auto", 17),
+        ("你好hello世界world", None, 1),
+        ("你好hello世界world", "cjk", 6),
+        ("你好hello世界world", "auto", 6),
+    ],
 )
-def test_number_of_words(sen,mode,out,set_default_jekyll):
+def test_number_of_words(sen, mode, out, set_default_jekyll):
     if mode is None:
         template = f"{{{{ {sen!r} | number_of_words }}}}"
     else:
@@ -91,71 +91,116 @@ def test_sort_error(set_default_jekyll):
         # (["ВУЗ", "Вуз", "вуз"], None, "first", ["Вуз", "вуз", "ВУЗ"]),
         (["ВУЗ", "Вуз", "вуз"], None, "first", ["вуз", "Вуз", "ВУЗ"]),
         (["_вуз", "вуз", "вуз_"], None, "first", ["вуз_", "вуз", "_вуз"]),
-        (["אלף" ,"בית"], None, "first", ["בית" ,"אלף"]),
+        (["אלף", "בית"], None, "first", ["בית", "אלף"]),
         (
-            [{ "a": 1 }, { "a": 2 }, { "a": 3 }, { "a": 4 }],
+            [{"a": 1}, {"a": 2}, {"a": 3}, {"a": 4}],
             "a",
             "first",
-            [{ "a": 4 }, { "a": 3 }, { "a": 2 }, { "a": 1 }],
+            [{"a": 4}, {"a": 3}, {"a": 2}, {"a": 1}],
         ),
         (
-            [{ "a": ".5" }, { "a": "0.65" }, { "a": "10" }],
+            [{"a": ".5"}, {"a": "0.65"}, {"a": "10"}],
             "a",
             "first",
-            [{ "a": "10" }, { "a": "0.65" }, { "a": ".5" }],
+            [{"a": "10"}, {"a": "0.65"}, {"a": ".5"}],
         ),
         (
-            [{ "a": ".5" }, { "a": "0.6" }, { "a": "twelve" }],
+            [{"a": ".5"}, {"a": "0.6"}, {"a": "twelve"}],
             "a",
             "first",
-            [{ "a": "twelve" }, { "a": "0.6" }, { "a": ".5" }],
+            [{"a": "twelve"}, {"a": "0.6"}, {"a": ".5"}],
         ),
         (
-            [{ "a": "1" }, { "a": "1abc" }, { "a": "20" }],
+            [{"a": "1"}, {"a": "1abc"}, {"a": "20"}],
             "a",
             "first",
-            [{ "a": "20" }, { "a": "1abc" }, { "a": "1" }],
+            [{"a": "20"}, {"a": "1abc"}, {"a": "1"}],
         ),
         (
-            [{ "a": 2 }, { "b": 1 }, { "a": 1 }],
+            [{"a": 2}, {"b": 1}, {"a": 1}],
             "a",
             "first",
-            [{ "b": 1 }, { "a": 2 }, { "a": 1 }],
+            [{"b": 1}, {"a": 2}, {"a": 1}],
         ),
         (
-            [{ "a": 2 }, { "b": 1 }, { "a": 1 }],
+            [{"a": 2}, {"b": 1}, {"a": 1}],
             "a",
             "last",
-            [{ "a": 2 }, { "a": 1 }, { "b": 1 }],
+            [{"a": 2}, {"a": 1}, {"b": 1}],
         ),
         (
-            [{ "a": { "b": 1 } }, { "a": { "b": 2 } }, { "a": { "b": 3 } }],
+            [{"a": {"b": 1}}, {"a": {"b": 2}}, {"a": {"b": 3}}],
             "a.b",
             "first",
-            [{ "a": { "b": 3 } }, { "a": { "b": 2 } }, { "a": { "b": 1 } }],
+            [{"a": {"b": 3}}, {"a": {"b": 2}}, {"a": {"b": 1}}],
         ),
-    ]
+    ],
 )
 def test_sort(array, prop, none_pos, out, set_default_jekyll):
     assert Liquid("{{x | sort: p, n}}").render(
-        x=array,
-        p=prop,
-        n=none_pos
+        x=array, p=prop, n=none_pos
     ) == str(out)
+
 
 @pytest.mark.parametrize(
     "template, out",
     [
-        ('{{ None | slugify }}', None),
+        ("{{ None | slugify }}", None),
         ('{{ " Q*bert says @!#?@!" | slugify }}', "q-bert-says"),
-        ('{{ " Q*bert says @!#?@!" | slugify: "pretty" }}', "q-bert-says-@!-@!"),
+        (
+            '{{ " Q*bert says @!#?@!" | slugify: "pretty" }}',
+            "q-bert-says-@!-@!",
+        ),
         ('{{ "The _config.yml file" | slugify }}', "the-config-yml-file"),
-        ('{{ "The _config.yml file" | slugify: "default" }}', "the-config-yml-file"),
-        ('{{ "The _config.yml file" | slugify: "pretty" }}', "the-_config.yml-file"),
-        ('{{ "The _config.yml file" | slugify: "raw" }}', "the-_config.yml-file"),
-        ('{{ "The _cönfig.yml file" | slugify: "ascii" }}', "the-config-yml-file"),
-        ('{{ "The cönfig.yml file" | slugify: "latin" }}', "the-config-yml-file"),
-    ]
+        (
+            '{{ "The _config.yml file" | slugify: "default" }}',
+            "the-config-yml-file",
+        ),
+        (
+            '{{ "The _config.yml file" | slugify: "pretty" }}',
+            "the-_config.yml-file",
+        ),
+        (
+            '{{ "The _config.yml file" | slugify: "raw" }}',
+            "the-_config.yml-file",
+        ),
+        (
+            '{{ "The _cönfig.yml file" | slugify: "ascii" }}',
+            "the-config-yml-file",
+        ),
+        (
+            '{{ "The cönfig.yml file" | slugify: "latin" }}',
+            "the-config-yml-file",
+        ),
+    ],
 )
 def test_slugify(template, out, set_default_jekyll):
     assert Liquid(template).render() == str(out)
+
+
+@pytest.mark.parametrize(
+    "array, connector, out",
+    [
+        ([], "and", ""),
+        ([1], "and", "1"),
+        (["chunky"], "and", "chunky"),
+        ([1, 2], "and", "1 and 2"),
+        ([1, 2], "or", "1 or 2"),
+        (["chunky", "bacon"], "and", "chunky and bacon"),
+        ([1, 2, 3, 4], "and", "1, 2, 3, and 4"),
+        ([1, 2, 3, 4], "or", "1, 2, 3, or 4"),
+        (
+            ["chunky", "bacon", "bits", "pieces"],
+            "and",
+            "chunky, bacon, bits, and pieces",
+        ),
+    ],
+)
+def test_array_to_sentence_string(array, connector, out, set_default_jekyll):
+    assert (
+        Liquid("{{ x | array_to_sentence_string: c }}").render(
+            x=array,
+            c=connector,
+        )
+        == out
+    )

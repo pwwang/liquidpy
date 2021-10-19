@@ -138,9 +138,36 @@ def group_by_expr(env, value, item, expr):
 
 
 # TODO: xml_escape, cgi_escape, uri_escape
-# TODO: array_to_sentence_string
 # TODO: smartify, sassify, scssify
 # TODO: jsonify
+
+
+@jekyll_filter_manager.register
+def array_to_sentence_string(
+    array: Sequence[str],
+    connector: str = "and",
+) -> str:
+    """Join an array of things into a string by separating with commas and the
+    word "and" for the last one.
+
+    Args:
+        array: The Array of Strings to join.
+        connector: Word used to connect the last 2 items in the array
+
+    Returns:
+        The formatted string.
+    """
+    if len(array) == 0:
+        return ""
+
+    array = [str(elm) for elm in array]
+    if len(array) == 1:
+        return array[0]
+
+    if len(array) == 2:
+        return f"{array[0]} {connector} {array[1]}"
+
+    return ", ".join(array[:-1]) + f", {connector} {array[-1]}"
 
 
 @jekyll_filter_manager.register("slugify")
@@ -160,6 +187,7 @@ def jekyll_slugify(input: str, mode: str = "default") -> str:
         return input
 
     from slugify import slugify  # type: ignore
+
     if mode == "pretty":
         return slugify(input, regex_pattern=r"[^_.~!$&'()+,;=@\w]+")
     if mode == "raw":
