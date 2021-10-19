@@ -2,6 +2,7 @@
 See: https://jekyllrb.com/docs/liquid/filters/
 """
 import datetime
+import json
 import os
 import random
 import re
@@ -139,7 +140,19 @@ def group_by_expr(env, value, item, expr):
 
 # TODO: xml_escape, cgi_escape, uri_escape
 # TODO: smartify, sassify, scssify
-# TODO: jsonify
+
+
+@jekyll_filter_manager.register
+def jsonify(input: Any) -> str:
+    """Convert the input into json string
+
+    Args:
+        input: The Array or Hash to be converted
+
+    Returns:
+        The converted json string
+    """
+    return json.dumps(input)
 
 
 @jekyll_filter_manager.register

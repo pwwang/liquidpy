@@ -6,6 +6,7 @@
 - ✨ Add jekyll filter `sort`
 - ✨ Add jekyll filter `slugify`
 - ✨ Add jekyll filter `array_to_sentence_string`
+- ✨ Add jekyll filter `jsonify`
 - ✨ Add `int`, `float`, `str` and `bool` as both filters and globals for all modes (#40)
 
 

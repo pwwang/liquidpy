@@ -204,3 +204,16 @@ def test_array_to_sentence_string(array, connector, out, set_default_jekyll):
         )
         == out
     )
+
+
+@pytest.mark.parametrize(
+    "obj, out",
+    [
+        ({"age": 18}, '{"age": 18}'),
+        ([1,2], '[1, 2]'),
+        ([{"name": "Jack"}, {"name": "Smith"}],
+         '[{"name": "Jack"}, {"name": "Smith"}]'),
+    ]
+)
+def test_jsonify(obj, out, set_default_jekyll):
+    assert Liquid('{{ x | jsonify }}').render(x=obj) == out
