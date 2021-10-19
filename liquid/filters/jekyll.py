@@ -2,7 +2,6 @@
 See: https://jekyllrb.com/docs/liquid/filters/
 """
 import datetime
-import json
 import os
 import random
 import re
@@ -138,7 +137,50 @@ def group_by_expr(env, value, item, expr):
     return [{name: name, items: items} for name, items in out.items()]
 
 
-# TODO: xml_escape, cgi_escape, uri_escape
+@jekyll_filter_manager.register
+def xml_escape(input: str) -> str:
+    """Convert an object into its String representation
+
+    Args:
+        input: The object to be converted
+
+    Returns:
+        The converted string
+    """
+    if input is None:
+        return ""
+
+    from xml.sax.saxutils import escape
+    return escape(input)
+
+
+@jekyll_filter_manager.register
+def cgi_escape(input: str) -> str:
+    """CGI escape a string for use in a URL. Replaces any special characters
+    with appropriate %XX replacements.
+
+    Args:
+        input: The string to escape
+
+    Returns:
+        The escaped string
+    """
+    return urllib.parse.quote_plus(input)
+
+
+@jekyll_filter_manager.register
+def uri_escape(input: str) -> str:
+    """URI escape a string.
+
+    Args:
+        input: The string to escape
+
+    Returns:
+        The escaped string
+    """
+    return urllib.parse.quote(input, safe="!*'();:@&=+$,/?#[]")
+
+
 # TODO: smartify, sassify, scssify
 
 
@@ -152,6 +194,7 @@ def jsonify(input: Any) -> str:
     Returns:
         The converted json string
     """
+    import json
     return json.dumps(input)
 
 

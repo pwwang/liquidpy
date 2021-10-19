@@ -7,6 +7,7 @@
 - ✨ Add jekyll filter `slugify`
 - ✨ Add jekyll filter `array_to_sentence_string`
 - ✨ Add jekyll filter `jsonify`
+- ✨ Add jekyll filters `xml_escape`, `cgi_escape` and `uri_escape`
 - ✨ Add `int`, `float`, `str` and `bool` as both filters and globals for all modes (#40)
 
 

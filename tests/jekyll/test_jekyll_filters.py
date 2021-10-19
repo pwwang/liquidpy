@@ -210,10 +210,50 @@ def test_array_to_sentence_string(array, connector, out, set_default_jekyll):
     "obj, out",
     [
         ({"age": 18}, '{"age": 18}'),
-        ([1,2], '[1, 2]'),
-        ([{"name": "Jack"}, {"name": "Smith"}],
-         '[{"name": "Jack"}, {"name": "Smith"}]'),
-    ]
+        ([1, 2], "[1, 2]"),
+        (
+            [{"name": "Jack"}, {"name": "Smith"}],
+            '[{"name": "Jack"}, {"name": "Smith"}]',
+        ),
+    ],
 )
 def test_jsonify(obj, out, set_default_jekyll):
-    assert Liquid('{{ x | jsonify }}').render(x=obj) == out
+    assert Liquid("{{ x | jsonify }}").render(x=obj) == out
+
+
+def test_xml_escape(set_default_jekyll):
+    assert Liquid("{{ x | xml_escape }}").render(x=None) == ""
+    assert Liquid("{{ x | xml_escape }}").render(x="AT&T") == "AT&amp;T"
+    assert (
+        Liquid("{{ x | xml_escape }}").render(
+            x="<code>command &lt;filename&gt;</code>"
+        )
+        == "&lt;code&gt;command &amp;lt;filename&amp;gt;&lt;/code&gt;"
+    )
+
+
+def test_cgi_escape(set_default_jekyll):
+    assert Liquid("{{ x | cgi_escape }}").render(x="my things") == "my+things"
+    assert Liquid("{{ x | cgi_escape }}").render(x="hey!") == "hey%21"
+    assert (
+        Liquid("{{ x | cgi_escape }}").render(x="foo, bar; baz?")
+        == "foo%2C+bar%3B+baz%3F"
+    )
+
+
+def test_uri_escape(set_default_jekyll):
+    assert (
+        Liquid("{{ x | uri_escape }}").render(x="my things") == "my%20things"
+    )
+    assert (
+        Liquid("{{ x | uri_escape }}").render(x="foo!*'();:@&=+$,/?#[]bar")
+        == "foo!*'();:@&=+$,/?#[]bar"
+    )
+    assert (
+        Liquid("{{ x | uri_escape }}").render(x="foo bar!*'();:@&=+$,/?#[]baz")
+        == "foo%20bar!*'();:@&=+$,/?#[]baz"
+    )
+    assert (
+        Liquid("{{ x | uri_escape }}").render(x="http://foo.com/?q=foo, \\bar?")
+        == "http://foo.com/?q=foo,%20%5Cbar?"
+    )
