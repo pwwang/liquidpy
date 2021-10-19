@@ -122,12 +122,43 @@ def group_by_expr(env, value, item, expr):
         out.setdefault(name, []).append(itm)
     return [{name: name, items: items} for name, items in out.items()]
 
-
 # TODO: xml_escape, cgi_escape, uri_escape
-# TODO: number_of_words
 # TODO: array_to_sentence_string
 # TODO: smartify, sassify, scssify
 # TODO: slugify, jsonify
+
+
+@jekyll_filter_manager.register
+def number_of_words(input: str, mode: str = None) -> int:
+    """Count the number of words in the input string.
+
+    Args:
+        input: The String on which to operate.
+        mode: Passing 'cjk' as the argument will count every CJK character
+            detected as one word irrespective of being separated by whitespace.
+            Passing 'auto' (auto-detect) works similar to 'cjk'
+
+    Returns:
+        The word count.
+    """
+    import regex
+    cjk_charset = r"\p{Han}\p{Katakana}\p{Hiragana}\p{Hangul}"
+    cjk_regex = fr"[{cjk_charset}]"
+    word_regex = fr"[^{cjk_charset}\s]+"
+    if mode == "cjk":
+        return (
+            len(regex.findall(cjk_regex, input))
+            + len(regex.findall(word_regex, input))
+        )
+    if mode == "auto":
+        cjk_count = len(regex.findall(cjk_regex, input))
+        return (
+            len(input.split())
+            if cjk_count == 0
+            else cjk_count + len(regex.findall(word_regex, input))
+        )
+    return len(input.split())
+
 
 @jekyll_filter_manager.register
 def markdownify(value):

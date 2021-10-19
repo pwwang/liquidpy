@@ -40,5 +40,19 @@ def test_sample(set_default_jekyll):
         "3",
     ]
 
+
 def test_markdownify(set_default_jekyll):
-    assert Liquid("{{ '# a' | markdownify }}").render() == '<h1>a</h1>'
+    assert Liquid("{{ '# a' | markdownify }}").render() == "<h1>a</h1>"
+
+
+def test_number_of_words(set_default_jekyll):
+    assert Liquid("{{ 'Hello world!' | number_of_words }}").render() == "2"
+    assert Liquid("{{ '你好hello世界world' | number_of_words }}").render() == "1"
+    assert (
+        Liquid("{{ '你好hello世界world' | number_of_words: 'cjk' }}").render()
+        == "6"
+    )
+    assert (
+        Liquid("{{ '你好hello世界world' | number_of_words: 'auto' }}").render()
+        == "6"
+    )

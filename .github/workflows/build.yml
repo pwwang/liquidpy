@@ -32,6 +32,7 @@ jobs:
           poetry install -v
           # reinstall pandas to specific version
           pip install $JINJA2
+          pip install regex
           pip install markdown
           pip install python-dateutil
           pip install python-frontmatter
