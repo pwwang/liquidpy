@@ -2,7 +2,7 @@
 import re
 import math
 import html
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from jinja2.filters import FILTERS
 
@@ -22,24 +22,47 @@ class DateTime:
         """How it is rendered"""
         return self.dt.strftime(self.fmt)
 
-    def __add__(self, other: int) -> "DateTime":
-        """Add seconds"""
-        return self.__class__(
-            self.dt + timedelta(seconds=other),
-            self.fmt
-        )
+    def __add__(self, other: int) -> int:
+        return int(str(self)) + other
 
-    def __sub__(self, other: int) -> "DateTime":
-        """Minus seconds"""
-        return self.__class__(
-            self.dt - timedelta(seconds=other),
-            self.fmt
-        )
+    def __sub__(self, other: int) -> int:
+        return int(str(self)) - other
 
-    def __radd__(self, other: int) -> "DateTime":
-        return self + other
+    def __mul__(self, other: int) -> int:
+        return int(str(self)) * other
 
-    # cannot do rminus, 86400 - now doesn't make sense
+    def __floordiv__(self, other: int) -> float:
+        return float(str(self)) // other
+
+    def __mod__(self, other: int) -> int:
+        return int(str(self)) % other
+
+    def __pow__(self, other: int) -> int:  # pragma: no cover
+        return int(str(self)) ** other
+
+    def __truediv__(self, other: int) -> float:  # pragma: no cover
+        return float(str(self)) / other
+
+    def __radd__(self, other: int) -> int:  # pragma: no cover
+        return other + int(str(self))
+
+    def __rsub__(self, other: int) -> int:  # pragma: no cover
+        return other - int(str(self))
+
+    def __rmul__(self, other: int) -> int:  # pragma: no cover
+        return other * int(str(self))
+
+    def __rmod__(self, other: int) -> int:  # pragma: no cover
+        return other % int(str(self))
+
+    def __rpow__(self, other: int) -> int:  # pragma: no cover
+        return other ** int(str(self))
+
+    def __rtruediv__(self, other: int) -> float:  # pragma: no cover
+        return other / float(str(self))
+
+    def __rfloordiv__(self, other: int) -> float:  # pragma: no cover
+        return other // float(str(self))
 
 
 class EmptyDrop:
@@ -86,6 +109,10 @@ standard_filter_manager.register(str.rstrip)
 standard_filter_manager.register(str.strip)
 standard_filter_manager.register(str.replace)
 standard_filter_manager.register("size")(len)
+standard_filter_manager.register(int)
+standard_filter_manager.register(float)
+standard_filter_manager.register(str)
+standard_filter_manager.register(bool)
 
 
 @standard_filter_manager.register
@@ -154,10 +181,12 @@ def liquid_date(base, fmt):
         dtime = datetime.now()
     elif base == "today":
         dtime = datetime.today()
+    elif isinstance(base, (int, float)):
+        dtime = datetime.fromtimestamp(base)
     else:
         from dateutil import parser    # type: ignore
-
         dtime = parser.parse(base)
+
     return DateTime(dtime, fmt)
 
 

@@ -345,27 +345,19 @@ def test_dot(set_default_standard):
 
 
 @pytest.mark.parametrize(
-    "fmt,delta",
+    "tpl,out",
     [
-        ("%Y-%m-%d %H:%M", 86400),
-        ("%Y-%m-%d %H:%M", 0),
-        ("%Y-%m-%d %H:%M", -86400),
+        ('{{ 0 | date: "%s"  | plus: 86400 }}', "86400"),
+        ('{{ "now" | date: "%Y"  | plus: 1 }}', str(datetime.today().year + 1)),
+        ('{{ 0 | date: "%s"  | minus: 86400 }}', "-86400"),
+        ('{{ 0 | date: "%s"  | times: 86400 }}', "0"),
+        ('{{ 1 | date: "%s"  | times: 86400 }}', "86400"),
+        ('{{ 10 | date: "%s"  | divided_by: 2 | int }}', "5"),
+        ('{{ 10 | date: "%s"  | modulo: 3 }}', "1"),
     ],
 )
-def test_date_plus_minus(fmt, delta, set_default_standard):
-    from datetime import timedelta, datetime
-
-    # add
-    out = Liquid(f'{{{{"now" | date: "{fmt}" | plus: {delta} }}}}').render()
-    assert out == (datetime.now() + timedelta(seconds=delta)).strftime(fmt)
-    # radd
-    out = Liquid(
-        f'{{{{ {delta} | plus: date("now", "{fmt}") }}}}', mode="wild"
-    ).render()
-    assert out == (datetime.now() + timedelta(seconds=delta)).strftime(fmt)
-    # minus
-    out = Liquid(f'{{{{"now" | date: "{fmt}" | minus: {delta} }}}}').render()
-    assert out == (datetime.now() - timedelta(seconds=delta)).strftime(fmt)
+def test_date_arithmetic(tpl, out, set_default_standard):
+    assert Liquid(tpl).render() == out
 
 
 def test_emptydrop(set_default_standard):
@@ -392,3 +384,13 @@ def test_regex_replace(set_default_standard):
         ).render()
         == "bbc"
     )
+
+def test_basic_typecasting(set_default_standard):
+    assert Liquid('{{ "1" | int | plus: 1 }}').render() == "2"
+    assert Liquid('{{ "1" | float | plus: 1 }}').render() == "2.0"
+    assert Liquid('{{ 1 | str | append: "1" }}').render() == "11"
+    assert Liquid('{{ 1 | bool }}').render() == "True"
+    assert Liquid('{{ int("1") | plus: 1 }}').render() == "2"
+    assert Liquid('{{ float("1") | plus: 1 }}').render() == "2.0"
+    assert Liquid('{{ str(1) | append: "1" }}').render() == "11"
+    assert Liquid('{{ bool(1) }}').render() == "True"
