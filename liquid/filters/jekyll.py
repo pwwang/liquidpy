@@ -6,7 +6,7 @@ import os
 import random
 import re
 import urllib.parse
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 if TYPE_CHECKING:
     from jinja2.environment import Environment
@@ -31,6 +31,20 @@ def _getattr(obj: Any, attr: str) -> Any:
         return getattr(obj, attr)
     except AttributeError:
         return obj[attr]
+
+
+def _getattr_multi(obj: Any, attr: str) -> Any:
+    """Get attribute of an object at multiple levels
+
+    For example: x.a.b = 1, _getattr_multi(x, "a.b") == 1
+    """
+    attrs = attr.split(".")
+    for att in attrs:
+        try:
+            obj = _getattr(obj, att)
+        except (TypeError, KeyError):
+            obj = None
+    return obj
 
 
 def _get_global_var(env: "Environment", name: str, attr: str = None) -> Any:
@@ -122,6 +136,7 @@ def group_by_expr(env, value, item, expr):
         out.setdefault(name, []).append(itm)
     return [{name: name, items: items} for name, items in out.items()]
 
+
 # TODO: xml_escape, cgi_escape, uri_escape
 # TODO: array_to_sentence_string
 # TODO: smartify, sassify, scssify
@@ -142,13 +157,13 @@ def number_of_words(input: str, mode: str = None) -> int:
         The word count.
     """
     import regex
+
     cjk_charset = r"\p{Han}\p{Katakana}\p{Hiragana}\p{Hangul}"
     cjk_regex = fr"[{cjk_charset}]"
     word_regex = fr"[^{cjk_charset}\s]+"
     if mode == "cjk":
-        return (
-            len(regex.findall(cjk_regex, input))
-            + len(regex.findall(word_regex, input))
+        return len(regex.findall(cjk_regex, input)) + len(
+            regex.findall(word_regex, input)
         )
     if mode == "auto":
         cjk_count = len(regex.findall(cjk_regex, input))
@@ -164,6 +179,7 @@ def number_of_words(input: str, mode: str = None) -> int:
 def markdownify(value):
     """Markdownify a string"""
     from markdown import markdown  # type: ignore
+
     return markdown(value)
 
 
@@ -173,7 +189,61 @@ def normalize_whitespace(value):
     return re.sub(r"\s+", " ", value)
 
 
-# TODO: sort
+@jekyll_filter_manager.register("sort")
+def jekyll_sort(
+    array: Sequence,
+    prop: str = None,
+    none_pos: str = "first",
+) -> Sequence:
+    """Sort an array in a reverse way by default.
+
+    Note that the order might be different than it with ruby. For example,
+    in python `"1abc" > "1"`, but it's not the case in jekyll. Also, it's
+    always in reverse order for property values.
+
+    Args:
+        array: The array
+        prop: property name
+        none_pos: None order (first or last).
+
+    Returns:
+        The sorted array
+    """
+    if array is None:
+        raise ValueError("Cannot sort None object.")
+
+    if none_pos not in ("first", "last"):
+        raise ValueError(
+            f"{none_pos!r} is not a valid none_pos order. "
+            "It must be 'first' or 'last'."
+        )
+
+    if prop is None:
+        non_none_arr = [elm for elm in array if elm is not None]
+        n_none = len(array) - len(non_none_arr)
+        sorted_arr = list(sorted(non_none_arr, reverse=True))
+
+        if none_pos == "first":
+            return [None] * n_none + sorted_arr
+
+        return sorted_arr + [None] * n_none
+
+    non_none_arr = [
+        elm for elm in array if _getattr_multi(elm, prop) is not None
+    ]
+    none_arr = [elm for elm in array if _getattr_multi(elm, prop) is None]
+    sorted_arr = list(
+        sorted(
+            non_none_arr,
+            key=lambda elm: _getattr_multi(elm, prop),
+            reverse=True,
+        )
+    )
+
+    if none_pos == "first":
+        return none_arr + sorted_arr
+
+    return sorted_arr + none_arr
 
 
 @jekyll_filter_manager.register
