@@ -140,7 +140,32 @@ def group_by_expr(env, value, item, expr):
 # TODO: xml_escape, cgi_escape, uri_escape
 # TODO: array_to_sentence_string
 # TODO: smartify, sassify, scssify
-# TODO: slugify, jsonify
+# TODO: jsonify
+
+
+@jekyll_filter_manager.register("slugify")
+def jekyll_slugify(input: str, mode: str = "default") -> str:
+    """Slugify a string
+
+    Note that non-ascii characters are always translated to ascii ones.
+
+    Args:
+        input: The input string
+        mode: How string is slugified
+
+    Returns:
+        The slugified string
+    """
+    if input is None or mode == "none":
+        return input
+
+    from slugify import slugify  # type: ignore
+    if mode == "pretty":
+        return slugify(input, regex_pattern=r"[^_.~!$&'()+,;=@\w]+")
+    if mode == "raw":
+        return slugify(input, regex_pattern=r"\s+")
+
+    return slugify(input)
 
 
 @jekyll_filter_manager.register

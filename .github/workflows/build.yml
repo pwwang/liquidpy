@@ -36,6 +36,7 @@ jobs:
           pip install markdown
           pip install python-dateutil
           pip install python-frontmatter
+          pip install python-slugify
         env:
           JINJA2: ${{ matrix.jinja2 }}
       - name: Test with pytest

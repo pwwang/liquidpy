@@ -142,3 +142,20 @@ def test_sort(array, prop, none_pos, out, set_default_jekyll):
         p=prop,
         n=none_pos
     ) == str(out)
+
+@pytest.mark.parametrize(
+    "template, out",
+    [
+        ('{{ None | slugify }}', None),
+        ('{{ " Q*bert says @!#?@!" | slugify }}', "q-bert-says"),
+        ('{{ " Q*bert says @!#?@!" | slugify: "pretty" }}', "q-bert-says-@!-@!"),
+        ('{{ "The _config.yml file" | slugify }}', "the-config-yml-file"),
+        ('{{ "The _config.yml file" | slugify: "default" }}', "the-config-yml-file"),
+        ('{{ "The _config.yml file" | slugify: "pretty" }}', "the-_config.yml-file"),
+        ('{{ "The _config.yml file" | slugify: "raw" }}', "the-_config.yml-file"),
+        ('{{ "The _cönfig.yml file" | slugify: "ascii" }}', "the-config-yml-file"),
+        ('{{ "The cönfig.yml file" | slugify: "latin" }}', "the-config-yml-file"),
+    ]
+)
+def test_slugify(template, out, set_default_jekyll):
+    assert Liquid(template).render() == str(out)
