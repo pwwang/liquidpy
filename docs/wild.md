@@ -21,6 +21,8 @@ Below are some features it supports.
     - See: https://jinja.palletsprojects.com/en/3.0.x/templates/?highlight=builtin%20filters#builtin-filters
 - `ifelse`:
     - See: https://pwwang.github.io/liquidpy/api/liquid.filters.wild/
+- `map()`
+    - It is overridden by python's `builtins.map()`. To use the one from `liquid`, try `liquid_map()`
 
 ## Tests
 

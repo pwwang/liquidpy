@@ -1,3 +1,9 @@
+# 0.7.3
+
+- 🩹 Make `default` filter work with `None`
+- 🩹 Make `attr` filter work with dicts
+- 🩹 Use filter `liquid_map`, in wild mode, instead of `map`, which is overridden by python's builtin `map`
+
 # 0.7.2
 
 - 🐛 Fix `date` filter issues (#38, #40)

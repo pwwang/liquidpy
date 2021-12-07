@@ -93,7 +93,7 @@ class Liquid:
                 ext_conf[key] = val
 
         loader = env_args.pop("loader", None)
-        fsloader = FileSystemLoader(search_paths)
+        fsloader = FileSystemLoader(search_paths)  # type: ignore
         if loader:
             loader = ChoiceLoader([loader, fsloader])
         else:
@@ -190,7 +190,7 @@ class Liquid:
             # in case template is a PathLike
             self.template = env.get_template(str(template))
         else:
-            self.template = env.from_string(template)
+            self.template = env.from_string(str(template))
 
     def render(self, *args, **kwargs) -> Any:
         """Render the template.

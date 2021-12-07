@@ -2,7 +2,7 @@
 import textwrap
 from contextlib import redirect_stdout
 from io import StringIO
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Union
 
 from jinja2 import nodes
 from jinja2.exceptions import TemplateSyntaxError
@@ -151,6 +151,7 @@ def addfilter(
     token = parser.stream.expect("name")
     filtername = token.value
 
+    pass_env: Union[bool, Token]
     if parser.stream.current.type is TOKEN_BLOCK_END:
         # no pass_environment
         pass_env = False
@@ -176,7 +177,7 @@ def addfilter(
         ) from None
 
     if pass_env:
-        filterfunc = pass_environment(filterfunc)
+        filterfunc = pass_environment(filterfunc)  # type: ignore
     env.filters[filtername] = filterfunc
 
     return nodes.Output([], lineno=token.lineno)
