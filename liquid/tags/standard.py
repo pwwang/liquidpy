@@ -33,11 +33,11 @@ def comment(token: "Token", parser: "Parser") -> nodes.Node:
     """
     if parser.stream.current.type is TOKEN_BLOCK_END:
         # no args provided, ignore whatever
-        parser.parse_statements(["name:endcomment"], drop_needle=True)
+        parser.parse_statements(("name:endcomment", ), drop_needle=True)
         return nodes.Output([], lineno=token.lineno)
 
     args = parser.parse_expression()
-    body = parser.parse_statements(["name:endcomment"], drop_needle=True)
+    body = parser.parse_statements(("name:endcomment", ), drop_needle=True)
     body = decode_raw(body[0].nodes[0].data)
     body_parts = body.split("\n", 1)
     if not body_parts[0]:
@@ -194,7 +194,7 @@ def tablerow(
     Returns:
         The parsed node
     """
-    target = parser.parse_assign_target(extra_end_rules=("name:in"))
+    target = parser.parse_assign_target(extra_end_rules=("name:in", ))
     parser.stream.expect("name:in")
     iter_ = parser.parse_tuple(
         with_condexpr=False,
@@ -222,7 +222,7 @@ def tablerow(
             "load",
         )
     else:
-        inner_iter = iter_
+        inner_iter: nodes.Getitem = iter_
 
     inner_body = [
         nodes.Output(

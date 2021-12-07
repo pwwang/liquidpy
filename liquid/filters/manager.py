@@ -1,5 +1,5 @@
 """Provides filter manager"""
-from typing import TYPE_CHECKING, Callable, Dict, Union
+from typing import TYPE_CHECKING, Callable, Dict, Sequence, Union
 
 if TYPE_CHECKING:
     from jinja2 import Environment
@@ -19,7 +19,7 @@ class FilterManager:
         self.filters: Dict[str, Callable] = {}
 
     def register(
-        self, name_or_filter: Union[str, Callable] = None
+        self, name_or_filter: Union[str, Sequence[str], Callable] = None
     ) -> Callable:
         """Register a filter
 

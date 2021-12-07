@@ -92,7 +92,7 @@ class LiquidStandardExtension(LiquidExtension):
                     yield Token(token.lineno, TOKEN_COMMA, None)
                     yield tokens_ahead[3]
                     yield Token(token.lineno, TOKEN_ADD, None)
-                    yield Token(token.lineno, TOKEN_INTEGER, 1)
+                    yield Token(token.lineno, TOKEN_INTEGER, 1)  # type: ignore
                     yield Token(token.lineno, TOKEN_RPAREN, None)
 
             else:

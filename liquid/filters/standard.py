@@ -86,12 +86,17 @@ class EmptyDrop:
         return False
 
 
-def _get_prop(obj, prop):
+def _get_prop(obj, prop, _raise=False):
     """Get the property of the object, allow via getitem"""
     try:
         return obj[prop]
     except (TypeError, KeyError):
-        return getattr(obj, prop)
+        try:
+            return getattr(obj, prop)
+        except AttributeError:
+            if _raise:  # pragma: no cover
+                raise
+            return None
 
 
 # Jinja comes with thses filters
@@ -196,6 +201,8 @@ def default(base, deft, allow_false=False):
     Otherwise, return base"""
     if allow_false and base is False:
         return False
+    if base is None:
+        return deft
     return FILTERS["default"](base, deft, isinstance(base, str))
 
 
@@ -347,10 +354,16 @@ def where(base, prop, value):
     return ret or EmptyDrop()
 
 
-@standard_filter_manager.register("map")
+@standard_filter_manager.register(["liquid_map", "map"])
 def liquid_map(base, prop):
     """Map a property to a list of objects"""
     return [_get_prop(bas, prop) for bas in base]
+
+
+@standard_filter_manager.register
+def attr(base, prop):
+    """Similar as `__getattr__()` but also works like `__getitem__()"""
+    return _get_prop(base, prop)
 
 
 # @standard_filter_manager.register

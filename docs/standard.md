@@ -8,7 +8,6 @@ You may checkout the documentation for standard liquid:
 
 It always returns a `float` rather than an `integer` when `ndigits=0`
 
-
 ## Logical operators
 
 The logical operators `and`/`or` collapse from left to right (it's right to left in `liquid`)

@@ -3,6 +3,7 @@ https://shopify.github.io/liquid/filters/abs/
 """
 import pytest
 from datetime import datetime
+from collections import namedtuple
 
 from liquid import Liquid
 
@@ -394,3 +395,16 @@ def test_basic_typecasting(set_default_standard):
     assert Liquid('{{ float("1") | plus: 1 }}').render() == "2.0"
     assert Liquid('{{ str(1) | append: "1" }}').render() == "11"
     assert Liquid('{{ bool(1) }}').render() == "True"
+
+def test_attr(set_default_standard):
+    assert Liquid('{{x | attr: "y"}}').render(x = {}) == "None"
+    assert Liquid('{{x | attr: "y" | default: 1}}').render(x = {}) == "1"
+    assert Liquid('{{x | attr: "y"}}').render(x = {"y": 1}) == "1"
+    assert Liquid('{{x | attr: "y"}}').render(x=namedtuple("X", "y")(2)) == "2"
+
+def test_liquid_map(set_default_standard):
+    assert Liquid('{{x | liquid_map: "y" | first}}').render(x=[{}]) == "None"
+    assert Liquid('{{x | liquid_map: "y" | first}}').render(x=[{"y": 1}]) == "1"
+    assert Liquid('{{x | liquid_map: "y" | last}}').render(
+        x=[namedtuple("X", "y")(2)]
+    ) == "2"
