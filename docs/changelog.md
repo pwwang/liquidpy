@@ -1,3 +1,8 @@
+# 0.7.4
+
+- ✅ Add tests regarding #47
+- 📌 Upgrade and pin dependencies
+
 # 0.7.3
 
 - 🩹 Make `default` filter work with `None`
