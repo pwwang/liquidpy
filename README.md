@@ -8,6 +8,12 @@ A port of [liquid][19] template engine for python, on the shoulder of [jinja2][1
 pip install -U liquidpy
 ```
 
+## Playground
+
+Powered by [pyscript][21]:
+
+[https://pwwang.github.io/liquidpy/playground][22]
+
 ## Baisic usage
 
 ### Loading a template
@@ -89,3 +95,5 @@ liq.render()
 [18]: https://jekyllrb.com/docs/liquid/
 [19]: https://shopify.github.io/liquid/
 [20]: https://jinja.palletsprojects.com/
+[21]: https://pyscript.net/
+[22]: https://pwwang.github.io/liquidpy/playground
