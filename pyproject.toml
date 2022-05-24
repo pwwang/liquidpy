@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "liquidpy"
-version = "0.7.4"
+version = "0.7.5"
 description = "A port of liquid template engine for python"
 authors = [ "pwwang <pwwang@pwwang.com>",]
 license = "MIT"
@@ -39,7 +39,7 @@ target-version = ['py37', 'py38', 'py39']
 include = '\.pyi?$'
 
 [tool.pytest.ini_options]
-addopts = "-vv --cov-config=.coveragerc --cov=liquid --cov-report xml:cov.xml --cov-report term-missing"
+addopts = "-vv -p no:asyncio --cov-config=.coveragerc --cov=liquid --cov-report xml:cov.xml --cov-report term-missing"
 console_output_style = "progress"
 junit_family = "xunit1"
 

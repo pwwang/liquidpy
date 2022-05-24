@@ -4,4 +4,4 @@ from .patching import patch_jinja, unpatch_jinja
 
 patch_jinja()
 
-__version__ = "0.7.4"
+__version__ = "0.7.5"

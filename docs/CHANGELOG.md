@@ -1,3 +1,8 @@
+# 0.7.5
+
+- ✨ Implement a playground powered by pyscript
+- ✨ Add filter `call` for `wild` mode
+
 # 0.7.4
 
 - ✅ Add tests regarding #47

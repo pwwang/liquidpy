@@ -32,7 +32,7 @@ jobs:
       - name: Deploy docs
         run: |
           mkdocs gh-deploy --clean --force
-        if: success() && github.ref == 'refs/heads/master'
+        if: success() && (github.ref == 'refs/heads/master' || contains(github.event.head_commit.message, '[docs]'))
 
   fix-index:
     needs: docs

@@ -5,7 +5,7 @@ try:
 except ImportError:
     from jinja2 import environmentfilter as pass_environment
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 from .manager import FilterManager
 
 if TYPE_CHECKING:
@@ -67,3 +67,22 @@ def ifelse(
     if test_out:
         return compile_out(true, true_args)
     return compile_out(false, false_args)
+
+
+@wild_filter_manager.register
+def call(fn: Callable, *args, **kwargs) -> Any:
+    """Call a function with passed arguments
+
+    Examples:
+        >>> {{ int | call: "1" | plus: 1 }}
+        >>> # 2
+
+    Args:
+        fn: The callable
+        *args: and
+        **kwargs: The arguments for the callable
+
+    Returns:
+        The result of calling the function
+    """
+    return fn(*args, **kwargs)
