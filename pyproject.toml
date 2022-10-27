@@ -29,12 +29,10 @@ toml = {version = "^0.10.2", optional = true}
 [tool.poetry.dev-dependencies]
 pytest = "^7"
 pytest-cov = "^3"
+six = "^1.16.0"
 
 [tool.poetry.extras]
 extra = ["python-frontmatter", "markdown", "regex", "python-slugify", "python-dateutil", "toml"]
-
-[tool.poetry.group.dev.dependencies]
-six = "^1.16.0"
 
 [tool.black]
 line-length = 79
