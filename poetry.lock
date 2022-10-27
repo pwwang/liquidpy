@@ -299,7 +299,7 @@ extra = ["python-frontmatter", "markdown", "regex", "python-slugify", "python-da
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "185cdbe4cdbeec0c51edb9a542a801875356bf75edb794d8d0015cc7cf5f5f52"
+content-hash = "b4839714de5d28d7841838ed325fcf3395ecb5edb4628a1c631335028082dd27"
 
 [metadata.files]
 atomicwrites = [
