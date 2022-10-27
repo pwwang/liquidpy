@@ -31,6 +31,9 @@ pytest-cov = "^3"
 [tool.poetry.extras]
 extra = ["python-frontmatter", "markdown", "regex", "python-slugify", "python-dateutil", "toml"]
 
+[tool.poetry.group.dev.dependencies]
+six = "^1.16.0"
+
 [tool.black]
 line-length = 79
 target-version = ['py37', 'py38', 'py39']
