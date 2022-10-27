@@ -39,22 +39,21 @@ class FilterColonExtension(Extension):
             # print(token.value, token.type)
             if flag == 0 and token.type is TOKEN_PIPE:
                 flag = 1
-                yield token
             elif token.type is TOKEN_NAME and flag == 1:
                 flag = 2
-                yield token
             elif token.type is TOKEN_COLON and flag == 2:
                 flag = 3
-                yield Token(token.lineno, TOKEN_LPAREN, None)
+                token = Token(token.lineno, TOKEN_LPAREN, None)
             elif token.type is TOKEN_COLON and flag == 3:
                 # {{ a | filter: 1, x: 2}} => {{ a | filter: 1, x=2}}
-                yield Token(token.lineno, TOKEN_ASSIGN, None)
+                token = Token(token.lineno, TOKEN_ASSIGN, None)
             elif (
                 token.type in (TOKEN_VARIABLE_END, TOKEN_BLOCK_END, TOKEN_PIPE)
                 and flag == 3
             ):
                 flag = 1 if token.type is TOKEN_PIPE else 0
                 yield Token(token.lineno, TOKEN_RPAREN, None)
-                yield token
-            else:
-                yield token
+            elif token.type in (TOKEN_VARIABLE_END, TOKEN_BLOCK_END):
+                flag = 0
+
+            yield token

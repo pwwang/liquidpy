@@ -4,7 +4,7 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "liquidpy"
-version = "0.7.5"
+version = "0.7.6"
 description = "A port of liquid template engine for python"
 authors = [ "pwwang <pwwang@pwwang.com>",]
 license = "MIT"
@@ -29,6 +29,7 @@ toml = {version = "^0.10.2", optional = true}
 [tool.poetry.dev-dependencies]
 pytest = "^7"
 pytest-cov = "^3"
+six = "^1.16.0"
 
 [tool.poetry.extras]
 extra = ["python-frontmatter", "markdown", "regex", "python-slugify", "python-dateutil", "toml"]
