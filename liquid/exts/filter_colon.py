@@ -53,7 +53,7 @@ class FilterColonExtension(Extension):
             ):
                 flag = 1 if token.type is TOKEN_PIPE else 0
                 yield Token(token.lineno, TOKEN_RPAREN, None)
-            elif token.type == TOKEN_VARIABLE_END:
+            elif token.type in (TOKEN_VARIABLE_END, TOKEN_BLOCK_END):
                 flag = 0
 
             yield token
