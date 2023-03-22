@@ -19,9 +19,23 @@ def test_env_args(set_default_standard):
 
 def test_from_env(set_default_standard):
     loader = FileSystemLoader("~")
-    env = Environment(loader=loader)
-    tpl = Liquid.from_env("{{ a }}", env)
+    env = Environment(
+        loader=loader,
+        variable_start_string="{$",
+        variable_end_string="$}",
+    )
+    tpl = Liquid.from_env("{$ a $}", env)
     assert tpl.render(a=1) == "1"
+
+    tpl = Liquid(
+        "{@ a @}",
+        env=env,
+        # override the env's settings
+        variable_start_string="{@",
+        variable_end_string="@}",
+    )
+    assert tpl.render(a=1) == "1"
+
 
 def test_async_render(set_default_standard):
     import asyncio
