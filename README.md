@@ -79,7 +79,7 @@ liq.render()
 [2]: https://img.shields.io/pypi/v/liquidpy.svg?style=flat-square
 [3]: https://img.shields.io/github/tag/pwwang/liquidpy.svg?style=flat-square
 [4]: https://img.shields.io/pypi/pyversions/liquidpy.svg?style=flat-square
-[5]: https://img.shields.io/github/workflow/status/pwwang/liquidpy/building?style=flat-square
+[5]: https://img.shields.io/github/actions/workflow/status/pwwang/liquidpy/build.yml?style=flat-square
 [6]: https://img.shields.io/codacy/grade/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
 [7]: https://img.shields.io/codacy/coverage/aed04c099cbe42dabda2b42bae557fa4?style=flat-square
 [8]: https://pwwang.github.io/liquidpy
@@ -87,7 +87,7 @@ liq.render()
 [10]: https://github.com/pwwang/liquidpy
 [11]: https://github.com/pwwang/liquidpy/actions
 [12]: https://app.codacy.com/gh/pwwang/liquidpy/dashboard
-[13]: https://img.shields.io/github/workflow/status/pwwang/liquidpy/docs?style=flat-square
+[13]: https://img.shields.io/github/actions/workflow/status/pwwang/liquidpy/docs.yml?style=flat-square
 [14]: https://github.com/pwwang/liquidpy/tree/lark
 [15]: https://github.com/pwwang/liquidpy/tree/larkone
 [16]: https://github.com/pwwang/liquidpy/issues/22
