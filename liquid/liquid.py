@@ -99,23 +99,26 @@ class Liquid:
         else:
             loader = fsloader
 
-        self.env = env = Environment(**env_args, loader=loader)
-        env.extend(**ext_conf)
-        env.globals.update(SHARED_GLOBALS)
+        self.env = Environment(**env_args, loader=loader)
+        if env is not None:
+            self.env = env.overlay(**env_args, loader=loader)
 
-        standard_filter_manager.update_to_env(env)
-        env.add_extension("jinja2.ext.loopcontrols")
+        self.env.extend(**ext_conf)
+        self.env.globals.update(SHARED_GLOBALS)
+
+        standard_filter_manager.update_to_env(self.env)
+        self.env.add_extension("jinja2.ext.loopcontrols")
         if filter_with_colon:
             from .exts.filter_colon import FilterColonExtension
 
-            env.add_extension(FilterColonExtension)
+            self.env.add_extension(FilterColonExtension)
 
         if mode == "wild":
             from .exts.wild import LiquidWildExtension
             from .filters.wild import wild_filter_manager
 
-            env.add_extension("jinja2.ext.debug")
-            env.add_extension(LiquidWildExtension)
+            self.env.add_extension("jinja2.ext.debug")
+            self.env.add_extension(LiquidWildExtension)
 
             bfilters = {
                 key: getattr(builtins, key)
@@ -139,9 +142,9 @@ class Liquid:
                 )
                 and not any(key_c.isupper() for key_c in key)
             }
-            env.filters.update(bfilters)
-            wild_filter_manager.update_to_env(env)
-            env.globals.update(
+            self.env.filters.update(bfilters)
+            wild_filter_manager.update_to_env(self.env)
+            self.env.globals.update(
                 {
                     key: val
                     for key, val in __builtins__.items()
@@ -149,32 +152,32 @@ class Liquid:
                 }
             )
             if filters_as_globals:
-                env.globals.update(standard_filter_manager.filters)
-                env.globals.update(wild_filter_manager.filters)
+                self.env.globals.update(standard_filter_manager.filters)
+                self.env.globals.update(wild_filter_manager.filters)
 
         elif mode == "jekyll":
             from .exts.front_matter import FrontMatterExtension
             from .exts.jekyll import LiquidJekyllExtension
             from .filters.jekyll import jekyll_filter_manager
 
-            jekyll_filter_manager.update_to_env(env)
-            env.add_extension(FrontMatterExtension)
-            env.add_extension(LiquidJekyllExtension)
+            jekyll_filter_manager.update_to_env(self.env)
+            self.env.add_extension(FrontMatterExtension)
+            self.env.add_extension(LiquidJekyllExtension)
 
         elif mode == "shopify":
             from .exts.shopify import LiquidShopifyExtension
             from .filters.shopify import shopify_filter_manager
 
-            shopify_filter_manager.update_to_env(env)
-            env.add_extension(LiquidShopifyExtension)
+            shopify_filter_manager.update_to_env(self.env)
+            self.env.add_extension(LiquidShopifyExtension)
 
         else:  # standard
             from .exts.standard import LiquidStandardExtension
 
-            env.add_extension(LiquidStandardExtension)
+            self.env.add_extension(LiquidStandardExtension)
 
         if filters:
-            env.filters.update(filters)
+            self.env.filters.update(filters)
 
         builtin_globals = {
             "int": int,
@@ -184,13 +187,13 @@ class Liquid:
         }
         if globals:
             builtin_globals.update(globals)
-        env.globals.update(builtin_globals)
+        self.env.globals.update(builtin_globals)
 
         if from_file:
             # in case template is a PathLike
-            self.template = env.get_template(str(template))
+            self.template = self.env.get_template(str(template))
         else:
-            self.template = env.from_string(str(template))
+            self.template = self.env.from_string(str(template))
 
     def render(self, *args, **kwargs) -> Any:
         """Render the template.

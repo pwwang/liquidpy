@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.8.0
+
+- ⬆️ Upgrade deps including markdown, regex, and python-slugify
+- 📌 Drop support for python3.6
+- 🐛 Fix passing `env` to `Liquid()` not working
+
 ## 0.7.6
 
 - 🐛 Fix JSON/list parsing in certain cases (#50)
