@@ -12,6 +12,9 @@ readme = "README.md"
 homepage = "https://github.com/pwwang/liquidpy"
 repository = "https://github.com/pwwang/liquidpy"
 
+[tool.poetry.build]
+generate-setup-file = true
+
 [[tool.poetry.packages]]
 include = "liquid"
 
