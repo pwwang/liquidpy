@@ -1,5 +1,14 @@
 # Change Log
 
+## 0.8.1
+
+- 📝 Fix badges in README.md
+- 👷 Use latest actions in CI
+- 🏗️ Enable automatic setup file creation with Poetry
+- ⬆️ Upgrade dependencies to the latest
+- ✨ Add `*` modifier for variable block to keep intial indention for multiline strings for all modes
+- 📝 Update doc for "indent modifier"
+
 ## 0.8.0
 
 - ⬆️ Upgrade deps including markdown, regex, and python-slugify
