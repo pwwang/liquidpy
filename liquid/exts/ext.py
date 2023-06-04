@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 re_e = re.escape
-re_c = lambda rex: re.compile(rex, re.M | re.S)
+re_c = lambda rex: re.compile(rex, re.DOTALL | re.MULTILINE)
 
 # A unique id to encode the start strings
 ENCODING_ID = id(Extension)
@@ -35,12 +35,30 @@ class LiquidExtension(Extension):
         start strings ('{{', '{#', '{%') so that the body won't be tokenized
         by jinjia.
         """
+        # Turn
+        # "  {{* ... }}" to
+        # "  {{* ... | indent(2) }}"
+        # to keep the indent for multiline variables
+        variable_start_re = re_e(self.environment.variable_start_string)
+        variable_end_re = re_e(self.environment.variable_end_string)
+        indent_re = re_c(
+            fr"^([ \t]+){variable_start_re}\*"
+            "(.*?)"
+            fr"(\-{variable_end_re}|\+{variable_end_re}|{variable_end_re})"
+        )
+        source = indent_re.sub(
+            lambda m: (
+                f"{m.group(1)}{self.environment.variable_start_string}"
+                f"{m.group(2)} | indent({m.group(1)!r}){m.group(3)}"
+            ),
+            source,
+        )
+
         if not self.__class__.raw_tags:  # pragma: no cover
             return super().preprocess(source, name, filename=filename)
 
         block_start_re = re_e(self.environment.block_start_string)
         block_end_re = re_e(self.environment.block_end_string)
-        variable_start_re = re_e(self.environment.variable_start_string)
         comment_start_re = re_e(self.environment.comment_start_string)
         to_encode = re_c(
             f"({block_start_re}|{variable_start_re}|{comment_start_re})"
