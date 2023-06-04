@@ -107,3 +107,23 @@ You can do arbitrary things with the wild mode, like executing python code and a
 See details on:
 
 - https://pwwang.github.com/liquidpy/wild
+
+## `*` modifier for `{{` to keep initial indention along multiple lines
+
+```python
+tpl = """\
+if True:
+    {{* body }}
+"""
+body = """\
+print('hello')
+print('world')
+"""
+print(Liquid(tpl, from_file=False).render(body=body))
+```
+
+```
+if True:
+    print('hello')
+    print('world')
+```

@@ -190,3 +190,18 @@ def test_wscontrol(set_default_standard):
         Liquid(tpl).render()
         == "Wow, John G. Chalmers-Smith, you have a long name!"
     )
+
+
+def test_indention_keeping(set_default_standard):
+    tpl = """
+        1
+        {{* var }}
+        2
+    """
+    out = Liquid(tpl).render({"var": "a\n  b"})
+    assert out == """
+        1
+        a
+          b
+        2
+    """
