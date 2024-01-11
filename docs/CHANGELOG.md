@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.8.2
+
+- deps: bump jinja2 to 3.1.3
+
 ## 0.8.1
 
 - 📝 Fix badges in README.md
