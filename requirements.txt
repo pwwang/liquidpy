@@ -1,0 +1,5 @@
+# use_directory_urls doesn't work for newer versions
+mkdocs
+mkdocs-material
+pymdown-extensions
+mkapi-fix
