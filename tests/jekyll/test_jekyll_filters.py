@@ -1,4 +1,4 @@
-from re import template
+from re import template  # noqa: F401
 import pytest
 from liquid import Liquid
 
@@ -61,21 +61,21 @@ def test_markdownify(set_default_jekyll):
 )
 def test_number_of_words(sen, mode, out, set_default_jekyll):
     if mode is None:
-        template = f"{{{{ {sen!r} | number_of_words }}}}"
+        tpl = f"{{{{ {sen!r} | number_of_words }}}}"
     else:
-        template = f"{{{{ {sen!r} | number_of_words: {mode!r} }}}}"
+        tpl = f"{{{{ {sen!r} | number_of_words: {mode!r} }}}}"
 
-    assert Liquid(template).render() == str(out)
+    assert Liquid(tpl).render() == str(out)
 
 
 def test_sort_error(set_default_jekyll):
-    template = Liquid("{{ x | sort }}")
+    tpl = Liquid("{{ x | sort }}")
     with pytest.raises(ValueError):
-        template.render(x=None)
+        tpl.render(x=None)
 
-    template = Liquid("{{ x | sort: p, n }}")
+    tpl = Liquid("{{ x | sort: p, n }}")
     with pytest.raises(ValueError):
-        template.render(x=[], p=None, n=None)
+        tpl.render(x=[], p=None, n=None)
 
 
 @pytest.mark.parametrize(
@@ -143,7 +143,7 @@ def test_sort(array, prop, none_pos, out, set_default_jekyll):
 
 
 @pytest.mark.parametrize(
-    "template, out",
+    "tpl, out",
     [
         ("{{ None | slugify }}", None),
         ('{{ " Q*bert says @!#?@!" | slugify }}', "q-bert-says"),
@@ -174,8 +174,8 @@ def test_sort(array, prop, none_pos, out, set_default_jekyll):
         ),
     ],
 )
-def test_slugify(template, out, set_default_jekyll):
-    assert Liquid(template).render() == str(out)
+def test_slugify(tpl, out, set_default_jekyll):
+    assert Liquid(tpl).render() == str(out)
 
 
 @pytest.mark.parametrize(

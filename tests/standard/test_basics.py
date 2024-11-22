@@ -1,9 +1,9 @@
 """Tests grabbed from:
 https://shopify.github.io/liquid/basics
 """
-import pytest
+import pytest  # noqa: F401
 
-from liquid import Liquid, unpatch_jinja
+from liquid import Liquid, unpatch_jinja  # noqa: F401
 
 
 def test_introduction(set_default_standard):
@@ -87,6 +87,7 @@ def test_or_and(set_default_standard):
     assert Liquid(tpl).render() == (
         "This evaluates to true, since the `and` condition is checked first."
     )
+
 
 # This is a different behavior than in standard liquid
 def test_multiple_and_or(set_default_standard):

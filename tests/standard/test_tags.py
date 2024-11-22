@@ -520,7 +520,6 @@ def test_tablerow(set_default_standard):
     """
     )
 
-
     tpl = """
     <table>
     {% tablerow product in collection.products cols:2 offset:3 %}
@@ -734,6 +733,7 @@ def test_tablerow_arg_error(set_default_standard):
         TemplateSyntaxError, match="Expected an integer or a variable"
     ):
         Liquid(tpl)
+
 
 def test_unknown_tag(set_default_standard):
     with pytest.raises(TemplateSyntaxError, match="unknown tag"):

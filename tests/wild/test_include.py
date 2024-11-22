@@ -1,6 +1,7 @@
 from liquid import Liquid
 from pathlib import Path
 
+
 def test_include(set_default_wild):
     subtpl = Path(__file__).parent.joinpath("subtpl.liq")
 

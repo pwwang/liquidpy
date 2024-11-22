@@ -1,7 +1,7 @@
 from jinja2.environment import Environment
 from jinja2.loaders import FileSystemLoader
 from liquid.liquid import Liquid
-import pytest
+import pytest  # noqa: F401
 
 
 def test_env_args(set_default_standard):
@@ -47,4 +47,4 @@ def test_async_render(set_default_standard):
         loop = asyncio.get_event_loop()
         run = loop.run_until_complete
 
-    assert run(tpl.render_async(a = 1)) == "1"
+    assert run(tpl.render_async(a=1)) == "1"

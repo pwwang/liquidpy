@@ -1,6 +1,7 @@
 import pytest
 from liquid import defaults
 
+
 @pytest.fixture
 def set_default_standard():
     orig_mode = defaults.MODE
@@ -10,6 +11,7 @@ def set_default_standard():
     yield
     defaults.MODE = orig_mode
     defaults.FROM_FILE = orig_from_file
+
 
 @pytest.fixture
 def set_default_wild():
@@ -21,6 +23,7 @@ def set_default_wild():
     defaults.MODE = orig_mode
     defaults.FROM_FILE = orig_from_file
 
+
 @pytest.fixture
 def set_default_jekyll():
     orig_mode = defaults.MODE
@@ -30,6 +33,7 @@ def set_default_jekyll():
     yield
     defaults.MODE = orig_mode
     defaults.FROM_FILE = orig_from_file
+
 
 @pytest.fixture
 def set_default_shopify():

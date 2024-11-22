@@ -386,6 +386,7 @@ def test_regex_replace(set_default_standard):
         == "bbc"
     )
 
+
 def test_basic_typecasting(set_default_standard):
     assert Liquid('{{ "1" | int | plus: 1 }}').render() == "2"
     assert Liquid('{{ "1" | float | plus: 1 }}').render() == "2.0"
@@ -396,11 +397,13 @@ def test_basic_typecasting(set_default_standard):
     assert Liquid('{{ str(1) | append: "1" }}').render() == "11"
     assert Liquid('{{ bool(1) }}').render() == "True"
 
+
 def test_attr(set_default_standard):
-    assert Liquid('{{x | attr: "y"}}').render(x = {}) == "None"
-    assert Liquid('{{x | attr: "y" | default: 1}}').render(x = {}) == "1"
-    assert Liquid('{{x | attr: "y"}}').render(x = {"y": 1}) == "1"
+    assert Liquid('{{x | attr: "y"}}').render(x={}) == "None"
+    assert Liquid('{{x | attr: "y" | default: 1}}').render(x={}) == "1"
+    assert Liquid('{{x | attr: "y"}}').render(x={"y": 1}) == "1"
     assert Liquid('{{x | attr: "y"}}').render(x=namedtuple("X", "y")(2)) == "2"
+
 
 def test_liquid_map(set_default_standard):
     assert Liquid('{{x | liquid_map: "y" | first}}').render(x=[{}]) == "None"
