@@ -1,5 +1,13 @@
 # Change Log
 
+## 0.8.3 (housekeeping)
+
+- dep: bump up dependencies
+- style: fix code styles in tests
+- ci: update actions
+- chore(deps): bump jinja2 to 3.1.5
+- ci: separate tests for python3.7
+
 ## 0.8.2
 
 - deps: bump jinja2 to 3.1.3
