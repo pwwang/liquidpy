@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+    <py-env>
+        - liquidpy
+    </py-env>
+    <title>Liquidpy playground</title>
+</head>
+<body>
+    <main class="mx-auto w-4/5 pt-16">
+        <h1 class="text-2xl text-bold">Liquidpy playground</h1>
+        <p class="text-xs">
+            This is a playground for Liquidpy, powered by <a class="text-blue-600" target="_blank" href="https://pyscript.net">pyscript</a>.
+        </p>
+        <p class="text-xs"><py-script>
+                import liquid
+                print(f"Liquidpy version: {liquid.__version__}")
+            </py-script>
+        </p>
+        <p>&nbsp;</p>
+        <div>
+            <div class="w-1/3 inline-block mr-4">
+                <h2>Template</h2>
+                <textarea id="template" class="w-full h-96 p-2 text-sm font-mono border-2 border-slate-600"></textarea>
+            </div>
+            <div class="w-1/4 inline-block mr-4">
+                <h2>Variables</h2>
+                <textarea id="variables" class="w-full h-96 p-2 text-sm font-mono border-2 border-slate-600"># one assignment per line</textarea>
+            </div>
+            <div class="w-1/4 inline-block">
+                <h2>Filters</h2>
+                <textarea id="filters" class="w-full h-96 p-2 text-sm font-mono border-2 border-slate-600"></textarea>
+            </div>
+            <div class="my-4">
+                <select id="mode" class="bg-cyan-500 text-white text-sm py-2 px-4 rounded-lg">
+                    <option value="default">default</option>
+                    <option value="jekyll">jekyll</option>
+                    <option value="shopify">shopify</option>
+                    <option value="wild">wild</option>
+                </select>
+
+                <button id="render" pys-onClick="render" class="bg-lime-600 hover:bg-lime-700 text-white text-sm py-2 px-4 rounded-lg">Render</button>
+                <button id="load_example" pys-onClick="load_example" class="bg-slate-600 hover:bg-slate-700 text-white text-sm py-2 px-4 rounded-lg">Load example</button>
+            </div>
+            <div class="my-2">
+                <h2>Rendered:</h2>
+                <textarea id="rendered" readonly style="width: 82.8rem" class="text-sm h-72 p-2 font-mono border-2 border-slate-600"></textarea>
+            </div>
+        </div>
+        <py-script src="./liquid.py"></py-script>
+    </main>
+</body>
+</html>
