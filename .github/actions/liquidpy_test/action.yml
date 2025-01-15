@@ -23,12 +23,11 @@ runs:
           poetry install -v
           poetry install -E extra
           # reinstall pandas to specific version
-          pip install $JINJA2
-      env:
-          JINJA2: ${{ inputs.jinja2_version }}
+          pip install ${{ inputs.jinja2_version }}
 
     - name: Test with pytest
-        run: pytest tests/ --junitxml=junit/test-results-${{ inputs.python-version }}-${{ inputs.jinja2_version }}.xml
+      run: pytest tests/ --junitxml=junit/test-results-${{ inputs.python-version }}-${{ inputs.jinja2_version }}.xml
+
     - name: Upload pytest test results
       uses: actions/upload-artifact@v4
       with:
