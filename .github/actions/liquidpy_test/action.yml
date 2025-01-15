@@ -32,7 +32,7 @@ runs:
     - name: Upload pytest test results
       uses: actions/upload-artifact@v4
       with:
-        name: pytest-results-${{ inputs.python-version }}-${{ inputs.jinja2_version }}
-        path: junit/test-results-${{ inputs.python-version }}-${{ inputs.jinja2_version }}.xml
+        name: pytest-results-${{ inputs.python_version }}-${{ inputs.jinja2_version.replace('*', 'x') }}
+        path: junit/test-results-${{ inputs.python_version }}-${{ inputs.jinja2_version.replace('*', 'x') }}.xml
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
