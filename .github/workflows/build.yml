@@ -49,6 +49,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
           jinja2-version: ${{ matrix.jinja2 }}
 
+      - name: Run codacy-coverage-reporter
+        uses: codacy/codacy-coverage-reporter-action@master
+        if: matrix.python-version == '3.12' && matrix.jinja2_version == 'jinja2'
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: cov.xml
+
   deploy:
     needs: Test_Python_38_plus
     runs-on: ubuntu-24.04
