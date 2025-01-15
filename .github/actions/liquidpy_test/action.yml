@@ -25,14 +25,22 @@ runs:
           # reinstall pandas to specific version
           pip install ${{ inputs.jinja2_version }}
 
+    - name: Replace jinja2 version asterisk
+      uses: bluwy/substitute-string-action@v3
+      id: replace_jinja2_version
+      with:
+          _input-text: ${{ inputs.jinja2_version }}
+          "*": "x"
+
     - name: Test with pytest
       shell: bash
-      run: pytest tests/ --junitxml=junit/test-results-${{ inputs.python-version }}-${{ inputs.jinja2_version }}.xml
+      run: pytest tests/ --junitxml=junit/test-results-${{ inputs.python_version }}-${{ steps.replace_jinja2_version.outputs.result }}.xml
 
     - name: Upload pytest test results
+      id: upload_pytest_results
       uses: actions/upload-artifact@v4
       with:
-        name: pytest-results-${{ inputs.python_version }}-${{ inputs.jinja2_version.replace('*', 'x') }}
-        path: junit/test-results-${{ inputs.python_version }}-${{ inputs.jinja2_version.replace('*', 'x') }}.xml
+        name: pytest-results-${{ inputs.python_version }}-${{ steps.replace_jinja2_version.outputs.result }}
+        path: junit/test-results-${{ inputs.python_version }}-${{ steps.replace_jinja2_version.outputs.result }}.xml
       # Use always() to always run this step to publish test results when there are test failures
       if: ${{ always() }}
