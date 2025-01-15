@@ -25,8 +25,8 @@ jobs:
       - name: Run Test
         uses: ./.github/actions/liquidpy_test
         with:
-          python-version: ${{ matrix.python-version }}
-          jinja2-version: ${{ matrix.jinja2 }}
+          python_version: ${{ matrix.python-version }}
+          jinja2_version: ${{ matrix.jinja2 }}
 
   Test_Python_38_plus:
     runs-on: ubuntu-24.04
@@ -46,8 +46,8 @@ jobs:
       - name: Run Test
         uses: ./.github/actions/liquidpy_test
         with:
-          python-version: ${{ matrix.python-version }}
-          jinja2-version: ${{ matrix.jinja2 }}
+          python_version: ${{ matrix.python-version }}
+          jinja2_version: ${{ matrix.jinja2 }}
 
       - name: Run codacy-coverage-reporter
         uses: codacy/codacy-coverage-reporter-action@master
