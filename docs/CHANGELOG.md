@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.8.4
+
+- feat: add 'each' filter in wild mode
+
 ## 0.8.3 (housekeeping)
 
 - dep: bump up dependencies
