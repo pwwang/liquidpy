@@ -86,3 +86,31 @@ def call(fn: Callable, *args, **kwargs) -> Any:
         The result of calling the function
     """
     return fn(*args, **kwargs)
+
+
+@wild_filter_manager.register
+def each(array: Any, fn: Callable, *args: Any, **kwargs: Any) -> Any:
+    """Call a function for each item in an array.
+
+    With wild mode, you can use the 'map' filter to apply a function to each
+    item in an array. However, this filter is different from the 'map' filter
+    in that it takes the array as the first argument and additional arguments
+    passed to the function are allowed.
+
+    Examples:
+        >>> {{ floor | map: [1.1, 2.1, 3.1] | list }}
+        >>> # [1, 2, 3]
+
+        >>> {{ [1.1, 2.1, 3.1] | each: floor }}
+        >>> # [1, 2, 3]
+        >>> {{ [1.1, 2.1, 3.1] | each: plus, 1 }}
+        >>> # [2.2, 3.2, 4.2]
+
+    Args:
+        array: The array
+        fn: The callable
+
+    Returns:
+        The result of calling the function for each item in the array
+    """
+    return [fn(item, *args, **kwargs) for item in array]

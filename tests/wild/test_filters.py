@@ -19,3 +19,29 @@ def test_call(set_default_wild):
 
     out = Liquid(tpl).render()
     assert out == "2"
+
+
+def test_map(set_default_wild):
+    tpl = """{{ floor | map: x | list }}"""
+
+    out = Liquid(tpl).render(x=[1.1, 2.2, 3.3])
+    assert out == "[1, 2, 3]"
+    out = Liquid(tpl).render(x=[])
+    assert out == "[]"
+
+    # liquid_map
+    tpl = """{{ x | liquid_map: 'y' }}"""
+
+    out = Liquid(tpl).render(x=[{"y": 1}, {"y": 2}, {"y": 3}])
+    assert out == "[1, 2, 3]"
+    out = Liquid(tpl).render(x=[])
+    assert out == "[]"
+
+
+def test_each(set_default_wild):
+    tpl = """{{ x | each: plus, 1 }}"""
+
+    out = Liquid(tpl).render(x=[1, 2, 3])
+    assert out == "[2, 3, 4]"
+    out = Liquid(tpl).render(x=[])
+    assert out == "[]"

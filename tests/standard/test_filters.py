@@ -406,7 +406,8 @@ def test_attr(set_default_standard):
 
 
 def test_liquid_map(set_default_standard):
-    assert Liquid('{{x | liquid_map: "y" | first}}').render(x=[{}]) == "None"
+    # with standard mode, map works the same as liquid_map
+    assert Liquid('{{x | map: "y" | first}}').render(x=[{}]) == "None"
     assert Liquid('{{x | liquid_map: "y" | first}}').render(x=[{"y": 1}]) == "1"
     assert Liquid('{{x | liquid_map: "y" | last}}').render(
         x=[namedtuple("X", "y")(2)]

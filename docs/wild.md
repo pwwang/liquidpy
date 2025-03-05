@@ -21,8 +21,10 @@ Below are some features it supports.
     - See: https://jinja.palletsprojects.com/en/3.0.x/templates/?highlight=builtin%20filters#builtin-filters
 - `ifelse`:
     - See: https://pwwang.github.io/liquidpy/api/liquid.filters.wild/
-- `map()`
+- `map()`:
     - It is overridden by python's `builtins.map()`. To use the one from `liquid`, try `liquid_map()`
+- `each()`:
+    - Call a function for each item in an array. With wild mode, you can use the 'map' filter to apply a function to each item in an array. However, this filter is different from the 'map' filter in that it takes the array as the first argument and additional arguments passed to the function are allowed.
 
 ## Tests
 
