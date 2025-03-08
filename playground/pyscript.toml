@@ -1,0 +1,3 @@
+name = "liquidpy"
+description = "A simple example of a Python script that uses the Liquid template engine."
+packages = ["liquidpy"]
