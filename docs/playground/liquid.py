@@ -1,3 +1,4 @@
+from pyweb import pydom
 from liquid import Liquid
 
 EXAMPLE_TEMPLATE = "{{ a | upper }}"
@@ -7,18 +8,22 @@ def upper(value):
     return value.upper()
 """
 
-TEMPLATE_CONTAINER = Element("template")
-VARIABLES_CONTAINER = Element("variables")
-FILTERS_CONTAINER = Element("filters")
-MODE_CONTAINER = Element("mode")
-RENDERED_CONTAINER = Element("rendered")
+TEMPLATE_CONTAINER = pydom["#template"][0]
+VARIABLES_CONTAINER = pydom["#variables"][0]
+FILTERS_CONTAINER = pydom["#filters"][0]
+MODE_CONTAINER = pydom["#mode"][0]
+RENDERED_CONTAINER = pydom["#rendered"][0]
+
 
 def _remove_class(element, class_name):
-    element.element.classList.remove(class_name)
+    try:
+        element.classes.remove(class_name)
+    except ValueError:
+        pass
 
 
 def _add_class(element, class_name):
-    element.element.classList.add(class_name)
+    element.classes.append(class_name)
 
 
 def _error(message):
@@ -26,41 +31,41 @@ def _error(message):
     Displays an error message.
     """
     _add_class(RENDERED_CONTAINER, "bg-red-100")
-    RENDERED_CONTAINER.element.value = message
+    RENDERED_CONTAINER.value = message
 
 
 def load_example(*args, **kwargs):
     """
     Loads the example template, variables and filters.
     """
-    TEMPLATE_CONTAINER.element.value = EXAMPLE_TEMPLATE
-    VARIABLES_CONTAINER.element.value = EXAMPLE_VARIABLES
-    FILTERS_CONTAINER.element.value = EXAMPLE_FILTERS
+    TEMPLATE_CONTAINER.value = EXAMPLE_TEMPLATE
+    VARIABLES_CONTAINER.value = EXAMPLE_VARIABLES
+    FILTERS_CONTAINER.value = EXAMPLE_FILTERS
 
 
 def render(*args, **kwargs):
     """
     Renders the template with the variables and filters.
     """
-    template = TEMPLATE_CONTAINER.element.value
+    template = TEMPLATE_CONTAINER.value
     variables = {}
     try:
-        exec(VARIABLES_CONTAINER.element.value, variables)
+        exec(VARIABLES_CONTAINER.value, variables)
     except Exception as e:
         _error(f"Something wrong when evaluating variables: \n{e}")
         return
 
     filters = {}
     try:
-        exec(FILTERS_CONTAINER.element.value, filters)
+        exec(FILTERS_CONTAINER.value, filters)
     except Exception as e:
         _error(f"Something wrong when evaluating filters: \n{e}")
         return
 
-    mode = MODE_CONTAINER.element.value
+    mode = MODE_CONTAINER.value
     _remove_class(RENDERED_CONTAINER, "bg-red-100")
     try:
         liq = Liquid(template, from_file=False, mode=mode, filters=filters)
-        RENDERED_CONTAINER.element.value = liq.render(**variables)
+        RENDERED_CONTAINER.value = liq.render(**variables)
     except Exception as e:
         _error(f"Something wrong when rendering: \n{e}")
