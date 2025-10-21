@@ -206,3 +206,9 @@ def test_indention_keeping(set_default_standard):
           b
         2
     """
+
+
+def test_indention_keeping_without_leading_space(set_default_standard):
+    tpl = """{{* var }}"""
+    out = Liquid(tpl).render({"var": "a\n  b"})
+    assert out == """a\n  b"""

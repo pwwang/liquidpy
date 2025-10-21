@@ -42,7 +42,7 @@ class LiquidExtension(Extension):
         variable_start_re = re_e(self.environment.variable_start_string)
         variable_end_re = re_e(self.environment.variable_end_string)
         indent_re = re_c(
-            fr"^([ \t]+){variable_start_re}\*"
+            fr"^([ \t]*){variable_start_re}\*"
             "(.*?)"
             fr"(\-{variable_end_re}|\+{variable_end_re}|{variable_end_re})"
         )
