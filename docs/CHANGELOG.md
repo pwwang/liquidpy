@@ -1,5 +1,13 @@
 # Change Log
 
+## 0.8.5
+
+- fix: update playground to use pyscript 2024.1.1
+- ci: update action description for clarity
+- ci: add Python 3.13 to test matrix
+- chore: update pyproject.toml for dev dependencies and Python version support
+- test: remove unused import
+
 ## 0.8.4
 
 - feat: add 'each' filter in wild mode
