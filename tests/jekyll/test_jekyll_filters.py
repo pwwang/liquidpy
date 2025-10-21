@@ -1,5 +1,4 @@
-from re import template  # noqa: F401
-import pytest
+import pytest  # noqa: F401
 from liquid import Liquid
 
 
