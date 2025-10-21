@@ -1,4 +1,5 @@
 name: Liquidpy Test Run
+description: 'Run Liquidpy tests with specified Python and Jinja2 versions'
 
 inputs:
   python_version:
