@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.8.6
+
+- fix: fix for "{{*" when there is no leading white spaces
+
 ## 0.8.5
 
 - fix: update playground to use pyscript 2024.1.1
