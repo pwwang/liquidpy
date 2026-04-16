@@ -6,7 +6,7 @@ import os
 import random
 import re
 import urllib.parse
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence, Optional
 
 if TYPE_CHECKING:
     from jinja2.environment import Environment
@@ -47,7 +47,7 @@ def _getattr_multi(obj: Any, attr: str) -> Any:
     return obj
 
 
-def _get_global_var(env: "Environment", name: str, attr: str | None = None) -> Any:
+def _get_global_var(env: "Environment", name: str, attr: Optional[str] = None) -> Any:
     if name not in env.globals:
         raise ValueError(f"Global variables has not been set: {name}")
 
@@ -253,7 +253,7 @@ def jekyll_slugify(input: str, mode: str = "default") -> str:
 
 
 @jekyll_filter_manager.register
-def number_of_words(input: str, mode: str | None = None) -> int:
+def number_of_words(input: str, mode: Optional[str] = None) -> int:
     """Count the number of words in the input string.
 
     Args:
@@ -301,7 +301,7 @@ def normalize_whitespace(value):
 @jekyll_filter_manager.register("sort")
 def jekyll_sort(
     array: Sequence,
-    prop: str | None = None,
+    prop: Optional[str] = None,
     none_pos: str = "first",
 ) -> Sequence:
     """Sort an array in a reverse way by default.
