@@ -1,7 +1,7 @@
 """Provide tag manager"""
 import re
 from base64 import b64decode
-from typing import TYPE_CHECKING, Callable, Dict, Set, Union
+from typing import TYPE_CHECKING, Callable, Dict, Set, Union, Optional
 
 from jinja2 import nodes
 from jinja2.exceptions import TemplateSyntaxError
@@ -57,7 +57,7 @@ class TagManager:
 
     def register(
         self,
-        name_or_tagparser: Union[str, Callable] = None,
+        name_or_tagparser: Optional[Union[str, Callable]] = None,
         env: bool = False,
         raw: bool = False,
     ) -> Callable:
@@ -95,7 +95,7 @@ class TagManager:
                     )  # type: ignore
                 name = names  # type: ignore
 
-            for nam in name:
+            for nam in name:  # type: ignore
                 self.tags[nam] = tagparser
                 self.envs[nam] = env
                 self.raws[nam] = raw

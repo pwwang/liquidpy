@@ -10,8 +10,8 @@ from jinja2.lexer import TOKEN_BLOCK_END
 
 try:
     from jinja2 import pass_environment
-except ImportError:
-    from jinja2 import environmentfilter as pass_environment
+except ImportError:  # pragma: no cover
+    from jinja2 import environmentfilter as pass_environment  # type: ignore
 
 from .manager import TagManager, decode_raw
 from .standard import assign, capture, case, comment, cycle
@@ -52,7 +52,7 @@ def python(env: "Environment", token: "Token", parser: "Parser") -> nodes.Node:
     if parser.stream.current.type is TOKEN_BLOCK_END:
         # expect {% endpython %}
         body = parser.parse_statements(("name:endpython",), drop_needle=True)
-        body = decode_raw(body[0].nodes[0].data)
+        body = decode_raw(body[0].nodes[0].data)  # type: ignore
         body_parts = body.split("\n", 1)
         if not body_parts[0]:
             body = "" if len(body_parts) < 2 else body_parts[1]
@@ -159,7 +159,7 @@ def addfilter(
         pass_env = parser.stream.expect("name:pass_env")
 
     body = parser.parse_statements(("name:endaddfilter",), drop_needle=True)
-    body = decode_raw(body[0].nodes[0].data)
+    body = decode_raw(body[0].nodes[0].data)  # type: ignore
     body_parts = body.split("\n", 1)
     if not body_parts[0]:
         body = "" if len(body_parts) < 2 else body_parts[1]

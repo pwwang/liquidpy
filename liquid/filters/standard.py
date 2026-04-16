@@ -331,7 +331,7 @@ def uniq(base):
 def url_decode(base):
     """Url-decode a string"""
     try:
-        from urllib import unquote
+        from urllib import unquote  # type: ignore
     except ImportError:
         from urllib.parse import unquote
     return unquote(base)
@@ -341,7 +341,7 @@ def url_decode(base):
 def url_encode(base):
     """Url-encode a string"""
     try:
-        from urllib import urlencode
+        from urllib import urlencode  # type: ignore
     except ImportError:
         from urllib.parse import urlencode
     return urlencode({"": base})[1:]

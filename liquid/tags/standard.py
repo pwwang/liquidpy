@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 standard_tags = TagManager()
 
 
-@standard_tags.register(raw=True)
+@standard_tags.register(raw=True)  # type: ignore
 def comment(token: "Token", parser: "Parser") -> nodes.Node:
     """The comment tag {% comment %} ... {% endcomment %}
 
@@ -38,12 +38,15 @@ def comment(token: "Token", parser: "Parser") -> nodes.Node:
 
     args = parser.parse_expression()
     body = parser.parse_statements(("name:endcomment", ), drop_needle=True)
-    body = decode_raw(body[0].nodes[0].data)
+    body = decode_raw(body[0].nodes[0].data)  # type: ignore
     body_parts = body.split("\n", 1)
     if not body_parts[0]:
         body = "" if len(body_parts) < 2 else body_parts[1]
 
-    out = [nodes.Const(f"{args.value} {line}\n") for line in body.splitlines()]
+    out = [
+        nodes.Const(f"{args.value} {line}\n")  # type: ignore
+        for line in body.splitlines()
+    ]
     return nodes.Output(out, lineno=token.lineno)
 
 
@@ -222,7 +225,7 @@ def tablerow(
             "load",
         )
     else:
-        inner_iter: nodes.Getitem = iter_
+        inner_iter: nodes.Getitem = iter_  # type: ignore
 
     inner_body = [
         nodes.Output(

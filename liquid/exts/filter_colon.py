@@ -43,16 +43,16 @@ class FilterColonExtension(Extension):
                 flag = 2
             elif token.type is TOKEN_COLON and flag == 2:
                 flag = 3
-                token = Token(token.lineno, TOKEN_LPAREN, None)
+                token = Token(token.lineno, TOKEN_LPAREN, None)  # type: ignore
             elif token.type is TOKEN_COLON and flag == 3:
                 # {{ a | filter: 1, x: 2}} => {{ a | filter: 1, x=2}}
-                token = Token(token.lineno, TOKEN_ASSIGN, None)
+                token = Token(token.lineno, TOKEN_ASSIGN, None)  # type: ignore
             elif (
                 token.type in (TOKEN_VARIABLE_END, TOKEN_BLOCK_END, TOKEN_PIPE)
                 and flag == 3
             ):
                 flag = 1 if token.type is TOKEN_PIPE else 0
-                yield Token(token.lineno, TOKEN_RPAREN, None)
+                yield Token(token.lineno, TOKEN_RPAREN, None)  # type: ignore
             elif token.type in (TOKEN_VARIABLE_END, TOKEN_BLOCK_END):
                 flag = 0
 

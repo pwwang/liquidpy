@@ -1,6 +1,6 @@
 """Some utils"""
 from os import PathLike
-from typing import TYPE_CHECKING, Iterable, List, Union
+from typing import TYPE_CHECKING, Iterable, List, Union, Optional
 from jinja2 import nodes
 from jinja2.lexer import TOKEN_INTEGER, TOKEN_NAME
 from jinja2.exceptions import TemplateSyntaxError
@@ -36,7 +36,7 @@ def peek_tokens(stream: "TokenStream", n: int = 1) -> List["Token"]:
 
 def parse_tag_args(
     stream: "TokenStream", name: str, lineno: int
-) -> nodes.Node:
+) -> Optional[nodes.Node]:
     """Parse arguments for a tag.
 
     Only integer and name are allowed as values

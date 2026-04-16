@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 # environmentfilter deprecated
 try:
     from jinja2 import pass_environment
-except ImportError:
-    from jinja2 import environmentfilter as pass_environment
+except ImportError:  # pragma: no cover
+    from jinja2 import environmentfilter as pass_environment  # type: ignore
 
 from jinja2.filters import FILTERS
 
@@ -47,7 +47,7 @@ def _getattr_multi(obj: Any, attr: str) -> Any:
     return obj
 
 
-def _get_global_var(env: "Environment", name: str, attr: str = None) -> Any:
+def _get_global_var(env: "Environment", name: str, attr: str | None = None) -> Any:
     if name not in env.globals:
         raise ValueError(f"Global variables has not been set: {name}")
 
@@ -253,7 +253,7 @@ def jekyll_slugify(input: str, mode: str = "default") -> str:
 
 
 @jekyll_filter_manager.register
-def number_of_words(input: str, mode: str = None) -> int:
+def number_of_words(input: str, mode: str | None = None) -> int:
     """Count the number of words in the input string.
 
     Args:
@@ -301,7 +301,7 @@ def normalize_whitespace(value):
 @jekyll_filter_manager.register("sort")
 def jekyll_sort(
     array: Sequence,
-    prop: str = None,
+    prop: str | None = None,
     none_pos: str = "first",
 ) -> Sequence:
     """Sort an array in a reverse way by default.

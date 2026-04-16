@@ -100,24 +100,24 @@ jinja_parse_for = Parser.parse_for
 def patch_jinja():
     """Monkey-patch jinja"""
     nodes.If.fields = jinja_nodes_if_fields + ("elsif",)
-    nodes.If.elsif = None
-    Parser.parse_if = parse_if
+    nodes.If.elsif = None  # type: ignore
+    Parser.parse_if = parse_if  # type: ignore
 
-    LoopContext.rindex = LoopContext.revindex
-    LoopContext.rindex0 = LoopContext.revindex0
-    LoopContext.liquid_cycle = cycle
+    LoopContext.rindex = LoopContext.revindex  # type: ignore
+    LoopContext.rindex0 = LoopContext.revindex0  # type: ignore
+    LoopContext.liquid_cycle = cycle  # type: ignore
 
-    Parser.parse_for = parse_for
+    Parser.parse_for = parse_for  # type: ignore
 
 
 def unpatch_jinja():
     """Restore the patches to jinja"""
     nodes.If.fields = jinja_nodes_if_fields
-    del nodes.If.elsif
+    del nodes.If.elsif  # type: ignore
 
     Parser.parse_if = jinja_parse_if
-    del LoopContext.rindex
-    del LoopContext.rindex0
-    del LoopContext.liquid_cycle
+    del LoopContext.rindex  # type: ignore
+    del LoopContext.rindex0  # type: ignore
+    del LoopContext.liquid_cycle  # type: ignore
 
     Parser.parse_for = jinja_parse_for

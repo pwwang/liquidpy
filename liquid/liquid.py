@@ -1,6 +1,6 @@
 """Provides Liquid class"""
 import builtins
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Optional
 from jinja2 import (
     Environment,
     ChoiceLoader,
@@ -48,14 +48,14 @@ class Liquid:
     def __init__(
         self,
         template: PathType,
-        from_file: bool = None,
-        mode: str = None,
-        env: Environment = None,
-        filter_with_colon: bool = None,
-        search_paths: PathTypeOrIter = None,
-        globals: Mapping[str, Any] = None,
-        filters: Mapping[str, Callable] = None,
-        filters_as_globals: bool = None,
+        from_file: Optional[bool] = None,
+        mode: Optional[str] = None,
+        env: Optional[Environment] = None,
+        filter_with_colon: Optional[bool] = None,
+        search_paths: Optional[PathTypeOrIter] = None,
+        globals: Optional[Mapping[str, Any]] = None,
+        filters: Optional[Mapping[str, Callable]] = None,
+        filters_as_globals: Optional[bool] = None,
         **kwargs: Any,
     ) -> None:
         """Constructor"""
@@ -212,10 +212,10 @@ class Liquid:
         cls,
         template: PathType,
         env: Environment,
-        from_file: bool = None,
-        filter_with_colon: bool = None,
-        filters_as_globals: bool = None,
-        mode: str = None,
+        from_file: Optional[bool] = None,
+        filter_with_colon: Optional[bool] = None,
+        filters_as_globals: Optional[bool] = None,
+        mode: Optional[str] = None,
     ) -> "Liquid":
         """Initiate a template from a jinja environment
 

@@ -19,7 +19,7 @@ class FilterManager:
         self.filters: Dict[str, Callable] = {}
 
     def register(
-        self, name_or_filter: Union[str, Sequence[str], Callable] = None
+        self, name_or_filter: Union[str, Sequence[str], Callable] | None = None
     ) -> Callable:
         """Register a filter
 
@@ -53,7 +53,7 @@ class FilterManager:
                         nam.strip() for nam in names.split(",")
                     )  # type: ignore
                 name = names  # type: ignore
-            for nam in name:
+            for nam in name:  # type: ignore
                 self.filters[nam] = filterfunc
 
             return filterfunc

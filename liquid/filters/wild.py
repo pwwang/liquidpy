@@ -2,8 +2,8 @@
 
 try:
     from jinja2 import pass_environment
-except ImportError:
-    from jinja2 import environmentfilter as pass_environment
+except ImportError:  # pragma: no cover
+    from jinja2 import environmentfilter as pass_environment  # type: ignore
 
 from typing import TYPE_CHECKING, Any, Callable
 from .manager import FilterManager

@@ -50,8 +50,8 @@ class LiquidStandardExtension(LiquidExtension):
                     stream.skip()  # skip 'size'
                     yield token
                     yield Token(token.lineno, "name", "__len__")
-                    yield Token(token.lineno, "lparen", None)
-                    yield Token(token.lineno, "rparen", None)
+                    yield Token(token.lineno, "lparen", None)  # type: ignore
+                    yield Token(token.lineno, "rparen", None)  # type: ignore
                 else:
                     yield token
 
@@ -87,13 +87,13 @@ class LiquidStandardExtension(LiquidExtension):
                 else:
                     stream.skip(5)
                     yield Token(token.lineno, TOKEN_NAME, "range")
-                    yield Token(token.lineno, TOKEN_LPAREN, None)
+                    yield Token(token.lineno, TOKEN_LPAREN, None)  # type: ignore
                     yield tokens_ahead[0]
-                    yield Token(token.lineno, TOKEN_COMMA, None)
+                    yield Token(token.lineno, TOKEN_COMMA, None)  # type: ignore
                     yield tokens_ahead[3]
-                    yield Token(token.lineno, TOKEN_ADD, None)
+                    yield Token(token.lineno, TOKEN_ADD, None)  # type: ignore
                     yield Token(token.lineno, TOKEN_INTEGER, 1)  # type: ignore
-                    yield Token(token.lineno, TOKEN_RPAREN, None)
+                    yield Token(token.lineno, TOKEN_RPAREN, None)  # type: ignore
 
             else:
                 yield token

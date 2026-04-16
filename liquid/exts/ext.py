@@ -22,8 +22,8 @@ class LiquidExtension(Extension):
 
     def __init_subclass__(cls) -> None:
         """Initalize the tags and raw_tags using tag manager"""
-        cls.tags = cls.tag_manager.names
-        cls.raw_tags = cls.tag_manager.names_raw
+        cls.tags = cls.tag_manager.names  # type: ignore
+        cls.raw_tags = cls.tag_manager.names_raw  # type: ignore
 
     def preprocess(  # type: ignore
         self,
@@ -92,6 +92,6 @@ class LiquidExtension(Extension):
     def parse(self, parser: "Parser") -> nodes.Node:
         """Let tag manager to parse the tags that are being listened to"""
         token = next(parser.stream)
-        return self.__class__.tag_manager.parse(
+        return self.__class__.tag_manager.parse(  # type: ignore
             self.environment, token, parser
         )
