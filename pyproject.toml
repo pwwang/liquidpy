@@ -1,47 +1,51 @@
 [build-system]
-requires = [ "poetry>=1.0.0",]
-build-backend = "poetry.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry]
+[project]
 name = "liquidpy"
 version = "0.8.6"
 description = "A port of liquid template engine for python"
-authors = [ "pwwang <pwwang@pwwang.com>",]
-license = "MIT"
+authors = [{ name = "pwwang", email = "pwwang@pwwang.com" }]
+license = { text = "MIT" }
 readme = "README.md"
-homepage = "https://github.com/pwwang/liquidpy"
-repository = "https://github.com/pwwang/liquidpy"
-
-[tool.poetry.build]
-generate-setup-file = true
-
-[[tool.poetry.packages]]
-include = "liquid"
-
-[tool.poetry.dependencies]
-python = "^3.7"
-jinja2 = "^3"
-python-frontmatter = {version = "^1.0", optional = true}
-markdown = [
-    {version = "^3.4", optional = true, python = "<3.8"},
-    {version = "^3.5", optional = true, python = ">=3.8"},
+requires-python = ">=3.7"
+dependencies = [
+    "jinja2>=3,<4",
 ]
-regex = [
-    {version = "^2023.12", optional = true, python = "<3.8"},
-    {version = "^2024.11", optional = true, python = ">=3.8"},
+
+[project.urls]
+Homepage = "https://github.com/pwwang/liquidpy"
+Repository = "https://github.com/pwwang/liquidpy"
+
+[project.optional-dependencies]
+extra = [
+    "python-frontmatter>=1.0",
+    "markdown>=3.4; python_version < '3.8'",
+    "markdown>=3.5; python_version >= '3.8'",
+    "regex>=2023.12; python_version < '3.8'",
+    "regex>=2024.11; python_version >= '3.8'",
+    "python-slugify>=8",
+    "python-dateutil>=2.8",
+    # needed by python-frontmatter
+    "toml>=0.10",
 ]
-python-slugify = {version = "^8", optional = true}
-python-dateutil = {version = "^2.8", optional = true}
-# needed by python-frontmatter
-toml = {version = "^0.10", optional = true}
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^7"
-pytest-cov = "^4"
-six = "^1.17"
+[dependency-groups]
+dev = [
+    "pytest>=7",
+    "pytest-cov>=4",
+    "six>=1.17",
+]
+docs = [
+    "mkapi-fix>=0.1.1",
+    "mkdocs>=1.5.3",
+    "mkdocs-material>=9.2.6",
+    "pymdown-extensions>=10.2.1",
+]
 
-[tool.poetry.extras]
-extra = ["python-frontmatter", "markdown", "regex", "python-slugify", "python-dateutil", "toml"]
+[tool.hatch.build.targets.wheel]
+packages = ["liquid"]
 
 [tool.black]
 line-length = 88

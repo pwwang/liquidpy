@@ -10,21 +10,17 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Set up Python (${{ inputs.python_version }})
-      uses: actions/setup-python@v5
+    - name: Set up uv and Python (${{ inputs.python_version }})
+      uses: astral-sh/setup-uv@v8.0.0
       with:
         python-version: ${{ inputs.python_version }}
 
     - name: Install dependencies
       shell: bash
       run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade poetry
-          poetry config virtualenvs.create false
-          poetry install -v
-          poetry install -E extra
-          # reinstall pandas to specific version
-          pip install ${{ inputs.jinja2_version }}
+          uv sync --extra extra
+          # reinstall jinja2 to specific version
+          uv pip install ${{ inputs.jinja2_version }}
 
     - name: Replace jinja2 version asterisk
       uses: bluwy/substitute-string-action@v3
@@ -35,11 +31,11 @@ runs:
 
     - name: Test with pytest
       shell: bash
-      run: pytest tests/ --junitxml=junit/test-results-${{ inputs.python_version }}-${{ steps.replace_jinja2_version.outputs.result }}.xml
+      run: uv run pytest tests/ --junitxml=junit/test-results-${{ inputs.python_version }}-${{ steps.replace_jinja2_version.outputs.result }}.xml
 
     - name: Upload pytest test results
       id: upload_pytest_results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: pytest-results-${{ inputs.python_version }}-${{ steps.replace_jinja2_version.outputs.result }}
         path: junit/test-results-${{ inputs.python_version }}-${{ steps.replace_jinja2_version.outputs.result }}.xml

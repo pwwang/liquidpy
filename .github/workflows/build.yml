@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run Test
         uses: ./.github/actions/liquidpy_test
@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run Test
         uses: ./.github/actions/liquidpy_test
@@ -64,13 +64,13 @@ jobs:
       matrix:
         python-version: [3.12]
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python # Set Python version
-        uses: actions/setup-python@v5
-      - name: Install dependencies
+      - uses: actions/checkout@v6
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build and publish to PyPI
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install poetry
-      - name: Publish to PyPI
-        run: poetry publish --build -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }}
+          uv build
+          uv publish --username ${{ secrets.PYPI_USER }} --password ${{ secrets.PYPI_PASSWORD }}
         if: success()
