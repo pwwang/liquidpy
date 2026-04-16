@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.9.0
+
+- refactor: use uv instead of poetry
+- BREAK: drop support for python 3.7 and 3.8
+- style: fix type annotation issues
+
 ## 0.8.6
 
 - fix: fix for "{{*" when there is no leading white spaces

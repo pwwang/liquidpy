@@ -4,4 +4,6 @@ from .patching import patch_jinja, unpatch_jinja
 
 patch_jinja()
 
-__version__ = "0.8.6"
+__version__ = "0.9.0"
+
+__all__ = ["Liquid", "patch_jinja", "unpatch_jinja"]
