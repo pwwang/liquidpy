@@ -8,7 +8,7 @@ jobs:
     # if: github.ref == 'refs/heads/master'
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: [3.12]
     steps:
       - uses: actions/checkout@v6
       - name: Set up uv and Python (${{ matrix.python-version }})

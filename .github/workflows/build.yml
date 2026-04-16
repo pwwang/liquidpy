@@ -7,33 +7,12 @@ on:
 
 jobs:
 
-  Test_Python_37:
-    runs-on: ubuntu-22.04
+  Test_Python_39_plus:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7]
-        jinja2: [
-          jinja2==3.0.*,
-          jinja2
-        ]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Run Test
-        uses: ./.github/actions/liquidpy_test
-        with:
-          python_version: ${{ matrix.python-version }}
-          jinja2_version: ${{ matrix.jinja2 }}
-
-  Test_Python_38_plus:
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.8, 3.9, "3.10", "3.11", "3.12", "3.13"]
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
         jinja2: [
           jinja2==3.0.*,
           jinja2
@@ -57,8 +36,8 @@ jobs:
           coverage-reports: cov.xml
 
   deploy:
-    needs: Test_Python_38_plus
-    runs-on: ubuntu-24.04
+    needs: Test_Python_39_plus
+    runs-on: ubuntu-latest
     if: github.event_name == 'release'
     strategy:
       matrix:

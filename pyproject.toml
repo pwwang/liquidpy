@@ -9,7 +9,7 @@ description = "A port of liquid template engine for python"
 authors = [{ name = "pwwang", email = "pwwang@pwwang.com" }]
 license = { text = "MIT" }
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 dependencies = [
     "jinja2>=3,<4",
 ]
@@ -21,10 +21,8 @@ Repository = "https://github.com/pwwang/liquidpy"
 [project.optional-dependencies]
 extra = [
     "python-frontmatter>=1.0",
-    "markdown>=3.4; python_version < '3.8'",
-    "markdown>=3.5; python_version >= '3.8'",
-    "regex>=2023.12; python_version < '3.8'",
-    "regex>=2024.11; python_version >= '3.8'",
+    "markdown>=3.5",
+    "regex>=2024.11",
     "python-slugify>=8",
     "python-dateutil>=2.8",
     # needed by python-frontmatter
@@ -49,7 +47,7 @@ packages = ["liquid"]
 
 [tool.black]
 line-length = 88
-target-version = ['py37', 'py38', 'py39', 'py310', 'py311', 'py312', 'py313']
+target-version = ['py39', 'py310', 'py311', 'py312', 'py313']
 include = '\.pyi?$'
 
 [tool.pytest.ini_options]
