@@ -22,6 +22,7 @@ jobs:
         run: |
           cd docs
           cp ../README.md index.md
+          sed -i 's#docs/logo.png#logo.png#g' index.md
           cd ..
           uv run mkdocs build
         if : success()
