@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="./logo.png" width="260px" alt="liquidpy logo" />
+    <img src="./docs/logo.png" width="260px" alt="liquidpy logo" />
     <p style="font-weight:bold;">
         A port of <a href="https://shopify.github.io/liquid/" target="_blank">liquid</a> template engine for python, on the shoulders of <a href="https://jinja.palletsprojects.com/" target="_blank">jinja2</a>
     </p>
