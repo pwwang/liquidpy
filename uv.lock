@@ -534,7 +534,6 @@ wheels = [
 
 [[package]]
 name = "liquidpy"
-version = "0.9.0"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },

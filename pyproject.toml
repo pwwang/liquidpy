@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "liquidpy"
-version = "0.9.0"
+dynamic = ["version"]
 description = "A port of liquid template engine for python"
 authors = [{ name = "pwwang", email = "pwwang@pwwang.com" }]
 license = { text = "MIT" }
@@ -13,6 +13,9 @@ requires-python = ">=3.9"
 dependencies = [
     "jinja2>=3,<4",
 ]
+
+[tool.hatch.version]
+path = "liquid/__init__.py"
 
 [project.urls]
 Homepage = "https://github.com/pwwang/liquidpy"

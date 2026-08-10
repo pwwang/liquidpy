@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.10.0
+
+- fix: update python-frontmatter dependency for Python 3.9 compatibility
+- feat: add support for sandboxed environment in Liquid class for potential security issues
+- chore: add Pyright configuration to ignore tests directory
+- ci: update substitute-string-action to version 4 in GitHub Actions workflow
+- ci: replace Codacy coverage reporter with Coveralls in build workflow
+- docs: add logo
+- docs: update favicon
+
 ## 0.9.0
 
 - refactor: use uv instead of poetry
