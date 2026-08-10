@@ -63,3 +63,6 @@ allow_redefinition = true
 disable_error_code = ["attr-defined", "no-redef", "union-attr"]
 show_error_codes = true
 strict_optional = false
+
+[tool.pyright]
+ignore = [ "tests/" ]
