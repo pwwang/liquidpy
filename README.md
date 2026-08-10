@@ -1,5 +1,11 @@
-# liquidpy
-A port of [liquid][19] template engine for python, on the shoulders of [jinja2][17]
+<div align="center">
+    <img src="./logo.png" width="260px" alt="liquidpy logo" />
+    <p style="font-weight:bold;">
+        A port of <a href="https://shopify.github.io/liquid/" target="_blank">liquid</a> template engine for python, on the shoulders of <a href="https://jinja.palletsprojects.com/" target="_blank">jinja2</a>
+    </p>
+</div>
+
+<hr />
 
 [![Pypi][2]][9] [![Github][3]][10] [![PythonVers][4]][9] [![Docs building][13]][11] [![Travis building][5]][11] [![Codacy][6]][12] [![Coveralls coverage][7]][12]
 
