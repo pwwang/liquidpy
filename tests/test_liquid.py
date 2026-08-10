@@ -1,5 +1,6 @@
 from jinja2.environment import Environment
 from jinja2.loaders import FileSystemLoader
+from jinja2.exceptions import SecurityError
 from liquid.liquid import Liquid
 import pytest  # noqa: F401
 
@@ -15,6 +16,16 @@ def test_env_args(set_default_standard):
     )
     assert tpl.render(a=1) == "1"
     assert tpl.env.x == 1
+
+
+def test_sandboxed_env(set_default_standard):
+    tpl = Liquid(
+        '{{  lipsum.__globals__["os"].popen("touch /tmp/marker").read()}}',
+        from_file=False,
+        sandboxed=True,
+    )
+    with pytest.raises(SecurityError):
+        tpl.render()
 
 
 def test_from_env(set_default_standard):

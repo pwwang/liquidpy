@@ -6,6 +6,7 @@ from jinja2 import (
     ChoiceLoader,
     FileSystemLoader,
 )
+from jinja2.sandbox import SandboxedEnvironment
 
 from .filters.standard import standard_filter_manager
 from .utils import PathType, PathTypeOrIter
@@ -39,6 +40,12 @@ class Liquid:
         filters: Additional filters be to used to render the template
         filters_as_globals: Whether also use filters as globals
             Only works in wild mode
+        sandboxed: Whether to use a sandboxed environment. If True, the template
+            will be rendered in a sandboxed environment, which restricts the
+            access to certain features of the template. This is useful for
+            untrusted templates. If False, the template will be rendered in a
+            normal environment, which allows access to all features of the
+            template. This is useful for trusted templates. Default is False.
         **kwargs: Other arguments for an jinja Environment construction and
             configurations for extensions
     """
@@ -51,6 +58,7 @@ class Liquid:
         from_file: Optional[bool] = None,
         mode: Optional[str] = None,
         env: Optional[Environment] = None,
+        sandboxed: Optional[bool] = False,
         filter_with_colon: Optional[bool] = None,
         search_paths: Optional[PathTypeOrIter] = None,
         globals: Optional[Mapping[str, Any]] = None,
@@ -99,7 +107,10 @@ class Liquid:
         else:
             loader = fsloader
 
-        self.env = Environment(**env_args, loader=loader)
+        if sandboxed:
+            self.env = SandboxedEnvironment(**env_args, loader=loader)
+        else:
+            self.env = Environment(**env_args, loader=loader)
         if env is not None:
             self.env = env.overlay(**env_args, loader=loader)
 
