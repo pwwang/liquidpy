@@ -20,7 +20,9 @@ Repository = "https://github.com/pwwang/liquidpy"
 
 [project.optional-dependencies]
 extra = [
-    "python-frontmatter>=1.0",
+    # python-frontmatter 1.2.0 dropped py3.9 support (uses TypeGuard) without declaring Requires-Python
+    "python-frontmatter>=1.0,<1.2; python_version < '3.10'",
+    "python-frontmatter>=1.0; python_version >= '3.10'",
     "markdown>=3.5",
     "regex>=2024.11",
     "python-slugify>=8",
