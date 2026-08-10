@@ -23,7 +23,7 @@ runs:
           uv pip install ${{ inputs.jinja2_version }}
 
     - name: Replace jinja2 version asterisk
-      uses: bluwy/substitute-string-action@v3
+      uses: bluwy/substitute-string-action@v4
       id: replace_jinja2_version
       with:
           _input-text: ${{ inputs.jinja2_version }}
