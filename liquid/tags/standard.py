@@ -251,7 +251,8 @@ def tablerow(
         *parser.parse_statements(("name:endtablerow",), drop_needle=True),
         nodes.Output([nodes.Const("</td>")]),
     ]
-    _close_tablerow_breaks(inner_body)
+    broken = f"_tablerow_broken_{token.lineno}_{id(token)}" if cols else None
+    _close_tablerow_breaks(inner_body, broken)
     tr_begin = nodes.Output(
         [
             nodes.Const('<tr class="row'),
@@ -288,33 +289,68 @@ def tablerow(
         nodes.Add(iter_length_int, nodes.Const(1)),
     )
 
-    return nodes.For(
-        nodes.Name("_tablerow_i", "store"),
-        nodes.Call(nodes.Name("range", "load"), [iter_length], [], None, None),
-        [tr_begin, inner_loop, tr_end],
-        [],
-        None,
-        False,
-        lineno=token.lineno,
-    )
+    return [
+        nodes.Assign(
+            nodes.Name(broken, "store"),
+            nodes.Call(
+                nodes.Name("namespace", "load"),
+                [],
+                [nodes.Keyword("broken", nodes.Const(False))],
+                None,
+                None,
+            ),
+        ),
+        nodes.For(
+            nodes.Name("_tablerow_i", "store"),
+            nodes.Call(nodes.Name("range", "load"), [iter_length], [], None, None),
+            [
+                nodes.If(
+                    nodes.Not(
+                        nodes.Getattr(nodes.Name(broken, "load"), "broken", "load")
+                    ),
+                    [tr_begin, inner_loop, tr_end],
+                    [],
+                    [],
+                    None,
+                    lineno=token.lineno,
+                )
+            ],
+            [],
+            None,
+            False,
+            lineno=token.lineno,
+        ),
+    ]
 
 
-def _close_tablerow_breaks(body):
+def _close_tablerow_breaks(body, broken=None):
     """Close the current cell before a break exits the tablerow loop."""
     index = 0
     while index < len(body):
         node = body[index]
         if isinstance(node, nodes.Break):
-            body.insert(
-                index,
-                nodes.Output([nodes.Const("</td>")], lineno=node.lineno),
+            close = nodes.Output(
+                [nodes.Const("</td>")],
+                lineno=node.lineno,
             )
-            index += 2
+            if broken is not None:
+                body[index:index] = [
+                    close,
+                    nodes.Assign(
+                        nodes.NSRef(broken, "broken"),
+                        nodes.Const(True),
+                    ),
+                ]
+                index += 3
+            else:
+                body.insert(index, close)
+                index += 2
             continue
-        for field in node.fields:
-            value = getattr(node, field)
-            if isinstance(value, list):
-                _close_tablerow_breaks(value)
+        if isinstance(node, nodes.If):
+            _close_tablerow_breaks(node.body, broken)
+            for branch in node.elif_:
+                _close_tablerow_breaks(branch.body, broken)
+            _close_tablerow_breaks(node.else_, broken)
         index += 1
 
 

@@ -39,6 +39,7 @@ class LiquidStandardExtension(LiquidExtension):
         environment.tests["contains"] = lambda cont, elm: cont.__contains__(
             elm
         )
+        environment.tests["liquid_eq"] = lambda left, right: left == right
 
     def filter_stream(self, stream: "TokenStream") -> Generator:
         """Supports for liquid features"""
