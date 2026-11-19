@@ -5,6 +5,7 @@ see: https://shopify.dev/api/liquid/tags
 from .manager import TagManager
 from .standard import (
     comment,
+    inline_comment,
     capture,
     assign,
     unless,
@@ -19,6 +20,7 @@ from .standard import (
 shopify_tags = TagManager()
 
 shopify_tags.register(comment, raw=True)
+shopify_tags.register(inline_comment, raw=True)
 shopify_tags.register(capture)
 shopify_tags.register(assign)
 shopify_tags.register(unless)
