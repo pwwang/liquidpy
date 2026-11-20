@@ -58,6 +58,15 @@ def test_shopify_tablerow_break_closes_cell(set_default_shopify):
     assert template.render(items=[1, 2]) == (
         '<tr class="row1">\n<td class="col1"></td></tr>\n'
     )
+    template = Liquid(
+        "{% tablerow item in items %}{% if item == 1 %}{{ item }}"
+        "{% elsif item == 2 %}{% break %}{% else %}other{% endif %}"
+        "{% endtablerow %}"
+    )
+    assert template.render(items=[1, 2]) == (
+        '<tr class="row1">\n<td class="col1">1</td>'
+        '<td class="col2"></td></tr>\n'
+    )
 
 
 def test_shopify_inline_comment_ignores_tags(set_default_shopify):
