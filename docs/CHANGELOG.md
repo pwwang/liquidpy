@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.10.1
+
+- fix: align Shopify mode with Golden Liquid semantics (#64)
+
 ## 0.10.0
 
 - fix: update python-frontmatter dependency for Python 3.9 compatibility
