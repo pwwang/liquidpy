@@ -1,5 +1,95 @@
+from types import SimpleNamespace
+
 import pytest  # noqa: F401
+from jinja2 import Undefined
 from liquid import Liquid
+from liquid.filters.shopify import (
+    _ShopifyDrop,
+    at_least,
+    divided_by,
+    liquid_contains,
+    liquid_equal,
+    liquid_map,
+    reject,
+    round as shopify_round,
+    shopify_join,
+    shopify_lstrip,
+    shopify_rstrip,
+    shopify_slice,
+    shopify_truncatewords,
+    sort,
+    where,
+)
+
+
+def test_shopify_drop_and_comparison_helpers():
+    missing = Undefined(name="missing")
+    assert str(_ShopifyDrop("blank")) == ""
+    assert _ShopifyDrop("blank") + "value" == "value"
+    assert "value" + _ShopifyDrop("blank") == "value"
+    assert _ShopifyDrop("blank").split() == []
+    assert list(_ShopifyDrop("blank")) == []
+    assert _ShopifyDrop("empty") == []
+    assert liquid_equal(missing, None)
+    assert liquid_equal(None, missing)
+    assert liquid_equal({"key": [1]}, {"key": [1]})
+    assert liquid_equal([True], [True])
+    assert not liquid_equal([1], (1,))
+    assert not liquid_equal(1, True)
+    assert liquid_contains("abc", "b")
+    assert not liquid_contains("abc", 1)
+    assert liquid_contains([{"key": 1}], {"key": 1})
+    assert not liquid_contains([1], None)
+    assert not liquid_contains([False], False)
+    assert not liquid_contains(1, "value")
+
+
+def test_shopify_filter_fallbacks_and_collections():
+    missing = Undefined(name="missing")
+    assert at_least(5, missing) == 5
+    assert at_least(None, 5) == 5
+    assert at_least(3, 5) == 5
+    assert divided_by(5, 2) == 2
+    assert divided_by(5, True) == 5
+    assert shopify_round(None) == 0
+    assert shopify_round(2.5, "invalid") == 3
+    assert liquid_map(missing, "key") == []
+    assert liquid_map({"key": 1}, "absent") == []
+    assert liquid_map({"key": 1}, "key") == [1]
+    assert liquid_map([{"key": 1}], missing) == []
+    assert liquid_map(["text"], "upper") == [None]
+    assert liquid_map([SimpleNamespace(key=1)], "key") == [1]
+    assert liquid_map([SimpleNamespace(key=lambda: 1)], "key") == [None]
+    assert sort(missing) == []
+    assert sort([3, 1], missing) == [1, 3]
+    assert sort([{"key": 2}, {"key": 1}], "key") == [
+        {"key": 1},
+        {"key": 2},
+    ]
+    assert sort([1, "two"]) is None
+    assert where(None, "key") == []
+    assert where([{"key": True}, {"key": False}], "key") == [{"key": True}]
+    assert where([{"key": True}], "key", True) == [{"key": True}]
+    assert where([{"key": True}], "key", missing) == [{"key": True}]
+    assert reject(missing, "key") == []
+    assert reject("abc", "b", False) == ["abc"]
+    assert reject([{"key": False}], "key", missing) == [{"key": False}]
+
+
+def test_shopify_join_slice_and_whitespace_fallbacks():
+    missing = Undefined(name="missing")
+    assert shopify_join(None) == ""
+    assert shopify_join(missing) == ""
+    assert shopify_join([{"key": "value"}, None, missing], ":", "key") == (
+        "value::"
+    )
+    assert shopify_truncatewords("one two", 2) == "one two"
+    assert shopify_slice("", 0) == ""
+    assert shopify_slice("abc", -1, None) == "c"
+    assert shopify_lstrip(None) == ""
+    assert shopify_lstrip(missing) == ""
+    assert shopify_rstrip(None) == ""
+    assert shopify_rstrip(missing) == ""
 
 
 def test_filter(set_default_shopify):

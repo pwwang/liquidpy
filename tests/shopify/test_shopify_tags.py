@@ -1,4 +1,31 @@
+import asyncio
+
 from liquid import Liquid
+
+
+def test_shopify_relational_comparisons_and_nested_branches(set_default_shopify):
+    template = Liquid(
+        "{% if 1 < 2 and 2 <= 2 and 3 > 2 and 3 >= 3 %}ordered{% endif %}"
+        "|{% if nil < 1 or blank > 1 or true < 2 or 1 < 'a' %}bad{% endif %}"
+        "|{% if true %}{% if true %}  {% endif %}{% endif %}"
+        "{% if true %}{% assign value = 2 %}{% endif %}{{ value }}"
+        "|{% if true %}{% if true %}{{ value }}{% endif %}{% endif %}"
+    )
+    assert template.render() == "ordered||2|2"
+
+
+def test_shopify_context_wrapping_in_sync_and_async_renders(set_default_shopify):
+    sync_template = Liquid("{{ data.name }}", mode="shopify")
+    assert sync_template.render({"data": {"name": "sync"}}) == "sync"
+
+    async_template = Liquid(
+        "before\r{{ values[0].name }}\r",
+        mode="shopify",
+        enable_async=True,
+    )
+    assert asyncio.run(
+        async_template.render_async(values=({"name": "async"},))
+    ) == "before\rasync\r"
 
 
 def test_shopify_case_and_alternate_not_equal(set_default_shopify):
@@ -23,6 +50,13 @@ def test_shopify_tablerow_break_closes_cell(set_default_shopify):
     )
     assert template.render(items=[1, 2, 3]) == (
         '<tr class="row1">\n<td class="col1">1</td></tr>\n'
+    )
+    template = Liquid(
+        "{% tablerow item in items %}{% if item == 1 %}{% break %}"
+        "{% endif %}{{ item }}{% endtablerow %}"
+    )
+    assert template.render(items=[1, 2]) == (
+        '<tr class="row1">\n<td class="col1"></td></tr>\n'
     )
 
 
