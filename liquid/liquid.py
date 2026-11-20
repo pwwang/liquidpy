@@ -212,11 +212,37 @@ class Liquid:
         You can either pass the values using `tpl.render(a=1)` or
         `tpl.render({'a': 1})`
         """
-        return self.template.render(*args, **kwargs)
+        from .exts.shopify import CARRIAGE_RETURN, LiquidShopifyExtension
+        is_shopify = any(
+            isinstance(extension, LiquidShopifyExtension)
+            for extension in self.env.extensions.values()
+        )
+        if is_shopify:
+            from .exts.shopify import shopify_context
+
+            args = tuple(shopify_context(arg) for arg in args)
+            kwargs = {key: shopify_context(value) for key, value in kwargs.items()}
+        out = self.template.render(*args, **kwargs)
+        if is_shopify:
+            out = out.replace(CARRIAGE_RETURN, "\r")
+        return out
 
     async def render_async(self, *args, **kwargs) -> Any:
         """Asynchronously render the template"""
-        return await self.template.render_async(*args, **kwargs)
+        from .exts.shopify import CARRIAGE_RETURN, LiquidShopifyExtension
+        is_shopify = any(
+            isinstance(extension, LiquidShopifyExtension)
+            for extension in self.env.extensions.values()
+        )
+        if is_shopify:
+            from .exts.shopify import shopify_context
+
+            args = tuple(shopify_context(arg) for arg in args)
+            kwargs = {key: shopify_context(value) for key, value in kwargs.items()}
+        out = await self.template.render_async(*args, **kwargs)
+        if is_shopify:
+            out = out.replace(CARRIAGE_RETURN, "\r")
+        return out
 
     @classmethod
     def from_env(

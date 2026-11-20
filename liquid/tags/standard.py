@@ -31,13 +31,17 @@ def comment(token: "Token", parser: "Parser") -> nodes.Node:
     Returns:
         The parsed node
     """
+    return _parse_comment(token, parser, "endcomment")
+
+
+def _parse_comment(token: "Token", parser: "Parser", end_tag: str) -> nodes.Node:
     if parser.stream.current.type is TOKEN_BLOCK_END:
         # no args provided, ignore whatever
-        parser.parse_statements(("name:endcomment", ), drop_needle=True)
+        parser.parse_statements((f"name:{end_tag}",), drop_needle=True)
         return nodes.Output([], lineno=token.lineno)
 
     args = parser.parse_expression()
-    body = parser.parse_statements(("name:endcomment", ), drop_needle=True)
+    body = parser.parse_statements((f"name:{end_tag}",), drop_needle=True)
     body = decode_raw(body[0].nodes[0].data)  # type: ignore
     body_parts = body.split("\n", 1)
     if not body_parts[0]:
@@ -48,6 +52,12 @@ def comment(token: "Token", parser: "Parser") -> nodes.Node:
         for line in body.splitlines()
     ]
     return nodes.Output(out, lineno=token.lineno)
+
+
+@standard_tags.register("inline_comment", raw=True)
+def inline_comment(token: "Token", parser: "Parser") -> nodes.Node:
+    """The inline_comment tag, which ignores its unparsed body."""
+    return _parse_comment(token, parser, "endinline_comment")
 
 
 @standard_tags.register
@@ -156,16 +166,19 @@ def case(token: "Token", parser: "Parser") -> nodes.Node:
     token = parser.stream.expect("name:when")
     node = result = nodes.If(lineno=token.lineno)
     while True:
-        node.test = nodes.Compare(
-            lhs,
-            [
-                nodes.Operand(
-                    "eq",
-                    parser.parse_tuple(with_condexpr=False),
-                )
-            ],
-            lineno=token.lineno,
+        when_values = parser.parse_tuple(with_condexpr=False)
+        when_values = (
+            when_values.items if isinstance(when_values, nodes.Tuple)
+            else [when_values]
         )
+        tests = [
+            nodes.Test(lhs, "liquid_eq", [value], [], None, None)
+            for value in when_values
+        ]
+        test = tests[0]
+        for value_test in tests[1:]:
+            test = nodes.Or(test, value_test)
+        node.test = test
         node.body = parser.parse_statements(
             ("name:when", "name:else", "name:endcase")
         )
@@ -238,6 +251,8 @@ def tablerow(
         *parser.parse_statements(("name:endtablerow",), drop_needle=True),
         nodes.Output([nodes.Const("</td>")]),
     ]
+    broken = f"_tablerow_broken_{token.lineno}_{id(token)}" if cols else None
+    _close_tablerow_breaks(inner_body, broken)
     tr_begin = nodes.Output(
         [
             nodes.Const('<tr class="row'),
@@ -274,15 +289,69 @@ def tablerow(
         nodes.Add(iter_length_int, nodes.Const(1)),
     )
 
-    return nodes.For(
-        nodes.Name("_tablerow_i", "store"),
-        nodes.Call(nodes.Name("range", "load"), [iter_length], [], None, None),
-        [tr_begin, inner_loop, tr_end],
-        [],
-        None,
-        False,
-        lineno=token.lineno,
-    )
+    return [
+        nodes.Assign(
+            nodes.Name(broken, "store"),
+            nodes.Call(
+                nodes.Name("namespace", "load"),
+                [],
+                [nodes.Keyword("broken", nodes.Const(False))],
+                None,
+                None,
+            ),
+        ),
+        nodes.For(
+            nodes.Name("_tablerow_i", "store"),
+            nodes.Call(nodes.Name("range", "load"), [iter_length], [], None, None),
+            [
+                nodes.If(
+                    nodes.Not(
+                        nodes.Getattr(nodes.Name(broken, "load"), "broken", "load")
+                    ),
+                    [tr_begin, inner_loop, tr_end],
+                    [],
+                    [],
+                    None,
+                    lineno=token.lineno,
+                )
+            ],
+            [],
+            None,
+            False,
+            lineno=token.lineno,
+        ),
+    ]
+
+
+def _close_tablerow_breaks(body, broken=None):
+    """Close the current cell before a break exits the tablerow loop."""
+    index = 0
+    while index < len(body):
+        node = body[index]
+        if isinstance(node, nodes.Break):
+            close = nodes.Output(
+                [nodes.Const("</td>")],
+                lineno=node.lineno,
+            )
+            if broken is not None:
+                body[index:index] = [
+                    close,
+                    nodes.Assign(
+                        nodes.NSRef(broken, "broken"),
+                        nodes.Const(True),
+                    ),
+                ]
+                index += 3
+            else:
+                body.insert(index, close)
+                index += 2
+            continue
+        if isinstance(node, nodes.If):
+            _close_tablerow_breaks(node.body, broken)
+            for branch in node.elif_:
+                _close_tablerow_breaks(branch.body, broken)
+            _close_tablerow_breaks(node.else_, broken)
+        index += 1
 
 
 @standard_tags.register
